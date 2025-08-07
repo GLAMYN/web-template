@@ -5,10 +5,15 @@ const {
   handleError,
   serialize,
   fetchCommission,
+  getIntegrationSdk,
 } = require('../api-util/sdk');
+const { UUID } = require('sharetribe-flex-integration-sdk').types;
 
 module.exports = (req, res) => {
-  const { isSpeculative, orderData, bodyParams, queryParams } = req.body;
+  const { isSpeculative, orderData, bodyParams, queryParams,pageData } = req.body;
+const selectedLocationType=pageData?.orderData?.locationChoice
+const selectedLocation=selectedLocationType === "mylocation" ? pageData?.orderData?.location?.selectedPlace?.address : `https://www.google.com/maps?q=${pageData?.listing?.attributes?.geolocation?.lat},${pageData?.listing?.attributes?.geolocation?.lng}`
+  const integrationSdk = getIntegrationSdk();
 
   const sdk = getSdk(req, res);
   let lineItems = null;
@@ -49,8 +54,28 @@ module.exports = (req, res) => {
       }
       return trustedSdk.transactions.initiate(body, queryParams);
     })
-    .then(apiResponse => {
+    .then( async apiResponse => {
       const { status, statusText, data } = apiResponse;
+if(pageData?.listing?.attributes?.geolocation?.lat){
+
+console.log('data',pageData?.listing?.attributes?.geolocation)
+console.log('data',pageData?.listing?.attributes?.geolocation?.lat)
+
+await integrationSdk.transactions.updateMetadata({
+  id: data.data.id,
+  metadata: {
+    selectedLocationType: selectedLocationType,
+    selectedLocation: selectedLocation
+  }
+}, {
+  expand: true
+}).then(res => {
+  // res.data contains the response data
+});
+}
+
+
+      
       res
         .status(status)
         .set('Content-Type', 'application/transit+json')

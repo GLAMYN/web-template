@@ -500,6 +500,8 @@ export const TransactionPageComponent = props => {
       showBookingLocation={showBookingLocation}
       hasViewingRights={hasViewingRights}
       showListingImage={showListingImage}
+                transaction={transaction}
+
       activityFeed={
         <ActivityFeed
           messages={messages}

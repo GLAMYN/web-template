@@ -216,9 +216,10 @@ export const processCheckoutWithPayment = (orderParams, extraPaymentParams) => {
     const isPrivileged = process.isPrivileged(requestTransition);
 
     // If paymentIntent exists, order has been initiated previously.
+    // bablu
     const orderPromise = hasPaymentIntents
       ? Promise.resolve(storedTx)
-      : onInitiateOrder(fnParams, processAlias, storedTx.id, requestTransition, isPrivileged);
+      : onInitiateOrder(fnParams, processAlias, storedTx.id, requestTransition, isPrivileged,pageData);
 
     orderPromise.then(order => {
       // Store the returned transaction (order)

@@ -7,7 +7,7 @@ import { timestampToDate } from '../../../util/dates';
 import { propTypes } from '../../../util/types';
 import { BOOKING_PROCESS_NAME } from '../../../transactions/transaction';
 
-import { Form, H6, PrimaryButton, FieldSelect } from '../../../components';
+import { Form, H6, PrimaryButton, FieldSelect, FieldLocationAutocompleteInput } from '../../../components';
 
 import EstimatedCustomerBreakdownMaybe from '../EstimatedCustomerBreakdownMaybe';
 import FieldDateAndTimeInput from './FieldDateAndTimeInput';
@@ -15,6 +15,8 @@ import FieldDateAndTimeInput from './FieldDateAndTimeInput';
 import FetchLineItemsError from '../FetchLineItemsError/FetchLineItemsError.js';
 
 import css from './BookingFixedDurationForm.module.css';
+import { autocompletePlaceSelected, autocompleteSearchRequired, composeValidators } from '../../../util/validators.js';
+const identity = v => v;
 
 // When the values of the form are updated we need to fetch
 // lineItems from this template's backend for the EstimatedTransactionMaybe
@@ -107,6 +109,7 @@ export const BookingFixedDurationForm = props => {
     priceVariantFieldComponent: PriceVariantFieldComponent,
     preselectedPriceVariant,
     isPublishedListing,
+    listing,
     ...rest
   } = props;
 
@@ -170,6 +173,14 @@ export const BookingFixedDurationForm = props => {
 
         const onHandleFetchLineItems = handleFetchLineItems(props);
         const submitDisabled = isPriceVariationsInUse && !isPublishedListing;
+// console.log('values',listing.attributes.publicData.location.address)
+
+  const addressRequiredMessage = intl.formatMessage({
+        id: 'EditListingLocationForm.addressRequired',
+      });
+      const addressNotRecognizedMessage = intl.formatMessage({
+        id: 'EditListingLocationForm.addressNotRecognized',
+      });
 
         return (
           <Form onSubmit={handleSubmit} className={classes} enforcePagePreloadFor="CheckoutPage">
@@ -179,6 +190,61 @@ export const BookingFixedDurationForm = props => {
               onPriceVariantChange={onPriceVariantChange(formRenderProps)}
               disabled={!isPublishedListing}
             />
+
+              <FieldSelect
+          id={`locationChoice`}
+          name="locationChoice"
+          className={css.field}
+          label={"Location Choice"}
+          // validate={validators.required(
+          //   "offersInStudio Required"
+          // )}
+        >
+          <option disabled value="">
+            Select Location
+          </option>
+         <option value="mylocation">
+            At my location
+          </option>
+          <option value="providerLocation">
+            At provider’s location
+          </option>
+        </FieldSelect>
+
+        {values?.locationChoice === "mylocation" &&
+
+<div className={css.myloccation}>
+
+
+        <FieldLocationAutocompleteInput
+            rootClassName={css.locationAddress}
+            inputClassName={css.locationAutocompleteInput}
+            iconClassName={css.locationAutocompleteInputIcon}
+            predictionsClassName={css.predictionsRoot}
+            validClassName={css.validLocation}
+            autoFocus={false}
+            name="location"
+            label={intl.formatMessage({ id: 'EditListingLocationForm.address' })}
+            placeholder={intl.formatMessage({
+              id: 'EditListingLocationForm.addressPlaceholder',
+            })}
+            useDefaultPredictions={false}
+            format={identity}
+            valueFromForm={values.location}
+            validate={composeValidators(
+              autocompleteSearchRequired(addressRequiredMessage),
+              autocompletePlaceSelected(addressNotRecognizedMessage)
+            )}
+            hideLocationIcon={true}
+            // CustomIcon={()=> <></>}
+          />
+          </div>
+      }
+      {
+        values?.locationChoice === "providerLocation" && 
+        
+        <div className={css.providerLocation}>Provider Location : <a href={`https://www.google.com/maps?q=${listing.attributes.geolocation.lat},${listing.attributes.geolocation.lng}`} target='_blank' >{listing.attributes.publicData.location.address}</a></div>
+      }
 
             {monthlyTimeSlots && timeZone ? (
               <FieldDateAndTimeInput

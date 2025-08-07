@@ -8,9 +8,9 @@ import css from './TransactionPanel.module.css';
 
 // Functional component as a helper to build OrderBreakdown
 const BreakdownMaybe = props => {
-  const { className, rootClassName, orderBreakdown, processName, priceVariantName } = props;
+  const { className, rootClassName, orderBreakdown, processName, priceVariantName,transaction } = props;
   const classes = classNames(rootClassName || css.breakdownMaybe, className);
-
+console.log('transaction',transaction?.attributes?.metadata?.selectedLocation)
   return orderBreakdown ? (
     <div className={classes}>
       {priceVariantName ? (
@@ -18,11 +18,13 @@ const BreakdownMaybe = props => {
           <p>{priceVariantName}</p>
         </div>
       ) : null}
+      <div className={css.orderBreakdownTitle}><b>Location:</b> {transaction?.attributes?.metadata?.selectedLocation}</div>
 
       <H6 as="h3" className={css.orderBreakdownTitle}>
         <FormattedMessage id={`TransactionPanel.${processName}.orderBreakdownTitle`} />
       </H6>
       <hr className={css.totalDivider} />
+      
       {orderBreakdown}
     </div>
   ) : null;

@@ -337,10 +337,9 @@
 .orderBreakdownTitle {
   letter-spacing: 1px;
   font-weight: var(--fontWeightMedium);
-  margin: 0 24px;
-
+  margin: 12px 24px;
   @media (--viewportLarge) {
-    margin: 0 48px;
+    margin: 12px 48px;
   }
 }
 

@@ -82,7 +82,6 @@ const EnhancedCheckoutPage = props => {
     const data = handlePageData(initialData, STORAGE_KEY, history);
     setPageData(data || {});
     setIsDataLoaded(true);
-
     // Do not fetch extra data if user is not active (E.g. they are in pending-approval state.)
     if (isUserAuthorized(currentUser)) {
       // This is for processes using payments with Stripe integration
@@ -245,8 +244,8 @@ const mapDispatchToProps = dispatch => ({
   fetchStripeCustomer: () => dispatch(stripeCustomer()),
   onInquiryWithoutPayment: (params, processAlias, transitionName) =>
     dispatch(initiateInquiryWithoutPayment(params, processAlias, transitionName)),
-  onInitiateOrder: (params, processAlias, transactionId, transitionName, isPrivileged) =>
-    dispatch(initiateOrder(params, processAlias, transactionId, transitionName, isPrivileged)),
+  onInitiateOrder: (params, processAlias, transactionId, transitionName, isPrivileged,pageData) =>
+    dispatch(initiateOrder(params, processAlias, transactionId, transitionName, isPrivileged,pageData)),
   onRetrievePaymentIntent: params => dispatch(retrievePaymentIntent(params)),
   onConfirmCardPayment: params => dispatch(confirmCardPayment(params)),
   onConfirmPayment: (transactionId, transitionName, transitionParams) =>

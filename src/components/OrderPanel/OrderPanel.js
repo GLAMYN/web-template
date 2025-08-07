@@ -469,6 +469,7 @@ const OrderPanel = props => {
             startDatePlaceholder={intl.formatDate(TODAY, dateFormattingOptions)}
             startTimeInterval={startTimeInterval}
             timeZone={timeZone}
+            listing={listing}
             {...priceVariantsMaybe}
             {...sharedProps}
           />

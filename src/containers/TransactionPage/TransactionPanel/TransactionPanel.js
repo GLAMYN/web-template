@@ -173,8 +173,8 @@ export class TransactionPanelComponent extends Component {
       orderPanel,
       config,
       hasViewingRights,
+      transaction,
     } = this.props;
-
     const isCustomer = transactionRole === 'customer';
     const isProvider = transactionRole === 'provider';
 
@@ -277,6 +277,8 @@ export class TransactionPanelComponent extends Component {
                     orderBreakdown={orderBreakdown}
                     processName={stateData.processName}
                     priceVariantName={priceVariantName}
+                                      transaction={transaction}
+
                   />
                   <DiminishedActionButtonMaybe
                     showDispute={stateData.showDispute}
@@ -387,6 +389,7 @@ export class TransactionPanelComponent extends Component {
                   orderBreakdown={orderBreakdown}
                   processName={stateData.processName}
                   priceVariantName={priceVariantName}
+                  transaction={transaction}
                 />
 
                 {stateData.showActionButtons ? (

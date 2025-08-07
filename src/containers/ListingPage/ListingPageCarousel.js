@@ -262,10 +262,13 @@ export const ListingPageComponent = props => {
   });
 
   const handleOrderSubmit = values => {
+          console.log('values>>>>',values)
+
     const isCurrentlyClosed = currentListing.attributes.state === LISTING_STATE_CLOSED;
     if (isOwnListing || isCurrentlyClosed) {
       window.scrollTo(0, 0);
     } else {
+      console.log('values>>>>',values)
       onSubmit(values);
     }
   };

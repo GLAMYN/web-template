@@ -186,14 +186,13 @@ export const initiateOrder = (
   processAlias,
   transactionId,
   transitionName,
-  isPrivilegedTransition
+  isPrivilegedTransition,pageData
 ) => (dispatch, getState, sdk) => {
   dispatch(initiateOrderRequest());
 
   // If we already have a transaction ID, we should transition, not
   // initiate.
   const isTransition = !!transactionId;
-
   const { deliveryMethod, quantity, bookingDates, ...otherOrderParams } = orderParams;
   const quantityMaybe = quantity ? { stockReservationQuantity: quantity } : {};
   const bookingParamsMaybe = bookingDates || {};
@@ -248,21 +247,28 @@ export const initiateOrder = (
 
   if (isTransition && isPrivilegedTransition) {
     // transition privileged
+    console.log('here1')
     return transitionPrivileged({ isSpeculative: false, orderData, bodyParams, queryParams })
       .then(handleSuccess)
       .catch(handleError);
   } else if (isTransition) {
+        console.log('here2')
+
     // transition non-privileged
     return sdk.transactions
       .transition(bodyParams, queryParams)
       .then(handleSuccess)
       .catch(handleError);
   } else if (isPrivilegedTransition) {
+        console.log('here3')
+
     // initiate privileged
-    return initiatePrivileged({ isSpeculative: false, orderData, bodyParams, queryParams })
+    return initiatePrivileged({ isSpeculative: false, orderData, bodyParams, queryParams,pageData })
       .then(handleSuccess)
       .catch(handleError);
   } else {
+        console.log('here4')
+
     // initiate non-privileged
     return sdk.transactions
       .initiate(bodyParams, queryParams)
