@@ -7,7 +7,7 @@ import { timestampToDate } from '../../../util/dates';
 import { propTypes } from '../../../util/types';
 import { BOOKING_PROCESS_NAME } from '../../../transactions/transaction';
 
-import { Form, H6, PrimaryButton, FieldSelect, FieldLocationAutocompleteInput } from '../../../components';
+import { Form, H6, PrimaryButton, FieldSelect, FieldLocationAutocompleteInput, FieldTextInput } from '../../../components';
 
 import EstimatedCustomerBreakdownMaybe from '../EstimatedCustomerBreakdownMaybe';
 import FieldDateAndTimeInput from './FieldDateAndTimeInput';
@@ -16,6 +16,8 @@ import FetchLineItemsError from '../FetchLineItemsError/FetchLineItemsError.js';
 
 import css from './BookingFixedDurationForm.module.css';
 import { autocompletePlaceSelected, autocompleteSearchRequired, composeValidators } from '../../../util/validators.js';
+import * as validators from '../../../util/validators';
+
 const identity = v => v;
 
 // When the values of the form are updated we need to fetch
@@ -173,7 +175,6 @@ export const BookingFixedDurationForm = props => {
 
         const onHandleFetchLineItems = handleFetchLineItems(props);
         const submitDisabled = isPriceVariationsInUse && !isPublishedListing;
-// console.log('values',listing.attributes.publicData.location.address)
 
   const addressRequiredMessage = intl.formatMessage({
         id: 'EditListingLocationForm.addressRequired',
@@ -182,6 +183,8 @@ export const BookingFixedDurationForm = props => {
         id: 'EditListingLocationForm.addressNotRecognized',
       });
 
+       console.log('values',listing?.attributes?.publicData)
+       const {bookingQuestion1,bookingQuestion2,bookingQuestion3}=listing?.attributes?.publicData
         return (
           <Form onSubmit={handleSubmit} className={classes} enforcePagePreloadFor="CheckoutPage">
             <PriceVariantFieldComponent
@@ -191,6 +194,7 @@ export const BookingFixedDurationForm = props => {
               disabled={!isPublishedListing}
             />
 
+{listing?.attributes?.publicData?.providerStudio_listingfield === "yes_option" &&
               <FieldSelect
           id={`locationChoice`}
           name="locationChoice"
@@ -210,8 +214,8 @@ export const BookingFixedDurationForm = props => {
             At provider’s location
           </option>
         </FieldSelect>
-
-        {values?.locationChoice === "mylocation" &&
+}
+        {(values?.locationChoice === "mylocation" || listing?.attributes?.publicData?.providerStudio_listingfield !== "yes_option") &&
 
 <div className={css.myloccation}>
 
@@ -244,6 +248,47 @@ export const BookingFixedDurationForm = props => {
         values?.locationChoice === "providerLocation" && 
         
         <div className={css.providerLocation}>Provider Location : <a href={`https://www.google.com/maps?q=${listing.attributes.geolocation.lat},${listing.attributes.geolocation.lng}`} target='_blank' >{listing.attributes.publicData.location.address}</a></div>
+      }
+
+      {bookingQuestion1 &&
+
+       <FieldTextInput
+              id={`bookingQuestion1`}
+              name="bookingQuestion1"
+              className={css.field}
+              type="text"
+              label={bookingQuestion1}
+              placeholder={"Enter answer"}
+              validate={composeValidators(validators.required("Required"))}
+              autoFocus={true}
+            />
+      
+      }
+
+      {bookingQuestion2 &&
+      <FieldTextInput
+              id={`bookingQuestion2`}
+              name="bookingQuestion2"
+              className={css.field}
+              type="text"
+              label={bookingQuestion2}
+              placeholder={"Enter answer"}
+              validate={composeValidators(validators.required("Required"))}
+              autoFocus={true}
+            />
+      }
+
+      {bookingQuestion3 &&
+       <FieldTextInput
+              id={`bookingQuestion3`}
+              name="bookingQuestion3"
+              className={css.field}
+              type="text"
+              label={bookingQuestion3}
+              placeholder={"Enter answer"}
+              validate={composeValidators(validators.required("Required"))}
+              autoFocus={true}
+            />
       }
 
             {monthlyTimeSlots && timeZone ? (

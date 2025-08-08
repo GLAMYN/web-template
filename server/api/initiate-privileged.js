@@ -13,6 +13,7 @@ module.exports = (req, res) => {
   const { isSpeculative, orderData, bodyParams, queryParams,pageData } = req.body;
 const selectedLocationType=pageData?.orderData?.locationChoice
 const selectedLocation=selectedLocationType === "mylocation" ? pageData?.orderData?.location?.selectedPlace?.address : `https://www.google.com/maps?q=${pageData?.listing?.attributes?.geolocation?.lat},${pageData?.listing?.attributes?.geolocation?.lng}`
+
   const integrationSdk = getIntegrationSdk();
 
   const sdk = getSdk(req, res);
@@ -57,15 +58,16 @@ const selectedLocation=selectedLocationType === "mylocation" ? pageData?.orderDa
     .then( async apiResponse => {
       const { status, statusText, data } = apiResponse;
 if(pageData?.listing?.attributes?.geolocation?.lat){
-
-console.log('data',pageData?.listing?.attributes?.geolocation)
-console.log('data',pageData?.listing?.attributes?.geolocation?.lat)
+const {bookingQuestion1,bookingQuestion2,bookingQuestion3}=pageData?.orderData
 
 await integrationSdk.transactions.updateMetadata({
   id: data.data.id,
   metadata: {
     selectedLocationType: selectedLocationType,
-    selectedLocation: selectedLocation
+    selectedLocation: selectedLocation,
+     ...(bookingQuestion1 && { bookingQuestion1 }),
+  ...(bookingQuestion2 && { bookingQuestion2 }),
+  ...(bookingQuestion3 && { bookingQuestion3 })
   }
 }, {
   expand: true
