@@ -373,14 +373,14 @@ console.log('publicData',publicData?.providerStudio_listingfield==="yes_option")
               categoryConfiguration={config.categoryConfiguration}
               intl={intl}
             />
-{/* {publicData?.providerStudio_listingfield==="yes_option" && */}
+{publicData?.providerStudio_listingfield==="yes_option" &&
             <SectionMapMaybe
               geolocation={geolocation}
               publicData={publicData}
               listingId={currentListing.id}
               mapsConfig={config.maps}
             />
-            {/* } */}
+          } 
             <SectionReviews reviews={reviews} fetchReviewsError={fetchReviewsError} />
             <SectionAuthorMaybe
               title={title}
