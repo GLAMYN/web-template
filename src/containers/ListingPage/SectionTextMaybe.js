@@ -15,7 +15,10 @@ const SectionTextMaybe = props => {
     longWordClass: css.longWord,
     breakChars: '/',
   });
-
+console.log('props',props?.heading?.toLowerCase())
+if(props?.heading?.toLowerCase()?.includes('question')){
+  return null;
+}
   return text ? (
     <section className={css.sectionText}>
       {heading ? (

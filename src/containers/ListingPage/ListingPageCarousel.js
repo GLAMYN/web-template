@@ -296,7 +296,7 @@ export const ListingPageComponent = props => {
     : 'https://schema.org/OutOfStock';
 
   const availabilityMaybe = schemaAvailability ? { availability: schemaAvailability } : {};
-
+console.log('publicData',publicData?.providerStudio_listingfield==="yes_option")
   return (
     <Page
       title={schemaTitle}
@@ -373,13 +373,14 @@ export const ListingPageComponent = props => {
               categoryConfiguration={config.categoryConfiguration}
               intl={intl}
             />
-
+{/* {publicData?.providerStudio_listingfield==="yes_option" && */}
             <SectionMapMaybe
               geolocation={geolocation}
               publicData={publicData}
               listingId={currentListing.id}
               mapsConfig={config.maps}
             />
+            {/* } */}
             <SectionReviews reviews={reviews} fetchReviewsError={fetchReviewsError} />
             <SectionAuthorMaybe
               title={title}
