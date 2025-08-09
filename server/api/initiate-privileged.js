@@ -59,12 +59,13 @@ const selectedLocation=selectedLocationType === "mylocation" ? pageData?.orderDa
       const { status, statusText, data } = apiResponse;
 if(pageData?.listing?.attributes?.geolocation?.lat){
 const {bookingQuestion1,bookingQuestion2,bookingQuestion3}=pageData?.orderData
-
+console.log('selectedLocationType',pageData?.orderData?.location)
 await integrationSdk.transactions.updateMetadata({
   id: data.data.id,
   metadata: {
     selectedLocationType: selectedLocationType,
     selectedLocation: selectedLocation,
+    location: pageData?.orderData?.location,
      ...(bookingQuestion1 && { bookingQuestion1 }),
   ...(bookingQuestion2 && { bookingQuestion2 }),
   ...(bookingQuestion3 && { bookingQuestion3 })

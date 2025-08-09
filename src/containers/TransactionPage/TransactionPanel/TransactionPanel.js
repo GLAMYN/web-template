@@ -390,6 +390,7 @@ export class TransactionPanelComponent extends Component {
                   processName={stateData.processName}
                   priceVariantName={priceVariantName}
                   transaction={transaction}
+                  listing={listing}
                 />
 
                 {stateData.showActionButtons ? (
