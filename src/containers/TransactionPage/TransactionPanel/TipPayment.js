@@ -1,141 +1,205 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Modal, NamedRedirect } from '../../../components';
-import './TipPayment.css';
+import { Modal, NamedRedirect, Button, IconCheckmark, IconSpinner } from '../../../components';
+import css from './TipPayment.module.css';
 import StripePaymentForm from '../../CheckoutPage/StripePaymentForm/StripePaymentForm';
 import { useIntl } from 'react-intl';
 import { useConfiguration } from '../../../context/configurationContext';
 import { useSelector } from 'react-redux';
-import { confirmStripePaymentApi, payTipApi } from '../../../util/api';
+import { confirmStripePaymentApi, createTipIntent, payTipApi } from '../../../util/api';
+
 const onManageDisableScrolling = (componentId, scrollingDisabled = true) => {
   // We are just checking the value for now
   console.log('Toggling Modal - scrollingDisabled currently:', componentId, scrollingDisabled);
 };
-const TipPayment = ({ orderBreakdown }) => {
+
+const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
   const [open, setOpen] = useState(false);
   const [tip, setTip] = useState(0);
   const [amountTip, setAmountTip] = useState(0);
+  const [customAmount, setCustomAmount] = useState('');
 
   const basePrice = orderBreakdown?.attributes?.payinTotal?.amount / 100;
-  console.log('orderBreakdown', basePrice);
+
+  const currentUser = useSelector(state => state.user.currentUser);
+  const intl = useIntl();
+  const config = useConfiguration();
+
+  const currency = config.currency || 'USD';
+  const [paymentIntentId, setPaymentIntentId] = useState(null);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [error, setError] = useState(null);
+  const [stripe, setStripe] = useState();
+  const [cardElement, setCardElement] = useState();
+
+  // Calculate tip amount when tip percentage or custom amount changes
   useEffect(() => {
-    if (tip && tip > 0) {
+    if (tip && tip > 0 && tip !== 'custom') {
       setAmountTip((basePrice * tip) / 100);
+      setCustomAmount('');
+    } else if (tip === 'custom' && customAmount) {
+      setAmountTip(parseFloat(customAmount) || 0);
+    } else {
+      setAmountTip(0);
     }
-  }, [tip]);
+  }, [tip, customAmount, basePrice]);
 
+  // Create payment intent when amount changes
+  useEffect(() => {
+    if (amountTip > 0 && currentUser?.id?.uuid && provider?.id?.uuid) {
+      setLoading(true);
+      setError(null);
 
+      console.log('Creating payment intent with:', {
+        amount: amountTip,
+        customerEmail: currentUser.attributes?.email,
+        providerId: provider.id.uuid,
+      });
 
-
-
-
-
-
-
-
-
-
-    const currentUser = useSelector(state => state.user.currentUser);
-
-    const intl = useIntl()
-    const config = useConfiguration()
-   
-    const cancellationFine = amountTip
-    const currency = config.currency || "USD"
-    const [clientSecret, setClientSecret] = useState(null)
-    const [loading, setLoading] = useState(false)
-    const [paymentSuccess, setPaymentSuccess] = useState(false)
-    const [error, setError] = useState(null)
-    const [stripe, setStripe] = useState()
-    const [cardElement, setCardElement] = useState()
-  
-    useEffect(() => {
-      if (cancellationFine > 0 && currentUser?.id?.uuid) {
-        setLoading(true)
-        payTipApi({
-          amount: Math.round(cancellationFine * 100), // assuming fine is in major units
-          currency,
-          userId: currentUser.id.uuid,
+      createTipIntent({
+        amount: amountTip,
+        customerEmail: currentUser.attributes?.email,
+        providerId: provider.id.uuid,
+      })
+        .then(data => {
+          console.log('Payment intent created:', data);
+          if (data.success && data.paymentIntent) {
+            setClientSecret(data.paymentIntent.client_secret);
+            setPaymentIntentId(data.paymentIntent.id);
+            setError(null);
+          } else {
+            setError(data.error || 'Failed to create payment intent.');
+          }
         })
-          .then((data) => {
-            if (data.clientSecret) {
-              setClientSecret(data.clientSecret)
-              setError(null)
-            } else {
-              setError(data.error || "Failed to create payment intent.")
-            }
-          })
-          .catch((e) => setError(e.message))
-          .finally(() => setLoading(false))
-      }
-    }, [cancellationFine, currency, currentUser?.id?.uuid])
-  
-    // Remove handlePaymentSubmit and use handlePaymentSuccess for onSubmitSuccess
-    const handlePaymentSuccess = useCallback(() => {
-      setLoading(true)
-                  setPaymentSuccess(true)
-
-    //   clearCancellationFineApi({})
-    //     .then((data) => {
-    //       if (data.success) {
-    //         setPaymentSuccess(true)
-    //         setError(null)
-    //       } else {
-    //         setError(data.error || "Failed to update penalty state.")
-    //       }
-    //     })
-    //     .catch((e) => setError(e.message))
-    //     .finally(() => setLoading(false))
-
-    }, [])
-  
-    // New: handle payment form submit using confirmStripePaymentApi
-    const handlePaymentFormSubmit = async (values, form) => {
-
-        console.log('hereeeeee',values,form)
-        return
-      setLoading(true)
-      setError(null)
-      try {
-        if (!stripe || !clientSecret) throw new Error("Stripe not initialized")
-        if (!cardElement) throw new Error("Card element not found")
-        // Create a payment method
-        const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
-          type: "card",
-          card: cardElement,
+        .catch(e => {
+          console.error('Payment intent creation error:', e);
+          setError(e.message || 'Failed to create payment intent.');
         })
-        if (pmError) throw pmError
-        // Retrieve the PaymentIntent to get its ID
-        const piResult = await stripe.retrievePaymentIntent(clientSecret)
-        const paymentIntentId = piResult && piResult.paymentIntent && piResult.paymentIntent.id
-        if (!paymentIntentId) throw new Error("Could not retrieve PaymentIntent ID")
-        // Confirm payment via backend
-        const result = await confirmStripePaymentApi({
-          clientSecret,
-          paymentMethodId: paymentMethod.id,
-          paymentIntentId,
-          returnUrl: window.location.href,
-        })
-        if (result && result.paymentIntent && result.paymentIntent.status === "succeeded") {
-          handlePaymentSuccess()
-        } else {
-          setError("Payment failed.")
-        }
-      } catch (e) {
-        setError(e.message)
-      } finally {
-        setLoading(false)
-      }
+        .finally(() => setLoading(false));
+    } else {
+      setClientSecret(null);
     }
-  
-    // Get the user's default payment method for Stripe
-    const defaultPaymentMethod = currentUser?.stripeCustomer?.defaultPaymentMethod || null;
-  
+  }, [amountTip, currentUser?.id?.uuid, provider?.id?.uuid]);
+
+  const handlePaymentSuccess = useCallback(() => {
+    setLoading(true);
+    setPaymentSuccess(true);
+    setShowSuccessMessage(true);
+    
+    // Show success message for 3 seconds, then refresh the page
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+      setPaymentSuccess(false);
+      setAmountTip(0);
+      setTip(0);
+      setCustomAmount('');
+      setOpen(false);
+      
+      // Refresh the page after 3 seconds
+      window.location.reload();
+    }, 3000);
+  }, []);
+
+  const handlePaymentFormSubmit = async values => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (!stripe || !clientSecret) {
+        throw new Error('Stripe not initialized or client secret missing');
+      }
+      if (!cardElement) {
+        throw new Error('Card element not found');
+      }
+
+      // Create a payment method
+      const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+      });
+
+      if (pmError) {
+        console.error('Payment method creation error:', pmError);
+        throw pmError;
+      }
+
+      // Confirm payment via backend
+      const result = await confirmStripePaymentApi({
+        clientSecret,
+        paymentMethodId: paymentMethod.id,
+        paymentIntentId,
+        returnUrl: window.location.href,
+        transactionId: transactionId,
+        amount: amountTip,
+      });
+      if (result && result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+        handlePaymentSuccess();
+      } else {
+        setError('Payment failed.');
+      }
+    } catch (e) {
+      console.error('Payment error:', e);
+      setError(e.message || 'Payment failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get the user's default payment method for Stripe
+  const defaultPaymentMethod = currentUser?.stripeCustomer?.defaultPaymentMethod || null;
+
+  const handleTipSelection = selectedTip => {
+    setTip(selectedTip);
+    if (selectedTip !== 'custom') {
+      setCustomAmount('');
+    }
+  };
+
+  const handleCustomAmountChange = e => {
+    const value = e.target.value;
+    setCustomAmount(value);
+    if (tip === 'custom') {
+      setAmountTip(parseFloat(value) || 0);
+    }
+  };
+
+  const formatCurrency = amount => {
+    return intl.formatNumber(amount, {
+      style: 'currency',
+      currency: currency,
+    });
+  };
+
+  const tipOptions = [
+    { value: 10, label: '10%', description: 'Standard', icon: '🙂' },
+    { value: 15, label: '15%', description: 'Good', icon: '😃' },
+    { value: 20, label: '20%', description: 'Great', icon: '🤩' },
+  ];
 
   return (
     <>
-      <div classNameName="button">
-        <button onClick={() => setOpen(prev => !prev)}>Tip</button>
+      <div className={css.tipButtonContainer}>
+        <Button
+          rootClassName={css.tipButton}
+          onClick={() => setOpen(prev => !prev)}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <IconSpinner rootClassName={css.spinner} />
+              Processing...
+            </>
+          ) : (
+            <>
+              <IconCheckmark rootClassName={css.tipIcon} />
+              Leave a Tip
+            </>
+          )}
+        </Button>
       </div>
+
       {open && (
         <Modal
           id="TipPage"
@@ -144,113 +208,162 @@ const TipPayment = ({ orderBreakdown }) => {
           usePortal
           onManageDisableScrolling={onManageDisableScrolling}
         >
-          <section className="tip-card" aria-labelledby="tip-title">
-            <h2 id="tip-title" className="tip-title">
-              Would you like to leave a tip?
-            </h2>
+          <div className={css.tipModalContainer}>
+            <div className={css.tipHeader}>
+              <div className={css.tipIconContainer}>
+                <svg
+                  style={{ fill: 'none', color: '#fff' }}
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                {/* <IconCheckmark rootClassName={css.headerIcon} /> */}
+              </div>
+              <h2 className={css.tipTitle}>Show your appreciation</h2>
+              <p className={css.tipSubtitle}>Leave a tip for exceptional service</p>
+            </div>
 
-            <form className="tip-form" action="#" method="post" novalidate>
-              <div className="tip-options" role="radiogroup" aria-label="Tip amount">
-                <label className="tip-option">
+            <div className={css.tipOptionsContainer}>
+              <div className={css.tipOptions} role="radiogroup" aria-label="Tip amount">
+                {tipOptions.map(option => (
+                  <label key={option.value} className={css.tipOption}>
+                    <input
+                      type="radio"
+                      name="tip"
+                      value={option.value}
+                      checked={tip === option.value}
+                      onChange={e => handleTipSelection(parseInt(e.target.value))}
+                      className={css.tipRadio}
+                    />
+                    <div className={css.tipOptionContent}>
+                      <span className={css.tipPercentage}>{option.label}</span>
+                      <span className={css.tipDescription}>{option.description}</span>
+                      <span className={css.tipDescription}>{option.icon}</span>
+                    </div>
+                  </label>
+                ))}
+
+                <label className={`${css.tipOption} ${css.customTipOption}`}>
                   <input
+                    id="tip-custom"
                     type="radio"
                     name="tip"
-                    value="10"
-                    onChange={e => {
-                      setTip(e.target.value);
-                    }}
+                    value="custom"
+                    checked={tip === 'custom'}
+                    onChange={() => handleTipSelection('custom')}
+                    className={css.tipRadio}
                   />
-                  <span className="label-text">10%</span>
+                  <div className={css.tipOptionContent}>
+                    <span className={css.tipPercentage}>Custom</span>
+                    <span className={css.tipDescription}>Your choice</span>
+                  </div>
                 </label>
+              </div>
 
-                <label className="tip-option">
-                  <input
-                    type="radio"
-                    name="tip"
-                    value="15"
-                    onChange={e => {
-                      setTip(e.target.value);
-                    }}
-                  />
-                  <span className="label-text">15%</span>
-                </label>
+              {tip === 'custom' && (
+                <div className={css.customAmountContainer}>
+                  <label htmlFor="custom-amount" className={css.customAmountLabel}>
+                    Enter custom amount
+                  </label>
+                  <div className={css.customAmountInputWrapper}>
+                    <span className={css.currencySymbol}>
+                      {currency === 'USD' ? '$' : currency}
+                    </span>
+                    <input
+                      id="custom-amount"
+                      className={css.customAmountInput}
+                      name="customAmount"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      aria-label="Custom tip amount"
+                      value={customAmount}
+                      onChange={handleCustomAmountChange}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
 
-                <label className="tip-option">
-                  <input
-                    type="radio"
-                    name="tip"
-                    value="20"
-                    onChange={e => {
-                      setTip(e.target.value);
-                    }}
-                  />
-                  <span className="label-text">20%</span>
-                </label>
+            {amountTip > 0 && (
+              <div className={css.tipAmountDisplay}>
+                <div className={css.tipAmountContent}>
+                  <span className={css.tipAmountLabel}>Tip Amount:</span>
+                  <span className={css.tipAmountValue}>{formatCurrency(amountTip)}</span>
+                </div>
+                <div className={css.tipAmountBreakdown}>
+                  <span>Base: {formatCurrency(basePrice)}</span>
+                  <span>+ Tip: {formatCurrency(amountTip)}</span>
+                  <span className={css.totalAmount}>
+                    Total: {formatCurrency(basePrice + amountTip)}
+                  </span>
+                </div>
+              </div>
+            )}
 
-                <input id="tip-custom" className="sr-only" type="radio" name="tip" value="custom"  onClick={e => {
-                    setAmountTip(0);
-                  }} />
-                <label for="tip-custom" className="tip-option custom-label">
-                  <span className="label-text">Custom</span>
-                </label>
+            {error && (
+              <div className={css.errorMessage}>
+                <div className={css.errorIcon}>❌</div>
+                <span className={css.errorText}>{error}</span>
+              </div>
+            )}
 
-                <input
-                  id="custom-amount"
-                  className="custom-amount"
-                  name="customAmount"
-                  type="number"
-                  inputmode="decimal"
-                  min="0"
-                  step="0.01"
-                  placeholder="$0.00"
-                  aria-label="Custom tip amount"
-                  value={amountTip}
-                  onChange={e => {
-                    setAmountTip(e.target.value);
+            {showSuccessMessage && (
+              <div className={css.successMessage}>
+                <IconCheckmark rootClassName={css.successIcon} />
+                <div className={css.successContent}>
+                  <span className={css.successTitle}>Payment successful!</span>
+                  <span className={css.successSubtitle}>Thank you for your tip. Page will refresh in a moment...</span>
+                </div>
+              </div>
+            )}
+
+            {clientSecret && amountTip > 0 && (
+              <div className={css.paymentFormContainer}>
+                <StripePaymentForm
+                  formId="TipPaymentStripePaymentForm"
+                  stripePublishableKey={config.stripe.publishableKey}
+                  clientSecret={clientSecret}
+                  totalPrice={formatCurrency(amountTip)}
+                  onStripeInitialized={stripe => {
+                    setStripe(stripe);
                   }}
+                  onSubmit={handlePaymentFormSubmit}
+                  onSubmitSuccess={handlePaymentSuccess}
+                  inProgress={loading}
+                  locale={config.localization?.locale || 'en-US'}
+                  marketplaceName={config.marketplaceName}
+                  showInitialMessageInput={false}
+                  askShippingDetails={false}
+                  showPickUplocation={false}
+                  defaultPaymentMethod={defaultPaymentMethod}
+                  setCardElement={setCardElement}
                 />
               </div>
-              <div>Amount: {amountTip ? amountTip : 0}</div>
+            )}
 
-
-                 <StripePaymentForm
-                                      formId="SellerPenaltyPageStripePaymentForm"
-                                      stripePublishableKey={config.stripe.publishableKey}
-                                      clientSecret={clientSecret}
-                                      totalPrice={intl.formatNumber(cancellationFine, { style: "currency", currency })}
-                                      onStripeInitialized={(stripe) => {
-                                        setStripe(stripe)
-                                      }}
-                                      onSubmit={handlePaymentFormSubmit}
-                                      onSubmitSuccess={handlePaymentSuccess}
-                                      inProgress={loading}
-                                      locale={config.localization?.locale || "en-US"}
-                                      marketplaceName={config.marketplaceName}
-                                      showInitialMessageInput={false}
-                                      askShippingDetails={false}
-                                      showPickUplocation={false}
-                                      setCardElement={setCardElement}
-                                      defaultPaymentMethod={defaultPaymentMethod}
-                                    />
-
-              <div className="tip-actions">
-                <button type="submit" className="btn btn-primary">
-                  Add tip
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-link"
-                  aria-label="No thanks"
-                  onClick={() => setOpen(false)}
-                >
-                  No, thanks
-                </button>
-              </div>
-            </form>
-          </section>
+            <div className={css.tipActions}>
+              <Button
+                // rootClassName={css.cancelButton}
+                onClick={() => setOpen(false)}
+                disabled={loading}
+              >
+                No, thanks
+              </Button>
+            </div>
+          </div>
         </Modal>
       )}
     </>
   );
 };
+
 export default TipPayment;

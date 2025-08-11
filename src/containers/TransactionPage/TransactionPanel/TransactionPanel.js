@@ -226,6 +226,7 @@ export class TransactionPanelComponent extends Component {
     const priceVariantName = protectedData?.priceVariantName;
 
     const classes = classNames(rootClassName || css.root, className);
+    const currency = config.currency || 'CAD';
 
     return (
       <div className={classes}>
@@ -278,8 +279,7 @@ export class TransactionPanelComponent extends Component {
                     orderBreakdown={orderBreakdown}
                     processName={stateData.processName}
                     priceVariantName={priceVariantName}
-                                      transaction={transaction}
-
+                    transaction={transaction}
                   />
                   <DiminishedActionButtonMaybe
                     showDispute={stateData.showDispute}
@@ -398,14 +398,45 @@ export class TransactionPanelComponent extends Component {
                   <div className={css.desktopActionButtons}>{actionButtons}</div>
                 ) : null}
               </div>
-             
+
               <DiminishedActionButtonMaybe
                 showDispute={stateData.showDispute}
                 onOpenDisputeModal={onOpenDisputeModal}
               />
-
-             <TipPayment orderBreakdown={transaction}/>
-
+              {transaction?.attributes?.metadata?.tipAmount ? (
+                <div className={css.tipContainer}>
+                  <div className={css.tipIconWrapper}>
+                    <svg
+                      style={{ fill: 'none', color: '#fff' }}
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  </div>
+                  <div className={css.tipContent}>
+                    <span className={css.tipLabel}>You tipped</span>
+                    <span className={css.tipAmount}>
+                      {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
+                        style: 'currency',
+                        currency,
+                      })}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <TipPayment
+                  orderBreakdown={transaction}
+                  provider={provider}
+                  transactionId={transaction?.id?.uuid}
+                />
+              )}
             </div>
           </div>
         </div>

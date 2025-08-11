@@ -21,6 +21,7 @@ const payCancellationFine = require('./api/pay-cancellation-fine');
 const confirmStripePayment = require('./api/confirm-stripe-payment');
 const { authenticateFacebook, authenticateFacebookCallback } = require('./api/auth/facebook');
 const { authenticateGoogle, authenticateGoogleCallback } = require('./api/auth/google');
+const tipPaymentIntent = require('./api/tip-payment-intent');
 
 const router = express.Router();
 
@@ -84,5 +85,6 @@ router.get('/auth/google/callback', authenticateGoogleCallback);
 
 router.post('/pay-cancellation-fine', payCancellationFine)
 router.post('/confirm-stripe-payment', confirmStripePayment)
+router.post('/tip-payment-intent', tipPaymentIntent)
 
 module.exports = router;

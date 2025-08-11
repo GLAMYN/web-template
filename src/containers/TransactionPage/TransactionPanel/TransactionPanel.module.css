@@ -620,3 +620,101 @@
     margin-top: 16px;
   }
 }
+
+/* Tip Container Styles */
+.tipContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  margin: 16px 0;
+  background-color: var(--colorGrey50);
+  border: 1px solid var(--colorGrey100);
+  border-radius: 8px;
+  transition: border-color 0.2s ease;
+}
+
+.tipContainer:hover {
+  border-color: var(--colorGrey200);
+}
+
+.tipIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: var(--marketplaceColor);
+  border-radius: 50%;
+  color: white;
+  flex-shrink: 0;
+}
+
+.tipIconWrapper svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2px;
+}
+
+.tipContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.tipLabel {
+  font-size: 14px;
+  color: var(--colorGrey600);
+  font-weight: var(--fontWeightMedium);
+  line-height: 1.2;
+}
+
+.tipAmount {
+  font-size: 16px;
+  font-weight: var(--fontWeightBold);
+  color: var(--colorBlack);
+  line-height: 1.2;
+}
+
+/* Responsive adjustments */
+@media (--viewportMedium) {
+  .tipContainer {
+    padding: 18px 24px;
+  }
+  
+  .tipIconWrapper {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .tipIconWrapper svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .tipAmount {
+    font-size: 18px;
+  }
+}
+
+@media (--viewportLarge) {
+  .tipContainer {
+    padding: 20px 28px;
+  }
+  
+  .tipIconWrapper {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .tipIconWrapper svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .tipAmount {
+    font-size: 20px;
+  }
+}

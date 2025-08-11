@@ -1,0 +1,404 @@
+@import '../../../styles/customMediaQueries.css';
+
+/* Tip Button Container */
+.tipButtonContainer {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.tipButton {
+  composes: buttonPrimary from global;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: var(--fontWeightMedium);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(93, 43, 192, 0.15);
+  min-height: 48px;
+  justify-content: center;
+}
+
+.tipButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(93, 43, 192, 0.25);
+}
+
+.tipButton:disabled {
+  transform: none;
+  box-shadow: 0 4px 12px rgba(93, 43, 192, 0.15);
+}
+
+.tipIcon {
+  width: 20px;
+  height: 20px;
+  stroke: var(--colorWhite);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  stroke: var(--colorWhite);
+}
+
+
+/* Header Section */
+.tipHeader {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.tipIconContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, var(--marketplaceColor) 0%, var(--marketplaceColorLight) 100%);
+  border-radius: 50%;
+  box-shadow: 0 8px 24px rgba(93, 43, 192, 0.3);
+}
+
+.headerIcon {
+  width: 32px;
+  height: 32px;
+  stroke: var(--colorWhite);
+  stroke-width: 2px;
+}
+
+.tipTitle {
+  font-size: 28px;
+  font-weight: var(--fontWeightBold);
+  color: var(--colorBlack);
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.tipSubtitle {
+  font-size: 16px;
+  color: var(--colorGrey600);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Tip Options Container */
+.tipOptionsContainer {
+  margin-bottom: 24px;
+}
+
+.tipOptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tipOption {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  background: var(--colorWhite);
+  border: 2px solid var(--colorGrey200);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  min-height: 100px;
+}
+
+.tipOption:hover {
+  border-color: var(--marketplaceColorLight);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(93, 43, 192, 0.1);
+}
+
+.tipOption:has(input:checked) {
+  border-color: var(--marketplaceColor);
+  background: linear-gradient(135deg, rgba(93, 43, 192, 0.05) 0%, rgba(119, 72, 213, 0.05) 100%);
+  box-shadow: 0 8px 24px rgba(93, 43, 192, 0.15);
+}
+
+.customTipOption {
+  grid-column: 1 / -1;
+  min-height: 80px;
+}
+
+.tipRadio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tipOptionContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tipPercentage {
+  font-size: 20px;
+  font-weight: var(--fontWeightBold);
+  color: var(--colorBlack);
+}
+
+.tipDescription {
+  font-size: 14px;
+  color: var(--colorGrey600);
+  font-weight: var(--fontWeightMedium);
+}
+
+/* Custom Amount Container */
+.customAmountContainer {
+  margin-top: 20px;
+  padding: 24px;
+  background: var(--colorGrey50);
+  border-radius: 16px;
+  border: 2px solid var(--colorGrey200);
+}
+
+.customAmountLabel {
+  display: block;
+  font-size: 16px;
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorBlack);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.customAmountInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--colorWhite);
+  border: 2px solid var(--colorGrey200);
+  border-radius: 12px;
+  padding: 0 16px;
+  transition: border-color 0.2s ease;
+}
+
+.customAmountInputWrapper:focus-within {
+  border-color: var(--marketplaceColor);
+  box-shadow: 0 0 0 3px rgba(93, 43, 192, 0.1);
+}
+
+.currencySymbol {
+  font-size: 18px;
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorGrey600);
+  margin-right: 8px;
+}
+
+.customAmountInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 18px;
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorBlack);
+  padding: 16px 0;
+  background: transparent;
+}
+
+.customAmountInput::placeholder {
+  color: var(--colorGrey400);
+}
+
+/* Tip Amount Display */
+.tipAmountDisplay {
+  background: linear-gradient(135deg, var(--colorSuccessLight) 0%, #e8f5e8 100%);
+  border: 2px solid var(--colorSuccess);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.tipAmountContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(46, 204, 113, 0.2);
+}
+
+.tipAmountLabel {
+  font-size: 16px;
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorBlack);
+}
+
+.tipAmountValue {
+  font-size: 24px;
+  font-weight: var(--fontWeightBold);
+  color: var(--colorSuccessDark);
+}
+
+.tipAmountBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--colorGrey600);
+}
+
+.totalAmount {
+  font-weight: var(--fontWeightBold);
+  color: var(--colorBlack);
+  font-size: 16px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(46, 204, 113, 0.2);
+}
+
+/* Error Message */
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--colorFailLight) 0%, #ffe8e8 100%);
+  border: 2px solid var(--colorFail);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.errorIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.errorText {
+  font-size: 16px;
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorFail);
+  line-height: 1.4;
+}
+
+/* Success Message */
+.successMessage {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, var(--colorSuccessLight) 0%, #e8f5e8 100%);
+  border: 2px solid var(--colorSuccess);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.successIcon {
+  width: 32px;
+  height: 32px;
+  stroke: var(--colorSuccess);
+  stroke-width: 2px;
+  flex-shrink: 0;
+}
+
+.successContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.successTitle {
+  font-size: 18px;
+  font-weight: var(--fontWeightBold);
+  color: var(--colorSuccessDark);
+}
+
+.successSubtitle {
+  font-size: 14px;
+  color: var(--colorGrey600);
+}
+
+/* Tip Actions */
+.tipActions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.cancelButton:disabled {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Responsive Design */
+@media (--viewportSmall) {
+  .tipOptions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .customTipOption {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (--viewportMedium) {
+  .tipOptions {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .customTipOption {
+    grid-column: 4 / 5;
+  }
+  
+  .tipTitle {
+    font-size: 32px;
+  }
+  
+}
+
+/* Animation for tip options */
+.tipOption {
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.tipOption:nth-child(1) { animation-delay: 0.1s; }
+.tipOption:nth-child(2) { animation-delay: 0.2s; }
+.tipOption:nth-child(3) { animation-delay: 0.3s; }
+.tipOption:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Focus states for accessibility */
+.tipOption:focus-within {
+  outline: 2px solid var(--marketplaceColor);
+  outline-offset: 2px;
+}
+
+.customAmountInput {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Loading state animations */
+.tipButton:disabled .spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

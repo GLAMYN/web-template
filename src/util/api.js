@@ -151,3 +151,7 @@ export const payTipApi = body => {
 export const confirmStripePaymentApi = body => {
   return post('/api/confirm-stripe-payment', body);
 };
+
+export const createTipIntent = body => {
+  return post('/api/tip-payment-intent', body)
+}

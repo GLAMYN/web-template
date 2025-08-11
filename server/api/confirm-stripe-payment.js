@@ -1,8 +1,10 @@
+const { updateTransactionMetaData } = require('../api-util/transactionHelper');
+
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 module.exports = async (req, res) => {
   try {
-    const { clientSecret, paymentMethodId, paymentIntentId, returnUrl } = req.body;
+    const { clientSecret, paymentMethodId, paymentIntentId, returnUrl, transactionId, amount } = req.body;
     if (!paymentIntentId || !paymentMethodId) {
       return res.status(400).json({ error: 'Missing required parameters.' });
     }
@@ -14,6 +16,9 @@ module.exports = async (req, res) => {
         return_url: returnUrl,
        }
     );
+    
+    // If the payment was successful, update transaction that a tip has been made
+    await updateTransactionMetaData(transactionId, {tipAmount: amount})
 
     res.status(200).json({ paymentIntent });
   } catch (e) {

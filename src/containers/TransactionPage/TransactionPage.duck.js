@@ -592,6 +592,7 @@ export const fetchTransaction = (id, txRole, config) => (dispatch, getState, sdk
           'customer.profileImage',
           'provider',
           'provider.profileImage',
+          'provider.privateData',
           'listing',
           'listing.currentStock',
           'listing.images',
@@ -599,6 +600,7 @@ export const fetchTransaction = (id, txRole, config) => (dispatch, getState, sdk
           'reviews',
           'reviews.author',
           'reviews.subject',
+          'metadata.tipAmount'
         ],
         ...getImageVariants(config.layout.listingImage),
       },
