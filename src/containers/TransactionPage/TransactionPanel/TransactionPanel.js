@@ -26,6 +26,7 @@ import DiminishedActionButtonMaybe from './DiminishedActionButtonMaybe';
 import PanelHeading from './PanelHeading';
 
 import css from './TransactionPanel.module.css';
+import TipPayment from './TipPayment';
 
 // Helper function to get display names for different roles
 const displayNames = (currentUser, provider, customer, intl) => {
@@ -397,10 +398,14 @@ export class TransactionPanelComponent extends Component {
                   <div className={css.desktopActionButtons}>{actionButtons}</div>
                 ) : null}
               </div>
+             
               <DiminishedActionButtonMaybe
                 showDispute={stateData.showDispute}
                 onOpenDisputeModal={onOpenDisputeModal}
               />
+
+             <TipPayment orderBreakdown={transaction}/>
+
             </div>
           </div>
         </div>
