@@ -27,6 +27,7 @@ import PanelHeading from './PanelHeading';
 
 import css from './TransactionPanel.module.css';
 import TipPayment from './TipPayment';
+import moment from 'moment';
 
 // Helper function to get display names for different roles
 const displayNames = (currentUser, provider, customer, intl) => {
@@ -227,7 +228,7 @@ export class TransactionPanelComponent extends Component {
 
     const classes = classNames(rootClassName || css.root, className);
     const currency = config.currency || 'CAD';
-// console.log('isCustomer',transaction?.attributes?.lastTransition === "transition/accept")
+    const isBookingEnded = moment().isAfter(moment(this.props?.booking?.attributes?.end))
     return (
       <div className={classes}>
         <div className={css.container}>
@@ -421,6 +422,17 @@ export class TransactionPanelComponent extends Component {
                     </svg>
                   </div>
                   <div className={css.tipContent}>
+                    {isProvider ? 
+                    <>
+                    <span className={css.tipLabel}>You've recieved a tip of </span>
+                    <span className={css.tipAmount}>
+                      {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
+                        style: 'currency',
+                        currency,
+                      })}
+                    </span></>
+                    :
+                    <>
                     <span className={css.tipLabel}>You tipped</span>
                     <span className={css.tipAmount}>
                       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
@@ -428,9 +440,11 @@ export class TransactionPanelComponent extends Component {
                         currency,
                       })}
                     </span>
+                    </>
+                    } 
                   </div>
                 </div>
-              ) : (isCustomer && transaction?.attributes?.lastTransition === "transition/accept") ? (
+              ) : (isCustomer && transaction?.attributes?.lastTransition === "transition/accept" && isBookingEnded) ? (
                 <TipPayment
                   orderBreakdown={transaction}
                   provider={provider}

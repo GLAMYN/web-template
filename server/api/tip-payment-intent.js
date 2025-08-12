@@ -5,7 +5,7 @@ const { getSdk, getIntegrationSdk } = require('../api-util/sdk');
 module.exports = async (req, res) => {
   const sdk = getSdk(req, res);
   const integrationSdk = getIntegrationSdk();
-  const { amount, customerEmail, providerId } = req.body;
+  const { amount, customerEmail, providerId, customerId } = req.body;
   
   try {
     // Get provider's Stripe account ID
@@ -19,8 +19,8 @@ module.exports = async (req, res) => {
     }
 
     // Create payment intent without confirming it
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
+    const paymentIntentParams = {
+      amount: Math.round(amount * 100),
       currency: 'cad',
       confirmation_method: 'manual', // Don't confirm automatically
       receipt_email: customerEmail,
@@ -34,7 +34,13 @@ module.exports = async (req, res) => {
         providerId: providerId,
         customerEmail: customerEmail
       }
-    });
+    };
+
+    // add customer ID if provided so that saved payment method can be used.
+    if (customerId) {
+      paymentIntentParams.customer = customerId;
+    }
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
 
     res.status(200).send({ 
       success: true, 

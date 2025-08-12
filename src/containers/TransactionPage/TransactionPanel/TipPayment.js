@@ -4,8 +4,9 @@ import css from './TipPayment.module.css';
 import StripePaymentForm from '../../CheckoutPage/StripePaymentForm/StripePaymentForm';
 import { useIntl } from 'react-intl';
 import { useConfiguration } from '../../../context/configurationContext';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { confirmStripePaymentApi, createTipIntent, payTipApi } from '../../../util/api';
+import { stripeCustomer } from '../../CheckoutPage/CheckoutPage.duck';
 
 const onManageDisableScrolling = (componentId, scrollingDisabled = true) => {
   // We are just checking the value for now
@@ -21,6 +22,7 @@ const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
   const basePrice = orderBreakdown?.attributes?.payinTotal?.amount / 100;
 
   const currentUser = useSelector(state => state.user.currentUser);
+  const dispatch = useDispatch();
   const intl = useIntl();
   const config = useConfiguration();
 
@@ -33,6 +35,13 @@ const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
   const [error, setError] = useState(null);
   const [stripe, setStripe] = useState();
   const [cardElement, setCardElement] = useState();
+
+  // Fetch Stripe customer data to ensure saved payment methods are loaded
+  useEffect(() => {
+    if (currentUser?.id?.uuid) {
+      dispatch(stripeCustomer());
+    }
+  }, [currentUser?.id?.uuid]);
 
   // Calculate tip amount when tip percentage or custom amount changes
   useEffect(() => {
@@ -52,19 +61,13 @@ const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
       setLoading(true);
       setError(null);
 
-      console.log('Creating payment intent with:', {
-        amount: amountTip,
-        customerEmail: currentUser.attributes?.email,
-        providerId: provider.id.uuid,
-      });
-
       createTipIntent({
         amount: amountTip,
         customerEmail: currentUser.attributes?.email,
         providerId: provider.id.uuid,
+        customerId: currentUser?.stripeCustomer?.attributes?.stripeCustomerId,
       })
         .then(data => {
-          console.log('Payment intent created:', data);
           if (data.success && data.paymentIntent) {
             setClientSecret(data.paymentIntent.client_secret);
             setPaymentIntentId(data.paymentIntent.id);
@@ -87,7 +90,7 @@ const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
     setLoading(true);
     setPaymentSuccess(true);
     setShowSuccessMessage(true);
-    
+
     // Show success message for 3 seconds, then refresh the page
     setTimeout(() => {
       setShowSuccessMessage(false);
@@ -96,7 +99,7 @@ const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
       setTip(0);
       setCustomAmount('');
       setOpen(false);
-      
+
       // Refresh the page after 3 seconds
       window.location.reload();
     }, 3000);
@@ -110,25 +113,35 @@ const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
       if (!stripe || !clientSecret) {
         throw new Error('Stripe not initialized or client secret missing');
       }
-      if (!cardElement) {
-        throw new Error('Card element not found');
-      }
 
-      // Create a payment method
-      const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-      });
+      let paymentMethodId;
 
-      if (pmError) {
-        console.error('Payment method creation error:', pmError);
-        throw pmError;
+      // Check if we have a saved payment method and no card element
+      if (defaultPaymentMethod?.id && !cardElement) {
+        paymentMethodId = defaultPaymentMethod.attributes?.stripePaymentMethodId;
+
+        if (!paymentMethodId) {
+          throw new Error('Saved payment method ID not found');
+        }
+      } else if (cardElement) {
+        // Create new payment method from card element
+        const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
+          type: 'card',
+          card: cardElement,
+        });
+
+        if (pmError) {
+          throw pmError;
+        }
+        paymentMethodId = paymentMethod.id;
+      } else {
+        throw new Error('No valid payment method available');
       }
 
       // Confirm payment via backend
       const result = await confirmStripePaymentApi({
         clientSecret,
-        paymentMethodId: paymentMethod.id,
+        paymentMethodId: paymentMethodId,
         paymentIntentId,
         returnUrl: window.location.href,
         transactionId: transactionId,
@@ -227,6 +240,7 @@ const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
               </div>
               <h2 className={css.tipTitle}>Show your appreciation</h2>
               <p className={css.tipSubtitle}>Leave a tip for exceptional service</p>
+              <p className={css.tipSubtitleNote}>Once given, tips can’t be changed.</p>
             </div>
 
             <div className={css.tipOptionsContainer}>
@@ -321,7 +335,9 @@ const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
                 <IconCheckmark rootClassName={css.successIcon} />
                 <div className={css.successContent}>
                   <span className={css.successTitle}>Payment successful!</span>
-                  <span className={css.successSubtitle}>Thank you for your tip. Page will refresh in a moment...</span>
+                  <span className={css.successSubtitle}>
+                    Thank you for your tip. Page will refresh in a moment...
+                  </span>
                 </div>
               </div>
             )}

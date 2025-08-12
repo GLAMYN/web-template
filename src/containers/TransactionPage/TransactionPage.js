@@ -500,8 +500,7 @@ export const TransactionPageComponent = props => {
       showBookingLocation={showBookingLocation}
       hasViewingRights={hasViewingRights}
       showListingImage={showListingImage}
-                transaction={transaction}
-
+      transaction={transaction}
       activityFeed={
         <ActivityFeed
           messages={messages}
@@ -552,6 +551,7 @@ export const TransactionPageComponent = props => {
           marketplaceName={config.marketplaceName}
         />
       }
+      booking={booking}
     />
   ) : (
     loadingOrFailedFetching
