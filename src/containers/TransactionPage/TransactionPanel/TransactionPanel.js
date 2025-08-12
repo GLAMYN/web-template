@@ -227,7 +227,7 @@ export class TransactionPanelComponent extends Component {
 
     const classes = classNames(rootClassName || css.root, className);
     const currency = config.currency || 'CAD';
-
+// console.log('isCustomer',transaction?.attributes?.lastTransition === "transition/accept")
     return (
       <div className={classes}>
         <div className={css.container}>
@@ -430,13 +430,13 @@ export class TransactionPanelComponent extends Component {
                     </span>
                   </div>
                 </div>
-              ) : (
+              ) : (isCustomer && transaction?.attributes?.lastTransition === "transition/accept") ? (
                 <TipPayment
                   orderBreakdown={transaction}
                   provider={provider}
                   transactionId={transaction?.id?.uuid}
                 />
-              )}
+              ) : ''}
             </div>
           </div>
         </div>

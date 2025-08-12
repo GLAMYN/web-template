@@ -193,7 +193,7 @@ const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
             </>
           ) : (
             <>
-              <IconCheckmark rootClassName={css.tipIcon} />
+              {/* <IconCheckmark rootClassName={css.tipIcon} /> */}
               Leave a Tip
             </>
           )}

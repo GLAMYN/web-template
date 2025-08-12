@@ -19,6 +19,7 @@
   box-shadow: 0 4px 12px rgba(93, 43, 192, 0.15);
   min-height: 48px;
   justify-content: center;
+  background-color: #609a7f
 }
 
 .tipButton:hover {
