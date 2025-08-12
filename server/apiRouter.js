@@ -17,9 +17,11 @@ const initiatePrivileged = require('./api/initiate-privileged');
 const transitionPrivileged = require('./api/transition-privileged');
 
 const createUserWithIdp = require('./api/auth/createUserWithIdp');
-
+const payCancellationFine = require('./api/pay-cancellation-fine');
+const confirmStripePayment = require('./api/confirm-stripe-payment');
 const { authenticateFacebook, authenticateFacebookCallback } = require('./api/auth/facebook');
 const { authenticateGoogle, authenticateGoogleCallback } = require('./api/auth/google');
+const tipPaymentIntent = require('./api/tip-payment-intent');
 
 const router = express.Router();
 
@@ -79,5 +81,10 @@ router.get('/auth/google', authenticateGoogle);
 // with Google. In this route a Passport.js custom callback is used for calling
 // loginWithIdp endpoint in Sharetribe Auth API to authenticate user to the marketplace
 router.get('/auth/google/callback', authenticateGoogleCallback);
+
+
+router.post('/pay-cancellation-fine', payCancellationFine)
+router.post('/confirm-stripe-payment', confirmStripePayment)
+router.post('/tip-payment-intent', tipPaymentIntent)
 
 module.exports = router;
