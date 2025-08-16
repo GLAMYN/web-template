@@ -28,6 +28,8 @@ const selectedLocation=selectedLocationType === "mylocation" ? pageData?.orderDa
 
       const { providerCommission, customerCommission } =
         commissionAsset?.type === 'jsonAsset' ? commissionAsset.attributes.data : {};
+// console.log('providerCommission',providerCommission)
+// console.log('customerCommission',providerCommission)
 
       lineItems = transactionLineItems(
         listing,

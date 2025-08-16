@@ -155,3 +155,7 @@ export const confirmStripePaymentApi = body => {
 export const createTipIntent = body => {
   return post('/api/tip-payment-intent', body)
 }
+
+export const getCustomerProviderTxApi = body => {
+  return post('/api/get-customer-provider-tx', body)
+}

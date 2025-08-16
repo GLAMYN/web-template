@@ -22,6 +22,7 @@ const confirmStripePayment = require('./api/confirm-stripe-payment');
 const { authenticateFacebook, authenticateFacebookCallback } = require('./api/auth/facebook');
 const { authenticateGoogle, authenticateGoogleCallback } = require('./api/auth/google');
 const tipPaymentIntent = require('./api/tip-payment-intent');
+const getCustomerProviderTx = require('./api/get-customer-provider-transaction');
 
 const router = express.Router();
 
@@ -86,5 +87,6 @@ router.get('/auth/google/callback', authenticateGoogleCallback);
 router.post('/pay-cancellation-fine', payCancellationFine)
 router.post('/confirm-stripe-payment', confirmStripePayment)
 router.post('/tip-payment-intent', tipPaymentIntent)
+router.post('/get-customer-provider-tx', getCustomerProviderTx)
 
 module.exports = router;
