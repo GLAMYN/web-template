@@ -141,7 +141,7 @@ const CouponCodeField = props => {
             <span className={css.discountAmount}>
               {appliedCoupon.type === 'percentage' 
                 ? `${appliedCoupon.discount}%`
-                : `$${(appliedCoupon.discount / 100).toFixed(2)}`
+                : `$${(appliedCoupon.discount).toFixed(2)}`
               }
             </span>
           </div>

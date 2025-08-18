@@ -160,7 +160,7 @@ const getCouponDiscountLineItem = (coupon, baseLineItems, currency) => {
     code: 'line-item/coupon-discount',
     unitPrice: new Money(-discountAmount, currency),
     quantity: 1,
-    includeFor: ['customer'], // Only reduce customer's payment
+    includeFor: ['customer','provider'], // Only reduce customer's payment
   };
 };
 

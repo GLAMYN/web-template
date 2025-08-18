@@ -245,7 +245,7 @@ export const CouponsPageComponent = props => {
                               <span className={css.value}>
                                 {coupon.type === 'percentage' 
                                   ? `${coupon.amount}%` 
-                                  : formatCurrency(coupon.amount, coupon.currency)
+                                  : formatCurrency(coupon.amount*100, coupon.currency)
                                 }
                               </span>
                             </div>
