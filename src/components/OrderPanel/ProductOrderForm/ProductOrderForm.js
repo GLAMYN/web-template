@@ -17,6 +17,7 @@ import {
 } from '../../../components';
 
 import EstimatedCustomerBreakdownMaybe from '../EstimatedCustomerBreakdownMaybe';
+import CouponCodeField from '../CouponCodeField/CouponCodeField';
 
 import FetchLineItemsError from '../FetchLineItemsError/FetchLineItemsError.js';
 
@@ -35,9 +36,14 @@ const handleFetchLineItems = ({
   isOwnListing,
   fetchLineItemsInProgress,
   onFetchTransactionLineItems,
+  coupon,
 }) => {
   const stockReservationQuantity = Number.parseInt(quantity, 10);
   const deliveryMethodMaybe = deliveryMethod ? { deliveryMethod } : {};
+  const couponMaybe = coupon ? { 
+    coupon,
+    couponCode: coupon.code 
+  } : {};
   const isBrowser = typeof window !== 'undefined';
   if (
     isBrowser &&
@@ -46,7 +52,7 @@ const handleFetchLineItems = ({
     !fetchLineItemsInProgress
   ) {
     onFetchTransactionLineItems({
-      orderData: { stockReservationQuantity, ...deliveryMethodMaybe },
+      orderData: { stockReservationQuantity, ...deliveryMethodMaybe, ...couponMaybe },
       listingId,
       isOwnListing,
     });
@@ -111,6 +117,7 @@ const DeliveryMethodMaybe = props => {
 
 const renderForm = formRenderProps => {
   const [mounted, setMounted] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const {
     // FormRenderProps from final-form
     handleSubmit,
@@ -159,6 +166,41 @@ const renderForm = formRenderProps => {
   const handleOnChange = formValues => {
     const { quantity, deliveryMethod } = formValues.values;
     if (mounted) {
+      handleFetchLineItems({
+        quantity,
+        deliveryMethod,
+        listingId,
+        isOwnListing,
+        fetchLineItemsInProgress,
+        onFetchTransactionLineItems,
+      });
+    }
+  };
+
+  // Handle coupon application
+  const handleCouponApplied = (coupon) => {
+    setAppliedCoupon(coupon);
+    // Refetch line items with coupon data
+    const { quantity, deliveryMethod } = values;
+    if (quantity) {
+      handleFetchLineItems({
+        quantity,
+        deliveryMethod,
+        listingId,
+        isOwnListing,
+        fetchLineItemsInProgress,
+        onFetchTransactionLineItems,
+        coupon,
+      });
+    }
+  };
+
+  // Handle coupon removal
+  const handleCouponRemoved = () => {
+    setAppliedCoupon(null);
+    // Refetch line items without coupon
+    const { quantity, deliveryMethod } = values;
+    if (quantity) {
       handleFetchLineItems({
         quantity,
         deliveryMethod,
@@ -258,6 +300,17 @@ const renderForm = formRenderProps => {
         formId={formId}
         intl={intl}
       />
+
+      {hasStock && !isOwnListing ? (
+        <CouponCodeField
+          listingId={listingId}
+          orderData={values}
+          onCouponApplied={handleCouponApplied}
+          onCouponRemoved={handleCouponRemoved}
+          appliedCoupon={appliedCoupon}
+          disabled={fetchLineItemsInProgress}
+        />
+      ) : null}
 
       {showBreakdown ? (
         <div className={css.breakdownWrapper}>

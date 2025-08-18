@@ -11,6 +11,7 @@ import { Form, H6, PrimaryButton, FieldSelect } from '../../../components';
 
 import EstimatedCustomerBreakdownMaybe from '../EstimatedCustomerBreakdownMaybe';
 import FieldDateAndTimeInput from './FieldDateAndTimeInput';
+import CouponCodeField from '../CouponCodeField/CouponCodeField';
 
 import FetchLineItemsError from '../FetchLineItemsError/FetchLineItemsError.js';
 
@@ -20,7 +21,7 @@ import css from './BookingTimeForm.module.css';
 // lineItems from this template's backend for the EstimatedTransactionMaybe
 // In case you add more fields to the form, make sure you add
 // the values here to the orderData object.
-const handleFetchLineItems = props => formValues => {
+const handleFetchLineItems = (props, coupon = null) => formValues => {
   const {
     listingId,
     isOwnListing,
@@ -38,6 +39,10 @@ const handleFetchLineItems = props => formValues => {
   const seatsMaybe = seatsEnabled && seats > 0 ? { seats: parseInt(seats, 10) } : {};
 
   const priceVariantMaybe = priceVariantName ? { priceVariantName } : {};
+  const couponMaybe = coupon ? { 
+    coupon,
+    couponCode: coupon.code 
+  } : {};
 
   if (bookingStartTime && bookingEndTime && isStartBeforeEnd && !fetchLineItemsInProgress) {
     const orderData = {
@@ -45,6 +50,7 @@ const handleFetchLineItems = props => formValues => {
       bookingEnd: endDate,
       ...seatsMaybe,
       ...priceVariantMaybe,
+      ...couponMaybe,
     };
     onFetchTransactionLineItems({
       orderData,
@@ -111,6 +117,7 @@ export const BookingTimeForm = props => {
   } = props;
 
   const [seatsOptions, setSeatsOptions] = useState([1]);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const initialValuesMaybe =
     priceVariants.length > 1 && preselectedPriceVariant
       ? { initialValues: { priceVariantName: preselectedPriceVariant?.name } }
@@ -165,8 +172,44 @@ export const BookingTimeForm = props => {
         const showEstimatedBreakdown =
           breakdownData && lineItems && !fetchLineItemsInProgress && !fetchLineItemsError;
 
-        const onHandleFetchLineItems = handleFetchLineItems(props);
+        const onHandleFetchLineItems = handleFetchLineItems(props, appliedCoupon);
         const submitDisabled = isPriceVariationsInUse && !isPublishedListing;
+
+        // Handle coupon application
+        const handleCouponApplied = (coupon) => {
+          setAppliedCoupon(coupon);
+          // Refetch line items with coupon data
+          if (startTime && endTime) {
+            onHandleFetchLineItems({
+              values: {
+                priceVariantName,
+                bookingStartDate: startDate,
+                bookingStartTime: startTime,
+                bookingEndDate: endDate,
+                bookingEndTime: endTime,
+                seats: values?.seats,
+              },
+            });
+          }
+        };
+
+        // Handle coupon removal
+        const handleCouponRemoved = () => {
+          setAppliedCoupon(null);
+          // Refetch line items without coupon
+          if (startTime && endTime) {
+            onHandleFetchLineItems({
+              values: {
+                priceVariantName,
+                bookingStartDate: startDate,
+                bookingStartTime: startTime,
+                bookingEndDate: endDate,
+                bookingEndTime: endTime,
+                seats: values?.seats,
+              },
+            });
+          }
+        };
 
         return (
           <Form onSubmit={handleSubmit} className={classes} enforcePagePreloadFor="CheckoutPage">
@@ -236,6 +279,17 @@ export const BookingTimeForm = props => {
                   </option>
                 ))}
               </FieldSelect>
+            ) : null}
+
+            {startTime && endTime && !isOwnListing ? (
+              <CouponCodeField
+                listingId={rest.listingId}
+                orderData={values}
+                onCouponApplied={handleCouponApplied}
+                onCouponRemoved={handleCouponRemoved}
+                appliedCoupon={appliedCoupon}
+                disabled={fetchLineItemsInProgress}
+              />
             ) : null}
 
             {showEstimatedBreakdown ? (

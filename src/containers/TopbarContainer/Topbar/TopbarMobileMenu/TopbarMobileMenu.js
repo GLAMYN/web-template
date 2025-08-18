@@ -8,6 +8,8 @@ import classNames from 'classnames';
 import { ACCOUNT_SETTINGS_PAGES } from '../../../../routing/routeConfiguration';
 import { FormattedMessage } from '../../../../util/reactIntl';
 import { ensureCurrentUser } from '../../../../util/data';
+import { useConfiguration } from '../../../../context/configurationContext';
+import { showCouponsForUser } from '../../../../util/userHelpers';
 
 import {
   AvatarLarge,
@@ -79,7 +81,13 @@ const TopbarMobileMenu = props => {
     showCreateListingsLink,
   } = props;
 
+  const config = useConfiguration();
   const user = ensureCurrentUser(currentUser);
+  
+  // Check if the current user is a provider and should see the coupons tab
+  const showCoupons = showCouponsForUser(config, currentUser);
+  console.log('TopbarMobileMenu - currentUser:', currentUser);
+  console.log('TopbarMobileMenu - showCoupons:', showCoupons);
 
   const extraLinks = customLinks.map((linkConfig, index) => {
     return (
@@ -183,6 +191,14 @@ const TopbarMobileMenu = props => {
           >
             <FormattedMessage id="TopbarMobileMenu.profileSettingsLink" />
           </NamedLink>
+          {showCoupons && (
+            <NamedLink
+              className={classNames(css.navigationLink, currentPageClass('CouponsPage'))}
+              name="CouponsPage"
+            >
+              <FormattedMessage id="TopbarMobileMenu.couponsLink" />
+            </NamedLink>
+          )}
           <NamedLink
             className={classNames(css.navigationLink, currentPageClass('AccountSettingsPage'))}
             name="AccountSettingsPage"

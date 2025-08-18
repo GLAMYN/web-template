@@ -172,7 +172,8 @@ const fetchSpeculatedTransactionIfNeeded = (orderParams, pageData, fetchSpeculat
       processAlias,
       transactionId,
       requestTransition,
-      isPrivileged
+      isPrivileged,
+      pageData.orderData?.coupanCode
     );
   }
 };

@@ -213,6 +213,7 @@ export const ManageListingsPageComponent = props => {
             <UserNav
               currentPage="ManageListingsPage"
               showManageListingsLink={showManageListingsLink}
+              currentUser={currentUser}
             />
           </>
         }

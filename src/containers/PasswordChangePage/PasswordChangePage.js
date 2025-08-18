@@ -73,6 +73,7 @@ export const PasswordChangePageComponent = props => {
     currentPage: 'PasswordChangePage',
     showPaymentMethods,
     showPayoutDetails,
+    currentUser
   };
 
   return (
@@ -87,6 +88,7 @@ export const PasswordChangePageComponent = props => {
             <UserNav
               currentPage="PasswordChangePage"
               showManageListingsLink={showManageListingsLink}
+              currentUser={currentUser}
             />
           </>
         }

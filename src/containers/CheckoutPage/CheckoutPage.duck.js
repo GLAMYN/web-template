@@ -397,7 +397,8 @@ export const speculateTransaction = (
   processAlias,
   transactionId,
   transitionName,
-  isPrivilegedTransition
+  isPrivilegedTransition,
+  coupanCode
 ) => (dispatch, getState, sdk) => {
   dispatch(speculateTransactionRequest());
 
@@ -468,7 +469,7 @@ export const speculateTransaction = (
 
   if (isTransition && isPrivilegedTransition) {
     // transition privileged
-    return transitionPrivileged({ isSpeculative: true, orderData, bodyParams, queryParams })
+    return transitionPrivileged({ isSpeculative: true, orderData, bodyParams, queryParams,coupanCode })
       .then(handleSuccess)
       .catch(handleError);
   } else if (isTransition) {
@@ -479,7 +480,7 @@ export const speculateTransaction = (
       .catch(handleError);
   } else if (isPrivilegedTransition) {
     // initiate privileged
-    return initiatePrivileged({ isSpeculative: true, orderData, bodyParams, queryParams })
+    return initiatePrivileged({ isSpeculative: true, orderData, bodyParams, queryParams,coupanCode })
       .then(handleSuccess)
       .catch(handleError);
   } else {

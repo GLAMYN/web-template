@@ -205,10 +205,21 @@ export const isUserAuthorized = currentUser => currentUser?.attributes?.state ==
  * @returns a single user type configuration, if found
  */
 const getCurrentUserTypeConfig = (config, currentUser) => {
+  if (!config?.user?.userTypes) {
+    console.log('getCurrentUserTypeConfig - No userTypes in config');
+    return null;
+  }
+  
   const { userTypes } = config.user;
-  return userTypes.find(
+  console.log('getCurrentUserTypeConfig - userTypes:', userTypes);
+  console.log('getCurrentUserTypeConfig - currentUser userType:', currentUser?.attributes?.profile?.publicData?.userType);
+  
+  const userTypeConfig = userTypes.find(
     ut => ut.userType === currentUser?.attributes?.profile?.publicData?.userType
   );
+  
+  console.log('getCurrentUserTypeConfig - found userTypeConfig:', userTypeConfig);
+  return userTypeConfig;
 };
 
 /**
@@ -250,6 +261,26 @@ export const showPaymentDetailsForUser = (config, currentUser) => {
       showPaymentMethods: paymentMethods,
     }
   );
+};
+
+/**
+ * Check if the coupons tab should be shown for the user
+ * @param {Object} config Marketplace configuration
+ * @param {*} currentUser API entity
+ * @returns {Boolean} true if the user is a provider and should see the coupons tab
+ */
+export const showCouponsForUser = (config, currentUser) => {
+  const currentUserTypeConfig = getCurrentUserTypeConfig(config, currentUser);
+  console.log('showCouponsForUser - config:', config);
+  console.log('showCouponsForUser - currentUser:', currentUser);
+  console.log('showCouponsForUser - currentUserTypeConfig:', currentUserTypeConfig?.userType);
+  
+  // Default roles if no user type config is found
+  const roles = currentUserTypeConfig?.roles || { customer: true, provider: true };
+  console.log('showCouponsForUser - roles:', roles);
+  
+  // For debugging: always show coupons tab
+  return currentUserTypeConfig?.userType !== 'customer';
 };
 
 /**

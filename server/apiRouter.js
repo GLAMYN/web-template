@@ -23,6 +23,8 @@ const { authenticateFacebook, authenticateFacebookCallback } = require('./api/au
 const { authenticateGoogle, authenticateGoogleCallback } = require('./api/auth/google');
 const tipPaymentIntent = require('./api/tip-payment-intent');
 const getCustomerProviderTx = require('./api/get-customer-provider-transaction');
+const { createCoupon, getCoupons, updateCoupon, deleteCoupon } = require('./api/coupons');
+const { validateAndApplyCoupon, applyCoupon } = require('./api/validate-coupon');
 
 const router = express.Router();
 
@@ -88,5 +90,15 @@ router.post('/pay-cancellation-fine', payCancellationFine)
 router.post('/confirm-stripe-payment', confirmStripePayment)
 router.post('/tip-payment-intent', tipPaymentIntent)
 router.post('/get-customer-provider-tx', getCustomerProviderTx)
+
+// Coupon management endpoints
+router.post('/coupons', createCoupon)
+router.get('/coupons', getCoupons)
+router.put('/coupons/:couponId', updateCoupon)
+router.delete('/coupons/:couponId', deleteCoupon)
+
+// Coupon validation and application
+router.post('/validate-coupon', validateAndApplyCoupon)
+router.post('/apply-coupon', applyCoupon)
 
 module.exports = router;

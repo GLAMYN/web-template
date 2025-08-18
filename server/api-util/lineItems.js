@@ -112,6 +112,59 @@ const getDateRangeQuantityAndLineItems = (orderData, code) => {
 };
 
 /**
+ * Calculate coupon discount line item
+ * @param {Object} coupon - The coupon object
+ * @param {Array} baseLineItems - Base line items before discount
+ * @param {string} currency - Currency code
+ * @returns {Object|null} coupon discount line item or null
+ */
+const getCouponDiscountLineItem = (coupon, baseLineItems, currency) => {
+  if (!coupon || !coupon.code) {
+    return null;
+  }
+
+  // Calculate subtotal from base line items (customer-facing)
+  const customerLineItems = baseLineItems.filter(item => 
+    item.includeFor.includes('customer') && !item.code.includes('commission')
+  );
+  
+  const subtotal = customerLineItems.reduce((sum, item) => {
+    if (item.quantity) {
+      return sum + (item.unitPrice.amount * item.quantity);
+    } else if (item.units && item.seats) {
+      return sum + (item.unitPrice.amount * item.units * item.seats);
+    } else if (item.percentage) {
+      return sum + (item.unitPrice.amount * item.percentage / 100);
+    }
+    return sum + item.unitPrice.amount;
+  }, 0);
+
+  let discountAmount = 0;
+  
+  if (coupon.type === 'percentage') {
+    const percentage = Number(coupon.discount) || Number(coupon.amount) || 0;
+    discountAmount = Math.round(subtotal * (percentage / 100));
+  } else if (coupon.type === 'fixed') {
+    const fixedAmount = Number(coupon.discount) || Number(coupon.amount) || 0;
+    discountAmount = fixedAmount * 100; // Convert to cents
+  }
+
+  // Don't allow discount to exceed subtotal
+  discountAmount = Math.min(discountAmount, subtotal);
+
+  if (discountAmount <= 0) {
+    return null;
+  }
+
+  return {
+    code: 'line-item/coupon-discount',
+    unitPrice: new Money(-discountAmount, currency),
+    quantity: 1,
+    includeFor: ['customer'], // Only reduce customer's payment
+  };
+};
+
+/**
  * Returns collection of lineItems (max 50)
  *
  * All the line-items dedicated to _customer_ define the "payin total".
@@ -225,11 +278,23 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
     includeFor: ['customer', 'provider'],
   };
 
-  // Let's keep the base price (order) as first line item and provider and customer commissions as last.
+  // Calculate base line items before applying coupons
+  const baseLineItems = [
+    order,
+    ...extraLineItems,
+  ];
+
+  // Add coupon discount if present
+  const coupon = orderData?.coupon;
+  const couponDiscountLineItem = getCouponDiscountLineItem(coupon, baseLineItems, currency);
+  const couponLineItems = couponDiscountLineItem ? [couponDiscountLineItem] : [];
+
+  // Let's keep the base price (order) as first line item, then coupon discount, and provider and customer commissions as last.
   // Note: the order matters only if OrderBreakdown component doesn't recognize line-item.
   const lineItems = [
     order,
     ...extraLineItems,
+    ...couponLineItems,
     ...getProviderCommissionMaybe(providerCommission, order, priceAttribute),
     ...getCustomerCommissionMaybe(customerCommission, order, priceAttribute),
   ];

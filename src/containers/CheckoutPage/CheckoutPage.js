@@ -80,6 +80,7 @@ const EnhancedCheckoutPage = props => {
     } = props;
     const initialData = { orderData, listing, transaction };
     const data = handlePageData(initialData, STORAGE_KEY, history);
+    console.log('data>>>>>>>>>>>>>',data)
     setPageData(data || {});
     setIsDataLoaded(true);
     // Do not fetch extra data if user is not active (E.g. they are in pending-approval state.)
@@ -239,8 +240,8 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => ({
   dispatch,
-  fetchSpeculatedTransaction: (params, processAlias, txId, transitionName, isPrivileged) =>
-    dispatch(speculateTransaction(params, processAlias, txId, transitionName, isPrivileged)),
+  fetchSpeculatedTransaction: (params, processAlias, txId, transitionName, isPrivileged,coupanCode) =>
+    dispatch(speculateTransaction(params, processAlias, txId, transitionName, isPrivileged,coupanCode)),
   fetchStripeCustomer: () => dispatch(stripeCustomer()),
   onInquiryWithoutPayment: (params, processAlias, transitionName) =>
     dispatch(initiateInquiryWithoutPayment(params, processAlias, transitionName)),

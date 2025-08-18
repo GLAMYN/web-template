@@ -132,6 +132,35 @@ export const transitionPrivileged = body => {
   return post('/api/transition-privileged', body);
 };
 
+// Coupon management API calls
+
+export const fetchCoupons = () => {
+  return request('/api/coupons', { method: methods.GET });
+};
+
+export const createCoupon = body => {
+  return post('/api/coupons', body);
+};
+
+export const updateCoupon = (couponId, body) => {
+  return request(`/api/coupons/${couponId}`, { 
+    method: methods.PUT, 
+    body 
+  });
+};
+
+export const deleteCoupon = couponId => {
+  return request(`/api/coupons/${couponId}`, { method: methods.DELETE });
+};
+
+export const validateCoupon = body => {
+  return post('/api/validate-coupon', body);
+};
+
+export const applyCoupon = body => {
+  return post('/api/apply-coupon', body);
+};
+
 // Create user with identity provider (e.g. Facebook or Google)
 //
 // If loginWithIdp api call fails and user can't authenticate to Marketplace API with idp
@@ -159,3 +188,6 @@ export const createTipIntent = body => {
 export const getCustomerProviderTxApi = body => {
   return post('/api/get-customer-provider-tx', body)
 }
+
+// ================ COUPON API ================
+// Note: All coupon-related functions already declared above (fetchCoupons, createCoupon, updateCoupon, deleteCoupon, validateCoupon, applyCoupon)

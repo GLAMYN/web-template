@@ -5,6 +5,8 @@
 import React, { useEffect, useState } from 'react';
 
 import { FormattedMessage } from '../../../util/reactIntl';
+import { useConfiguration } from '../../../context/configurationContext';
+import { showCouponsForUser } from '../../../util/userHelpers';
 
 import { TabNav } from '../../../components';
 
@@ -70,6 +72,7 @@ const LayoutWrapperAccountSettingsSideNav = props => {
   const [mounted, setMounted] = useState(false);
   const [scrollLeft, setScrollLeft] = useGlobalState('scrollLeft');
   const { accountSettingsNavProps } = props;
+  const config = useConfiguration();
 
   useEffect(() => {
     setMounted(true);
@@ -90,7 +93,9 @@ const LayoutWrapperAccountSettingsSideNav = props => {
     }
   }, [mounted]);
 
-  const { currentPage, showPaymentMethods, showPayoutDetails } = accountSettingsNavProps;
+  const { currentPage, showPaymentMethods, showPayoutDetails, currentUser } = accountSettingsNavProps;
+  console.log('LayoutWrapperAccountSettingsSideNav - currentUser:',currentUser, accountSettingsNavProps);
+  
   const payoutDetailsMaybe = showPayoutDetails
     ? [
         {
@@ -118,6 +123,21 @@ const LayoutWrapperAccountSettingsSideNav = props => {
         },
       ]
     : [];
+    
+  // Only show coupons tab for providers
+  const showCoupons = showCouponsForUser(config, currentUser);
+  const couponsMaybe = showCoupons
+    ? [
+        {
+          text: <FormattedMessage id="LayoutWrapperAccountSettingsSideNav.couponsTabTitle" />,
+          selected: currentPage === 'CouponsPage',
+          id: 'CouponsPageTab',
+          linkProps: {
+            name: 'CouponsPage',
+          },
+        },
+      ]
+    : [];
 
   const tabs = [
     {
@@ -136,6 +156,7 @@ const LayoutWrapperAccountSettingsSideNav = props => {
         name: 'PasswordChangePage',
       },
     },
+    ...couponsMaybe,
     ...payoutDetailsMaybe,
     ...paymentMethodsMaybe,
   ];

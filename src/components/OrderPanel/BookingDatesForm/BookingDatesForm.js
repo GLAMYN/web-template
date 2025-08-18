@@ -24,6 +24,7 @@ import { BOOKING_PROCESS_NAME } from '../../../transactions/transaction';
 import { Form, PrimaryButton, FieldDateRangePicker, FieldSelect, H6 } from '../../../components';
 
 import EstimatedCustomerBreakdownMaybe from '../EstimatedCustomerBreakdownMaybe';
+import CouponCodeField from '../CouponCodeField/CouponCodeField';
 
 import FetchLineItemsError from '../FetchLineItemsError/FetchLineItemsError.js';
 
@@ -343,18 +344,24 @@ const calculateLineItems = (
   isOwnListing,
   fetchLineItemsInProgress,
   onFetchTransactionLineItems,
-  seatsEnabled
+  seatsEnabled,
+  coupon = null
 ) => formValues => {
   const { startDate, endDate, priceVariantName, seats } = formValues?.values || {};
 
   const priceVariantMaybe = priceVariantName ? { priceVariantName } : {};
   const seatCount = seats ? parseInt(seats, 10) : 1;
+  const couponMaybe = coupon ? { 
+    coupon,
+    couponCode: coupon.code 
+  } : {};
 
   const orderData = {
     bookingStart: startDate,
     bookingEnd: endDate,
     ...priceVariantMaybe,
     ...(seatsEnabled && { seats: seatCount }),
+    ...couponMaybe,
   };
 
   if (startDate && endDate && !fetchLineItemsInProgress) {
@@ -541,6 +548,7 @@ export const BookingDatesForm = props => {
   } = props;
   const intl = useIntl();
   const [currentMonth, setCurrentMonth] = useState(getStartOf(TODAY, 'month', timeZone));
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const initialValuesMaybe =
     priceVariants.length > 1 && preselectedPriceVariant
       ? { initialValues: { priceVariantName: preselectedPriceVariant?.name } }
@@ -598,7 +606,8 @@ export const BookingDatesForm = props => {
     isOwnListing,
     fetchLineItemsInProgress,
     onFetchTransactionLineItems,
-    seatsEnabled
+    seatsEnabled,
+    appliedCoupon
   );
 
   return (
@@ -643,6 +652,36 @@ export const BookingDatesForm = props => {
             : null;
         const showEstimatedBreakdown =
           breakdownData && lineItems && !fetchLineItemsInProgress && !fetchLineItemsError;
+
+        // Handle coupon application
+        const handleCouponApplied = (coupon) => {
+          setAppliedCoupon(coupon);
+          // Refetch line items with coupon data
+          if (startDate && endDate) {
+            onHandleFetchLineItems({
+              values: {
+                bookingDates: { startDate, endDate },
+                priceVariantName,
+                seats: values?.seats,
+              },
+            });
+          }
+        };
+
+        // Handle coupon removal
+        const handleCouponRemoved = () => {
+          setAppliedCoupon(null);
+          // Refetch line items without coupon
+          if (startDate && endDate) {
+            onHandleFetchLineItems({
+              values: {
+                bookingDates: { startDate, endDate },
+                priceVariantName,
+                seats: values?.seats,
+              },
+            });
+          }
+        };
 
         const dateFormatOptions = {
           weekday: 'short',
@@ -821,6 +860,17 @@ export const BookingDatesForm = props => {
                   </option>
                 ))}
               </FieldSelect>
+            ) : null}
+
+            {startDate && endDate && !isOwnListing ? (
+              <CouponCodeField
+                listingId={listingId}
+                orderData={values}
+                onCouponApplied={handleCouponApplied}
+                onCouponRemoved={handleCouponRemoved}
+                appliedCoupon={appliedCoupon}
+                disabled={fetchLineItemsInProgress}
+              />
             ) : null}
 
             {showEstimatedBreakdown ? (

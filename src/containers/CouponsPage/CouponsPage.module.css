@@ -1,0 +1,246 @@
+@import '../../styles/customMediaQueries.css';
+
+.content {
+  padding: 24px;
+  
+  @media (--viewportMedium) {
+    padding: 32px;
+  }
+  
+  @media (--viewportLarge) {
+    padding: 40px;
+  }
+}
+
+.headingContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding: 0 0 24px 0;
+  border-bottom: 1px solid #e7e7e7;
+}
+
+.heading {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  color: #000;
+}
+
+.createButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: #3c73e6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.createButton:hover {
+  background-color: #2d5bd4;
+}
+
+.createIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.loading {
+  text-align: center;
+  padding: 48px 24px;
+  color: #666;
+}
+
+.couponsContainer {
+  /* No additional padding needed as content already has padding */
+}
+
+.noCoupons {
+  text-align: center;
+  padding: 48px 24px;
+  color: #666;
+  font-size: 16px;
+}
+
+.couponsList {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1fr;
+  
+  @media (--viewportMedium) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (--viewportLarge) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.couponCard {
+  background: white;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.couponCard:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.couponHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e7e7e7;
+}
+
+.couponCode {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #3c73e6;
+  font-family: 'Courier New', monospace;
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #e7e7e7;
+}
+
+.couponActions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionButton {
+  padding: 8px;
+  background: transparent;
+  border: 1px solid #e7e7e7;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background: #f5f5f5;
+  border-color: #333;
+}
+
+.couponDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.couponInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.value {
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.active {
+  color: #28a745;
+}
+
+.inactive {
+  color: #dc3545;
+}
+
+/* Modal Styles */
+.modal :global(.scrollLayer) {
+  align-items: center !important;
+  overflow: visible !important;
+}
+
+.modal :global(.container) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  border-bottom: none !important;
+  min-height: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+.modalContent {
+  background: white;
+  border-radius: 8px;
+  padding: 32px;
+  max-width: 500px;
+  width: 100%;
+  overflow: visible;
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 24px 0;
+  color: #333;
+  text-align: center;
+}
+
+.deleteConfirmText {
+  color: #666;
+  margin-bottom: 24px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.cancelButton {
+  padding: 12px 24px;
+  background: transparent;
+  border: 1px solid #e7e7e7;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover {
+  background: #f5f5f5;
+}
+
+.deleteButton {
+  padding: 12px 24px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.deleteButton:hover {
+  background: #c82333;
+}

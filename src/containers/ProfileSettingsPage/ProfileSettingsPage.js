@@ -183,6 +183,7 @@ export const ProfileSettingsPageComponent = props => {
             <UserNav
               currentPage="ProfileSettingsPage"
               showManageListingsLink={showManageListingsLink}
+              currentUser={currentUser}
             />
           </>
         }

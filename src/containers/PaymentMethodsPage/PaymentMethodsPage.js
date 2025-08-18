@@ -168,6 +168,7 @@ const PaymentMethodsPageComponent = props => {
     currentPage: 'PaymentMethodsPage',
     showPaymentMethods,
     showPayoutDetails,
+    currentUser
   };
 
   return (
@@ -182,6 +183,7 @@ const PaymentMethodsPageComponent = props => {
             <UserNav
               currentPage="PaymentMethodsPage"
               showManageListingsLink={showManageListingsLink}
+              currentUser={currentUser}
             />
           </>
         }

@@ -11,6 +11,7 @@ import { Form, H6, PrimaryButton, FieldSelect, FieldLocationAutocompleteInput, F
 
 import EstimatedCustomerBreakdownMaybe from '../EstimatedCustomerBreakdownMaybe';
 import FieldDateAndTimeInput from './FieldDateAndTimeInput';
+import CouponCodeField from '../CouponCodeField/CouponCodeField';
 
 import FetchLineItemsError from '../FetchLineItemsError/FetchLineItemsError.js';
 
@@ -24,7 +25,7 @@ const identity = v => v;
 // lineItems from this template's backend for the EstimatedTransactionMaybe
 // In case you add more fields to the form, make sure you add
 // the values here to the orderData object.
-const handleFetchLineItems = props => formValues => {
+const handleFetchLineItems = (props) => formValues => {
   const {
     listingId,
     isOwnListing,
@@ -32,16 +33,22 @@ const handleFetchLineItems = props => formValues => {
     onFetchTransactionLineItems,
     seatsEnabled,
   } = props;
-  const { bookingStartTime, bookingEndTime, seats, priceVariantName } = formValues.values;
+  const { bookingStartTime, bookingEndTime, seats, priceVariantName ,coupon} = formValues.values;
   const startDate = bookingStartTime ? timestampToDate(bookingStartTime) : null;
   const endDate = bookingEndTime ? timestampToDate(bookingEndTime) : null;
-
+console.log('coupon>>>>>>>>>>>>>',formValues)
   // Note: we expect values bookingStartTime and bookingEndTime to be strings
   // which is the default case when the value has been selected through the form
   const isStartBeforeEnd = bookingStartTime < bookingEndTime;
   const seatsMaybe = seatsEnabled && seats > 0 ? { seats: parseInt(seats, 10) } : {};
 
   const priceVariantMaybe = priceVariantName ? { priceVariantName } : {};
+  
+  // Include both coupon object and couponCode for backward compatibility
+  const couponMaybe = coupon ? { 
+    coupon,
+    couponCode: coupon.code 
+  } : {};
 
   if (startDate && endDate && isStartBeforeEnd && !fetchLineItemsInProgress) {
     const orderData = {
@@ -49,7 +56,9 @@ const handleFetchLineItems = props => formValues => {
       bookingEnd: endDate,
       ...seatsMaybe,
       ...priceVariantMaybe,
+      ...couponMaybe,
     };
+    
     onFetchTransactionLineItems({
       orderData,
       listingId,
@@ -116,6 +125,7 @@ export const BookingFixedDurationForm = props => {
   } = props;
 
   const [seatsOptions, setSeatsOptions] = useState([1]);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const initialValuesMaybe =
     priceVariants.length > 1 && preselectedPriceVariant
       ? { initialValues: { priceVariantName: preselectedPriceVariant?.name } }
@@ -176,6 +186,45 @@ export const BookingFixedDurationForm = props => {
         const onHandleFetchLineItems = handleFetchLineItems(props);
         const submitDisabled = isPriceVariationsInUse && !isPublishedListing;
 
+        // Handle coupon application
+        const handleCouponApplied = (coupon) => {
+          console.log('coupon>>>>>>>>>>>>>code',coupon)
+          setAppliedCoupon(coupon);
+          // Refetch line items with coupon data
+          if (startTime && endTime) {
+            onHandleFetchLineItems({
+              values: {
+                priceVariantName,
+                bookingStartDate: startDate,
+                bookingStartTime: startTime,
+                bookingEndDate: endDate,
+                bookingEndTime: endTime,
+                seats: values?.seats,
+                coupon: coupon
+              },
+             
+            });
+          }
+        };
+
+        // Handle coupon removal
+        const handleCouponRemoved = () => {
+          setAppliedCoupon(null);
+          // Refetch line items without coupon
+          if (startTime && endTime) {
+            onHandleFetchLineItems({
+              values: {
+                priceVariantName,
+                bookingStartDate: startDate,
+                bookingStartTime: startTime,
+                bookingEndDate: endDate,
+                bookingEndTime: endTime,
+                seats: values?.seats,
+              },
+            });
+          }
+        };
+
   const addressRequiredMessage = intl.formatMessage({
         id: 'EditListingLocationForm.addressRequired',
       });
@@ -183,7 +232,6 @@ export const BookingFixedDurationForm = props => {
         id: 'EditListingLocationForm.addressNotRecognized',
       });
 
-       console.log('values',listing?.attributes?.publicData)
        const {bookingQuestion1,bookingQuestion2,bookingQuestion3}=listing?.attributes?.publicData
         return (
           <Form onSubmit={handleSubmit} className={classes} enforcePagePreloadFor="CheckoutPage">
@@ -347,6 +395,27 @@ export const BookingFixedDurationForm = props => {
               </FieldSelect>
             ) : null}
 
+            {startTime && endTime && !isOwnListing ? (
+              <CouponCodeField
+                listingId={rest.listingId}
+                orderData={values}
+                onCouponApplied={handleCouponApplied}
+                onCouponRemoved={handleCouponRemoved}
+                appliedCoupon={appliedCoupon}
+                disabled={fetchLineItemsInProgress}
+              />
+            ) : null}
+           
+            {appliedCoupon?.code &&
+<FieldTextInput
+              id={`coupanCode`}
+              name="coupanCode"
+              className={css.field}
+              type="hidden"
+              value={appliedCoupon?.code}
+              defaultValue={appliedCoupon?.code}
+            />
+      }
             {showEstimatedBreakdown ? (
               <div className={css.priceBreakdownContainer}>
                 <H6 as="h3" className={css.bookingBreakdownTitle}>

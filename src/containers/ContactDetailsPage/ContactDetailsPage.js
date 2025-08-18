@@ -111,6 +111,7 @@ export const ContactDetailsPageComponent = props => {
     currentPage: 'ContactDetailsPage',
     showPaymentMethods,
     showPayoutDetails,
+    currentUser
   };
 
   return (
@@ -125,6 +126,7 @@ export const ContactDetailsPageComponent = props => {
             <UserNav
               currentPage="ContactDetailsPage"
               showManageListingsLink={showManageListingsLink}
+              currentUser={currentUser}
             />
           </>
         }
