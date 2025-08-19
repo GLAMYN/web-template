@@ -1238,6 +1238,8 @@
   "CouponCodeField.missingFields": "Unable to apply coupon. Please try again after selecting dates/times.",
   "CouponCodeField.helpText": "Enter a valid coupon code to get a discount on your order",
   "OrderBreakdown.couponDiscount": "Coupon discount",
+"OrderBreakdown.tipPaid": "Tip paid",
+"OrderBreakdown.tipReceived": "Tip received",
 
-  "LayoutWrapperAccountSettingsSideNav.couponsTabTitle": "Coupons"
+"LayoutWrapperAccountSettingsSideNav.couponsTabTitle": "Coupons"
 }

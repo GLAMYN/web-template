@@ -404,46 +404,46 @@ export class TransactionPanelComponent extends Component {
                 showDispute={stateData.showDispute}
                 onOpenDisputeModal={onOpenDisputeModal}
               />
-              {transaction?.attributes?.metadata?.tipAmount ? (
-                <div className={css.tipContainer}>
-                  <div className={css.tipIconWrapper}>
-                    <svg
-                      style={{ fill: 'none', color: '#fff' }}
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M20 6 9 17l-5-5" />
-                    </svg>
-                  </div>
-                  <div className={css.tipContent}>
-                    {isProvider ? 
-                    <>
-                    <span className={css.tipLabel}>You've recieved a tip of </span>
-                    <span className={css.tipAmount}>
-                      {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
-                        style: 'currency',
-                        currency,
-                      })}
-                    </span></>
-                    :
-                    <>
-                    <span className={css.tipLabel}>You tipped</span>
-                    <span className={css.tipAmount}>
-                      {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
-                        style: 'currency',
-                        currency,
-                      })}
-                    </span>
-                    </>
-                    } 
-                  </div>
-                </div>
+              {transaction?.attributes?.metadata?.tipAmount ? (<></>
+                // <div className={css.tipContainer}>
+                //   <div className={css.tipIconWrapper}>
+                //     <svg
+                //       style={{ fill: 'none', color: '#fff' }}
+                //       width="20"
+                //       height="20"
+                //       viewBox="0 0 24 24"
+                //       fill="none"
+                //       stroke="currentColor"
+                //       strokeWidth="2"
+                //       strokeLinecap="round"
+                //       strokeLinejoin="round"
+                //     >
+                //       <path d="M20 6 9 17l-5-5" />
+                //     </svg>
+                //   </div>
+                //   <div className={css.tipContent}>
+                //     {isProvider ? 
+                //     <>
+                //     <span className={css.tipLabel}>You've recieved a tip of </span>
+                //     <span className={css.tipAmount}>
+                //       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
+                //         style: 'currency',
+                //         currency,
+                //       })}
+                //     </span></>
+                //     :
+                //     <>
+                //     <span className={css.tipLabel}>You tipped</span>
+                //     <span className={css.tipAmount}>
+                //       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
+                //         style: 'currency',
+                //         currency,
+                //       })}
+                //     </span>
+                //     </>
+                //     } 
+                //   </div>
+                // </div>
               ) : (isCustomer && transaction?.attributes?.lastTransition === "transition/accept" && isBookingEnded) ? (
                 <TipPayment
                   orderBreakdown={transaction}

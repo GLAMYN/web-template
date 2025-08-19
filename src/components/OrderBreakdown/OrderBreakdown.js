@@ -31,6 +31,7 @@ import LineItemRefundMaybe from './LineItemRefundMaybe';
 import LineItemTotalPrice from './LineItemTotalPrice';
 import LineItemUnknownItemsMaybe from './LineItemUnknownItemsMaybe';
 import LineItemCouponDiscount from './LineItemCouponDiscount';
+import LineItemTipMaybe from './LineItemTipMaybe';
 
 import css from './OrderBreakdown.module.css';
 
@@ -157,6 +158,8 @@ export const OrderBreakdownComponent = props => {
       />
 
       <LineItemTotalPrice transaction={transaction} isProvider={isProvider} intl={intl} />
+
+      <LineItemTipMaybe transaction={transaction} isProvider={isProvider} intl={intl} />
 
       {hasCommissionLineItem ? (
         <span className={css.feeInfo}>

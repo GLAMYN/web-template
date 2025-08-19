@@ -2,6 +2,7 @@ const { transactionLineItems } = require('../api-util/lineItems');
 const { getSdk, handleError, serialize, fetchCommission, getIntegrationSdk } = require('../api-util/sdk');
 const { constructValidLineItems } = require('../api-util/lineItemHelpers');
 const { validateCouponData } = require('./coupons');
+const { recurringCommission } = require('../constants/commissions');
 async function getTransactions(integrationSdk, customerId, listingId) {
   return integrationSdk.transactions.query({
     customerId,
@@ -33,9 +34,17 @@ module.exports = async(req, res) => {
       const { providerCommission, customerCommission } =
         commissionAsset?.type === 'jsonAsset' ? commissionAsset.attributes.data : {};
         
-      customerCommission.percentage = transactions?.data?.data?.length > 0 ? 0 : customerCommission.percentage;
-      customerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? 0 : customerCommission.minimum_amount;
+      // customerCommission.percentage = transactions?.data?.data?.length > 0 ? 0 : customerCommission.percentage;
+      // customerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? 0 : customerCommission.minimum_amount;
       
+      // Apply the same logic as in transaction-line-items.js
+      customerCommission.percentage = transactions?.data?.data?.length > 0 ? recurringCommission.customerCommission.percentage : customerCommission.percentage;
+      customerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recurringCommission.customerCommission.minimum_amount : customerCommission.minimum_amount;
+// console.log('providerCommission',providerCommission)
+providerCommission.percentage = transactions?.data?.data?.length > 0 ? recurringCommission.providerCommission.percentage : providerCommission.percentage;
+providerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recurringCommission.providerCommission.minimum_amount : providerCommission.minimum_amount;
+// console.log('customerCommission',providerCommission)
+
       // If there's a coupon code but no coupon object, validate and get the coupon
       let updatedOrderData = { ...orderData };
       

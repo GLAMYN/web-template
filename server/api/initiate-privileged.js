@@ -7,6 +7,7 @@ const {
   fetchCommission,
   getIntegrationSdk,
 } = require('../api-util/sdk');
+const { recurringCommission } = require('../constants/commissions');
 const { UUID } = require('sharetribe-flex-integration-sdk').types;
 
 async function getTransactions(integrationSdk, customerId, listingId) {
@@ -109,9 +110,11 @@ console.log('coupanCode',coupanCode)
       const transactions = await getTransactions(integrationSdk, customerId, listing_Id);
       
       // Apply the same logic as in transaction-line-items.js
-      customerCommission.percentage = transactions?.data?.data?.length > 0 ? 0 : customerCommission.percentage;
-      customerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? 0 : customerCommission.minimum_amount;
+      customerCommission.percentage = transactions?.data?.data?.length > 0 ? recurringCommission.customerCommission.percentage : customerCommission.percentage;
+      customerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recurringCommission.customerCommission.minimum_amount : customerCommission.minimum_amount;
 // console.log('providerCommission',providerCommission)
+providerCommission.percentage = transactions?.data?.data?.length > 0 ? recurringCommission.providerCommission.percentage : providerCommission.percentage;
+providerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recurringCommission.providerCommission.minimum_amount : providerCommission.minimum_amount;
 // console.log('customerCommission',providerCommission)
 
       // We need to fetch coupon details from the provider's private data
