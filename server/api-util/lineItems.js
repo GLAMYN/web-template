@@ -289,14 +289,21 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   const couponDiscountLineItem = getCouponDiscountLineItem(coupon, baseLineItems, currency);
   const couponLineItems = couponDiscountLineItem ? [couponDiscountLineItem] : [];
 
+  // Create line items including coupon discount for commission calculation
+  const baseLineItemsWithCoupon = [
+    order,
+    ...extraLineItems,
+    ...couponLineItems,
+  ];
+
   // Let's keep the base price (order) as first line item, then coupon discount, and provider and customer commissions as last.
   // Note: the order matters only if OrderBreakdown component doesn't recognize line-item.
   const lineItems = [
     order,
     ...extraLineItems,
     ...couponLineItems,
-    ...getProviderCommissionMaybe(providerCommission, order, priceAttribute),
-    ...getCustomerCommissionMaybe(customerCommission, order, priceAttribute),
+    ...getProviderCommissionMaybe(providerCommission, baseLineItemsWithCoupon, priceAttribute),
+    ...getCustomerCommissionMaybe(customerCommission, baseLineItemsWithCoupon, priceAttribute),
   ];
 
   return lineItems;

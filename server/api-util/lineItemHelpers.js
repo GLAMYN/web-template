@@ -339,11 +339,11 @@ exports.hasMinimumCommission = commission => {
 /**
  * Get provider commission
  * @param {Object} providerCommission object containing provider commission info
- * @param {Object} order object containing order line items
+ * @param {Array} baseLineItems array containing base line items (order + extras + discounts, but no commissions)
  * @param {Object} priceAttribute object containing listing price information
  * @returns {Array} provider commission line item
  */
-exports.getProviderCommissionMaybe = (providerCommission, order, priceAttribute) => {
+exports.getProviderCommissionMaybe = (providerCommission, baseLineItems, priceAttribute) => {
   // Check if either minimum commission or percentage are defined in the commission object
   const hasMinimumCommission = this.hasMinimumCommission(providerCommission);
   const hasCommissionPercentage = this.hasCommissionPercentage(providerCommission);
@@ -352,8 +352,13 @@ exports.getProviderCommissionMaybe = (providerCommission, order, priceAttribute)
     return [];
   }
 
-  // Calculate the total money paid into the transaction
-  const totalMoneyIn = this.calculateTotalFromLineItems([order]);
+  // Calculate the total money based on line items that should be included in commission calculation
+  // This includes the base order, extras, and any discounts (coupon, etc.)
+  const commissionableLineItems = baseLineItems.filter(item => 
+    item.includeFor.includes('provider') && !item.code.includes('commission')
+  );
+  const totalMoneyIn = this.calculateTotalFromLineItems(commissionableLineItems);
+  
   // Calculate the estimated commission with percentage applied, if applicable
   const estimatedCommissionFromPercentage = calculateCommissionWithPercentage(
     providerCommission?.percentage,
@@ -396,10 +401,11 @@ exports.getProviderCommissionMaybe = (providerCommission, order, priceAttribute)
 /**
  * Get customer commission
  * @param {Object} customerCommission object containing customer commission info
- * @param {Object} order object containing order line items
+ * @param {Array} baseLineItems array containing base line items (order + extras + discounts, but no commissions)
+ * @param {Object} priceAttribute object containing listing price information
  * @returns {Array} customer commission line item
  */
-exports.getCustomerCommissionMaybe = (customerCommission, order, priceAttribute) => {
+exports.getCustomerCommissionMaybe = (customerCommission, baseLineItems, priceAttribute) => {
   // Check if either minimum commission or percentage are defined in the commission object
   const hasMinimumCommission = this.hasMinimumCommission(customerCommission);
   const hasCommissionPercentage = this.hasCommissionPercentage(customerCommission);
@@ -408,8 +414,13 @@ exports.getCustomerCommissionMaybe = (customerCommission, order, priceAttribute)
     return [];
   }
 
-  // Calculate the total money paid into the transaction
-  const totalMoneyIn = this.calculateTotalFromLineItems([order]);
+  // Calculate the total money based on line items that should be included in commission calculation
+  // This includes the base order, extras, and any discounts (coupon, etc.)
+  const commissionableLineItems = baseLineItems.filter(item => 
+    item.includeFor.includes('customer') && !item.code.includes('commission')
+  );
+  const totalMoneyIn = this.calculateTotalFromLineItems(commissionableLineItems);
+  
   // Calculate the estimated commission with percentage applied, if applicable
   const estimatedCommissionFromPercentage = calculateCommissionWithPercentage(
     customerCommission?.percentage,
@@ -435,7 +446,7 @@ exports.getCustomerCommissionMaybe = (customerCommission, order, priceAttribute)
     : [
         {
           code: 'line-item/customer-commission',
-          unitPrice: this.calculateTotalFromLineItems([order]),
+          unitPrice: totalMoneyIn,
           percentage: customerCommission.percentage,
           includeFor: ['customer'],
         },
