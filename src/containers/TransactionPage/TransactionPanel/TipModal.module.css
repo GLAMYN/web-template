@@ -1,0 +1,52 @@
+/* Custom modal styles to fix mobile display issues */
+.modalRoot {
+  z-index: 1000 !important; /* Higher z-index to ensure it appears above footer */
+}
+
+.modalScrollLayer {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  z-index: 1000;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalContainer {
+  position: relative;
+  background: white;
+  width: calc(100% - 32px) !important;
+  max-width: 600px;
+  margin: 16px auto !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+/* Make sure modal content is scrollable on small screens */
+.modalContent {
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  padding-top: 8px;
+}
+
+/* Mobile specific styles */
+@media (max-width: 767px) {
+  .modalContainer {
+    max-height: calc(100vh - 40px);
+    margin: 20px auto !important;
+    top: 0 !important; /* Override any top positioning */
+    transform: none !important; /* Override any transformations */
+  }
+  
+  /* Hide the footer content when modal is open */
+  body.modalOpen .footer {
+    z-index: 1; /* Keep footer behind modal */
+  }
+}

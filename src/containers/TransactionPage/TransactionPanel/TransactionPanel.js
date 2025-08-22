@@ -450,11 +450,7 @@ export class TransactionPanelComponent extends Component {
                   provider={provider}
                   transactionId={transaction?.id?.uuid}
                 />
-              ) :  <TipPayment
-              orderBreakdown={transaction}
-              provider={provider}
-              transactionId={transaction?.id?.uuid}
-            />}
+              ) :  ''}
             </div>
           </div>
         </div>

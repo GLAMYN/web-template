@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Modal, NamedRedirect, Button, IconCheckmark, IconSpinner } from '../../../components';
 import css from './TipPayment.module.css';
+import modalCss from './TipModal.module.css';
 import StripePaymentForm from '../../CheckoutPage/StripePaymentForm/StripePaymentForm';
 import { useIntl } from 'react-intl';
 import { useConfiguration } from '../../../context/configurationContext';
@@ -9,8 +10,15 @@ import { confirmStripePaymentApi, createTipIntent, payTipApi } from '../../../ut
 import { stripeCustomer } from '../../CheckoutPage/CheckoutPage.duck';
 
 const onManageDisableScrolling = (componentId, scrollingDisabled = true) => {
-  // We are just checking the value for now
-  console.log('Toggling Modal - scrollingDisabled currently:', componentId, scrollingDisabled);
+  // Add or remove the modalOpen class to control footer visibility
+  if (scrollingDisabled) {
+    document.body.classList.add('modalOpen');
+  } else {
+    document.body.classList.remove('modalOpen');
+  }
+  
+  // Prevent background scrolling when modal is open
+  document.body.style.overflow = scrollingDisabled ? 'hidden' : '';
 };
 
 const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
@@ -220,6 +228,10 @@ const TipPayment = ({ orderBreakdown, provider, transactionId }) => {
           onClose={() => setOpen(false)}
           usePortal
           onManageDisableScrolling={onManageDisableScrolling}
+          className={modalCss.modalRoot}
+          scrollLayerClassName={modalCss.modalScrollLayer}
+          containerClassName={modalCss.modalContainer}
+          contentClassName={modalCss.modalContent}
         >
           <div className={css.tipModalContainer}>
             <div className={css.tipHeader}>

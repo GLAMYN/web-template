@@ -45,6 +45,13 @@
 }
 
 
+/* Modal Container */
+.tipModalContainer {
+  padding: 24px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
 /* Header Section */
 .tipHeader {
   text-align: center;
@@ -327,6 +334,11 @@
   color: var(--colorGrey600);
 }
 
+/* Payment Form Container */
+.paymentFormContainer {
+  margin-bottom: 24px;
+}
+
 /* Tip Actions */
 .tipActions {
   display: flex;
@@ -347,6 +359,97 @@
   
   .customTipOption {
     grid-column: 1 / -1;
+  }
+  
+  /* Mobile-specific improvements */
+  .tipModalContainer {
+    padding: 16px;
+    max-width: 100%;
+    margin: 0;
+  }
+  
+  .tipHeader {
+    margin-bottom: 20px;
+  }
+  
+  .tipTitle {
+    font-size: 24px;
+    margin: 0 0 6px 0;
+  }
+  
+  .tipSubtitle {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  
+  .tipSubtitleNote {
+    font-size: 12px;
+  }
+  
+  .tipOption {
+    padding: 14px 10px;
+    min-height: 80px;
+  }
+  
+  .tipPercentage {
+    font-size: 18px;
+  }
+  
+  .tipDescription {
+    font-size: 12px;
+  }
+  
+  .customAmountContainer {
+    padding: 16px;
+    margin-top: 12px;
+  }
+  
+  .customAmountLabel {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  
+  .tipAmountDisplay {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .tipAmountContent {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+  }
+  
+  .tipAmountValue {
+    font-size: 20px;
+  }
+  
+  /* Custom amount input fixes for mobile */
+  .customAmountInput {
+    font-size: 16px;
+    padding: 12px 0;
+  }
+  
+  .currencySymbol {
+    font-size: 16px;
+  }
+  
+  /* Make the Cancel/No thanks button more mobile-friendly */
+  .tipActions button {
+    width: 100%;
+    max-width: 250px;
+    padding: 12px;
+    font-size: 16px;
+  }
+  
+  /* Adjust modal padding on very small screens */
+  @media screen and (max-width: 340px) {
+    .tipModalContainer {
+      padding: 12px;
+    }
+    
+    .tipOptions {
+      grid-template-columns: 1fr;
+    }
   }
 }
 

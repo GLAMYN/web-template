@@ -1,0 +1,16 @@
+/* Fix for tip modal on mobile */
+body.modalOpen .footer {
+  display: none !important;
+}
+
+/* Fix for the close icon */
+body.modalOpen .marketplaceModalCloseNav {
+  z-index: 9999;
+  position: fixed;
+}
+
+/* Make sure the portal root is above everything */
+#portal-root {
+  z-index: 9999;
+  position: relative;
+}
