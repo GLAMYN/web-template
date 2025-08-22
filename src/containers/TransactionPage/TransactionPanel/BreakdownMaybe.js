@@ -12,7 +12,8 @@ const BreakdownMaybe = props => {
   const classes = classNames(rootClassName || css.breakdownMaybe, className);
 
 const locationUrl = transaction?.attributes?.metadata?.selectedLocationType === "providerLocation" ? `https://www.google.com/maps?q=${listing?.attributes?.geolocation?.lat},${listing?.attributes?.geolocation?.lng}` : `https://www.google.com/maps?q=${transaction?.attributes?.metadata?.location?.selectedPlace?.origin?.lat},${transaction?.attributes?.metadata?.location?.selectedPlace?.origin?.lng}`
-  return orderBreakdown ? (
+ console.log('transaction >>exxx',transaction)
+return orderBreakdown ? (
     <div className={classes}>
       {priceVariantName ? (
         <div className={css.bookingPriceVariant}>
@@ -20,9 +21,9 @@ const locationUrl = transaction?.attributes?.metadata?.selectedLocationType === 
         </div>
       ) : null}
       <div className={css.orderBreakdownTitle}><b>Location:</b> <a href={locationUrl}>{transaction?.attributes?.metadata?.selectedLocationType === "providerLocation" ? listing?.attributes?.publicData?.location?.address : transaction?.attributes?.metadata?.location?.selectedPlace?.address}</a></div>
-      {transaction?.attributes?.metadata?.bookingQuestion1 && <div className={css.orderBreakdownTitle}><b>{listing?.attributes?.publicData?.bookingQuestion1}:</b> {transaction?.attributes?.metadata?.bookingQuestion1}</div>}
-      {transaction?.attributes?.metadata?.bookingQuestion2 && <div className={css.orderBreakdownTitle}><b>{listing?.attributes?.publicData?.bookingQuestion2}:</b> {transaction?.attributes?.metadata?.bookingQuestion2}</div>}
-      {transaction?.attributes?.metadata?.bookingQuestion3 && <div className={css.orderBreakdownTitle}><b>{listing?.attributes?.publicData?.bookingQuestion2}:</b> {transaction?.attributes?.metadata?.bookingQuestion1}</div>}
+      {transaction?.attributes?.metadata?.bookingQuestion1  && <div className={css.orderBreakdownTitle}><b>{transaction?.listing?.attributes?.publicData?.bookingQuestion1}:</b> {transaction?.attributes?.metadata?.bookingQuestion1}</div>}
+      {transaction?.attributes?.metadata?.bookingQuestion2 && <div className={css.orderBreakdownTitle}><b>{transaction?.listing?.attributes?.publicData?.bookingQuestion2}:</b> {transaction?.attributes?.metadata?.bookingQuestion2}</div>}
+      {transaction?.attributes?.metadata?.bookingQuestion3  && <div className={css.orderBreakdownTitle}><b>{transaction?.listing?.attributes?.publicData?.bookingQuestion2}:</b> {transaction?.attributes?.metadata?.bookingQuestion1}</div>}
 
 
       <H6 as="h3" className={css.orderBreakdownTitle}>
