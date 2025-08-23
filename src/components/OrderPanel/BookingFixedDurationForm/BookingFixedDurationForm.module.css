@@ -26,9 +26,14 @@
 
 .bookingDates {
   flex-shrink: 0;
+  margin-bottom: 30px;
 
   /* Ensure that calendar dropdown gets some stacking context relative to other form items below */
   z-index: 1;
+
+  @media (--viewportMedium) {
+    margin-bottom: 24px;
+  }
 }
 
 .priceBreakdownContainer {
@@ -88,7 +93,13 @@
   }
 }
 .field{
-  margin-bottom: 30px;
+  width: calc(100% - 48px);
+  margin: 0 24px 30px 24px;
+
+  @media (--viewportMedium) {
+    width: 100%;
+    margin: 0 0 24px 0;
+  }
 }
 .providerLocation{
   margin-bottom: 20px;

@@ -265,7 +265,8 @@ export const BookingFixedDurationForm = props => {
 }
         {(values?.locationChoice === "mylocation" || listing?.attributes?.publicData?.providerStudio_listingfield !== "yes_option") &&
 
-<div className={css.myloccation}>
+<div               className={css.field}
+>
 
 
         <FieldLocationAutocompleteInput
@@ -295,7 +296,7 @@ export const BookingFixedDurationForm = props => {
       {
         values?.locationChoice === "providerLocation" && 
         
-        <div className={css.providerLocation}>Provider Location : <a href={`https://www.google.com/maps?q=${listing.attributes.geolocation.lat},${listing.attributes.geolocation.lng}`} target='_blank' >{listing.attributes.publicData.location.address}</a></div>
+        <div className={classNames(css.field,css.providerLocation)}>Provider Location : <a href={`https://www.google.com/maps?q=${listing.attributes.geolocation.lat},${listing.attributes.geolocation.lng}`} target='_blank' >{listing.attributes.publicData.location.address}</a></div>
       }
 
       {bookingQuestion1 &&
