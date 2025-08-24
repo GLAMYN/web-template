@@ -398,6 +398,7 @@ export const BookingFixedDurationForm = props => {
 
             {startTime && endTime && !isOwnListing ? (
               <CouponCodeField
+                className={css.field}
                 listingId={rest.listingId}
                 orderData={values}
                 onCouponApplied={handleCouponApplied}

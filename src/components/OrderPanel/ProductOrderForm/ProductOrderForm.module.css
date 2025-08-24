@@ -36,6 +36,15 @@
   }
 }
 
+.couponField {
+  padding: 0 24px;
+  margin-top: 24px;
+
+  @media (--viewportMedium) {
+    padding: 0;
+  }
+}
+
 .singleDeliveryMethodLabel {
   composes: label from global;
 

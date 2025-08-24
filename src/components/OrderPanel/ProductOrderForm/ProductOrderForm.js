@@ -303,6 +303,7 @@ const renderForm = formRenderProps => {
 
       {hasStock && !isOwnListing ? (
         <CouponCodeField
+          className={css.couponField}
           listingId={listingId}
           orderData={values}
           onCouponApplied={handleCouponApplied}

@@ -864,6 +864,7 @@ export const BookingDatesForm = props => {
 
             {startDate && endDate && !isOwnListing ? (
               <CouponCodeField
+                className={css.field}
                 listingId={listingId}
                 orderData={values}
                 onCouponApplied={handleCouponApplied}
