@@ -6,7 +6,21 @@ body.modalOpen .footer {
 /* Fix for the close icon */
 body.modalOpen .marketplaceModalCloseNav {
   z-index: 9999;
-  position: fixed;
+  position: absolute !important;
+  top: 0;
+  right: 0;
+}
+
+/* Make close button more visible against modal background */
+body.modalOpen .marketplaceModalCloseStyles {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 0 16px 0 16px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Improve close button positioning */
+body.modalOpen .marketplaceModalCloseText {
+  display: none !important; /* Hide the text and only show the X icon on mobile */
 }
 
 /* Make sure the portal root is above everything */
