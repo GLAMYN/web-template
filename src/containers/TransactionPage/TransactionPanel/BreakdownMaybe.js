@@ -20,7 +20,7 @@ return orderBreakdown ? (
           <p>{priceVariantName}</p>
         </div>
       ) : null}
-      <div className={css.orderBreakdownTitle}><b>Location:</b> <a href={locationUrl}>{transaction?.attributes?.metadata?.selectedLocationType === "providerLocation" ? listing?.attributes?.publicData?.location?.address : transaction?.attributes?.metadata?.location?.selectedPlace?.address}</a></div>
+      <div className={css.orderBreakdownTitle}><b>Location:</b> <a href={locationUrl}>{transaction?.attributes?.metadata?.selectedLocationType === "providerLocation" ? transaction?.listing?.attributes?.publicData?.location?.address : transaction?.attributes?.metadata?.location?.selectedPlace?.address}</a></div>
       {transaction?.attributes?.metadata?.bookingQuestion1  && <div className={css.orderBreakdownTitle}><b>{transaction?.listing?.attributes?.publicData?.bookingQuestion1}:</b> {transaction?.attributes?.metadata?.bookingQuestion1}</div>}
       {transaction?.attributes?.metadata?.bookingQuestion2 && <div className={css.orderBreakdownTitle}><b>{transaction?.listing?.attributes?.publicData?.bookingQuestion2}:</b> {transaction?.attributes?.metadata?.bookingQuestion2}</div>}
       {transaction?.attributes?.metadata?.bookingQuestion3  && <div className={css.orderBreakdownTitle}><b>{transaction?.listing?.attributes?.publicData?.bookingQuestion2}:</b> {transaction?.attributes?.metadata?.bookingQuestion1}</div>}
