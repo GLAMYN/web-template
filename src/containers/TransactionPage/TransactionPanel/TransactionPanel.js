@@ -274,7 +274,7 @@ export class TransactionPanelComponent extends Component {
     const transactionState = this.props.transaction.attributes.state;
 
     const bookingStartDate = this.props.booking?.attributes?.start;
-    const timeFrame = listing?.attributes?.publicData?.windowhrs || 0;
+    const timeFrame = (listing?.attributes?.publicData?.cancellation_listingfield || 0) * 24;
     const isBetweenTimeFrame = timeFrame >= moment(bookingStartDate).diff(moment(), 'hours');
     const endDate = new Date(transaction?.booking?.attributes?.start);
     const now = new Date();
@@ -386,26 +386,29 @@ export class TransactionPanelComponent extends Component {
             {this.cancellationObject ? (
               <div className={css.feedContainer}>
                 <div className={css.cancellationMessage}>
-                  {this.cancellationObject?.cancelBy === transactionRole
-                    ? 'You have'
-                    : this.cancellationObject?.cancelBy === 'provider'
-                    ? <>{authorDisplayName} has</>
-                    : <>{customerDisplayName} has</>}{' '}
+                  {this.cancellationObject?.cancelBy === transactionRole ? (
+                    'You have'
+                  ) : this.cancellationObject?.cancelBy === 'provider' ? (
+                    <>{authorDisplayName} has</>
+                  ) : (
+                    <>{customerDisplayName} has</>
+                  )}{' '}
                   cancelled the booking.
                 </div>
                 <div className={css.cancelledAt}>
                   Cancelled at: {moment(this.cancellationObject?.cancelledAt).fromNow()}
                 </div>
                 <div className={css.cancelledAt}>
-                  {this.cancellationObject?.refundIssued ? "Full " : "No "} refund has issued.
+                  {this.cancellationObject?.refundIssued ? 'A full refund has been issued for this transaction.' : 'No refund has been issued for this transaction.'}
                 </div>
-
-                <div className={css.cancellationMessage}>
-                  <div>
-                    <b>Cancellation Feedback</b>
+                {this.cancellationObject?.cancellationFeedback && (
+                  <div className={css.cancellationMessage}>
+                    <div>
+                      <b>Cancellation Feedback:</b>
+                    </div>
+                    {this.cancellationObject?.cancellationFeedback}
                   </div>
-                  {this.cancellationObject?.cancellationFeedback}
-                </div>
+                )}
               </div>
             ) : (
               <></>
