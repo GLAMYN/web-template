@@ -384,7 +384,7 @@ export class TransactionPanelComponent extends Component {
               isConversation={isInquiryProcess}
             />
             {this.cancellationObject ? (
-              <>
+              <div className={css.feedContainer}>
                 <div className={css.cancellationMessage}>
                   {this.cancellationObject?.cancelBy === transactionRole
                     ? 'You have'
@@ -406,7 +406,7 @@ export class TransactionPanelComponent extends Component {
                   </div>
                   {this.cancellationObject?.cancellationFeedback}
                 </div>
-              </>
+              </div>
             ) : (
               <></>
             )}
