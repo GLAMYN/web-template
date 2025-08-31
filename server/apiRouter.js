@@ -25,6 +25,7 @@ const tipPaymentIntent = require('./api/tip-payment-intent');
 const getCustomerProviderTx = require('./api/get-customer-provider-transaction');
 const { createCoupon, getCoupons, updateCoupon, deleteCoupon } = require('./api/coupons');
 const { validateAndApplyCoupon, applyCoupon } = require('./api/validate-coupon');
+const transactionTransition = require('./api/transaction-transition');
 
 const router = express.Router();
 
@@ -85,7 +86,7 @@ router.get('/auth/google', authenticateGoogle);
 // loginWithIdp endpoint in Sharetribe Auth API to authenticate user to the marketplace
 router.get('/auth/google/callback', authenticateGoogleCallback);
 
-
+router.post('/transaction-transition', transactionTransition)
 router.post('/pay-cancellation-fine', payCancellationFine)
 router.post('/confirm-stripe-payment', confirmStripePayment)
 router.post('/tip-payment-intent', tipPaymentIntent)

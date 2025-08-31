@@ -189,5 +189,9 @@ export const getCustomerProviderTxApi = body => {
   return post('/api/get-customer-provider-tx', body)
 }
 
+export const transactionTransitionApi = body => {
+  return post('/api/transaction-transition', body)
+}
+
 // ================ COUPON API ================
 // Note: All coupon-related functions already declared above (fetchCoupons, createCoupon, updateCoupon, deleteCoupon, validateCoupon, applyCoupon)

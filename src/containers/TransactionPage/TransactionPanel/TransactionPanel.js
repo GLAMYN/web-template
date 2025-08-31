@@ -8,7 +8,7 @@ import { userDisplayNameAsString } from '../../../util/data';
 import { isMobileSafari } from '../../../util/userAgent';
 import { createSlug } from '../../../util/urlHelpers';
 
-import { AvatarLarge, NamedLink, UserDisplayName } from '../../../components';
+import { AvatarLarge, Button, Modal, NamedLink, UserDisplayName } from '../../../components';
 
 import { stateDataShape } from '../TransactionPage.stateData';
 import SendMessageForm from '../SendMessageForm/SendMessageForm';
@@ -28,6 +28,7 @@ import PanelHeading from './PanelHeading';
 import css from './TransactionPanel.module.css';
 import TipPayment from './TipPayment';
 import moment from 'moment';
+import { transactionTransitionApi } from '../../../util/api';
 
 // Helper function to get display names for different roles
 const displayNames = (currentUser, provider, customer, intl) => {
@@ -91,8 +92,11 @@ const displayNames = (currentUser, provider, customer, intl) => {
 export class TransactionPanelComponent extends Component {
   constructor(props) {
     super(props);
+    this.cancellationObject = this.props.transaction?.attributes?.metadata?.cancellationObject;
+    this.alreadyCancelled = this.props.transaction?.attributes?.state === 'state/cancelled';
     this.state = {
       sendMessageFormFocused: false,
+      cancellationFeetback: null,
     };
     this.isMobSaf = false;
     this.sendMessageFormName = 'TransactionPanel.SendMessageForm';
@@ -101,6 +105,10 @@ export class TransactionPanelComponent extends Component {
     this.onSendMessageFormBlur = this.onSendMessageFormBlur.bind(this);
     this.onMessageSubmit = this.onMessageSubmit.bind(this);
     this.scrollToMessage = this.scrollToMessage.bind(this);
+
+    this.openCancelModal = this.openCancelModal.bind(this);
+    this.closeCancelModal = this.closeCancelModal.bind(this);
+    this.handleCancelTransaction = this.handleCancelTransaction.bind(this);
   }
 
   componentDidMount() {
@@ -147,6 +155,33 @@ export class TransactionPanelComponent extends Component {
     }
   }
 
+  openCancelModal() {
+    this.setState({ isCancelModalOpen: true, cancelError: null });
+  }
+
+  closeCancelModal() {
+    this.setState({ isCancelModalOpen: false, cancelError: null });
+  }
+
+  handleCancelTransaction() {
+    const { transactionId } = this.props;
+    this.setState({ cancelInProgress: true, cancelError: null });
+
+    transactionTransitionApi({
+      transactionId,
+      params: {},
+      cancelBy: this.props.transactionRole,
+      cancellationFeedback: this.state.cancellationFeetback,
+    })
+      .then(() => {
+        this.setState({ isCancelModalOpen: false, cancelInProgress: false });
+        window.location.reload();
+      })
+      .catch(e => {
+        this.setState({ cancelInProgress: false, cancelError: e?.message || 'Cancel failed' });
+      });
+  }
+
   render() {
     const {
       rootClassName,
@@ -176,6 +211,7 @@ export class TransactionPanelComponent extends Component {
       config,
       hasViewingRights,
       transaction,
+      showCancelButton = true,
     } = this.props;
     const isCustomer = transactionRole === 'customer';
     const isProvider = transactionRole === 'provider';
@@ -227,8 +263,30 @@ export class TransactionPanelComponent extends Component {
     const priceVariantName = protectedData?.priceVariantName;
 
     const classes = classNames(rootClassName || css.root, className);
+
+    const { isCancelModalOpen, cancelInProgress, cancelError } = this.state;
+    const { isConsentModalOpen, consentInProgress, consentError } = this.state;
+
     const currency = config.currency || 'CAD';
-    const isBookingEnded = moment().isAfter(moment(this.props?.booking?.attributes?.end))
+    const isBookingEnded = moment().isAfter(moment(this.props?.booking?.attributes?.end));
+
+    const includedStates = ['state/accepted'];
+    const transactionState = this.props.transaction.attributes.state;
+
+    const bookingStartDate = this.props.booking?.attributes?.start;
+    const timeFrame = listing?.attributes?.publicData?.windowhrs || 0;
+    const isBetweenTimeFrame = timeFrame >= moment(bookingStartDate).diff(moment(), 'hours');
+    const endDate = new Date(transaction?.booking?.attributes?.start);
+    const now = new Date();
+    // Check if end date is valid and still in the future
+    const isBeforeEndDate = endDate instanceof Date && !isNaN(endDate) && now < endDate;
+
+    const cancelButton =
+      showCancelButton && !this.alreadyCancelled && includedStates.includes(transactionState) ? (
+        <Button type="button" rootClassName={css.cancelButton} onClick={this.openCancelModal}>
+          <FormattedMessage id="TransactionPanel.cancelButton" defaultMessage="Cancel Booking" />
+        </Button>
+      ) : null;
     return (
       <div className={classes}>
         <div className={css.container}>
@@ -251,7 +309,7 @@ export class TransactionPanelComponent extends Component {
 
             <PanelHeading
               processName={stateData.processName}
-              processState={stateData.processState}
+              processState={this.alreadyCancelled ? 'canceled' : stateData.processState}
               showExtraInfo={stateData.showExtraInfo}
               showPriceOnMobile={showPrice}
               price={listing?.attributes?.price}
@@ -325,6 +383,33 @@ export class TransactionPanelComponent extends Component {
               activityFeed={activityFeed}
               isConversation={isInquiryProcess}
             />
+            {this.cancellationObject ? (
+              <>
+                <div className={css.cancellationMessage}>
+                  {this.cancellationObject?.cancelBy === transactionRole
+                    ? 'You have'
+                    : this.cancellationObject?.cancelBy === 'provider'
+                    ? <>{authorDisplayName} has</>
+                    : <>{customerDisplayName} has</>}{' '}
+                  cancelled the booking.
+                </div>
+                <div className={css.cancelledAt}>
+                  Cancelled at: {moment(this.cancellationObject?.cancelledAt).fromNow()}
+                </div>
+                <div className={css.cancelledAt}>
+                  {this.cancellationObject?.refundIssued ? "Full " : "No "} refund has issued.
+                </div>
+
+                <div className={css.cancellationMessage}>
+                  <div>
+                    <b>Cancellation Feedback</b>
+                  </div>
+                  {this.cancellationObject?.cancellationFeedback}
+                </div>
+              </>
+            ) : (
+              <></>
+            )}
             {showSendMessageForm ? (
               <SendMessageForm
                 formId={this.sendMessageFormName}
@@ -348,7 +433,10 @@ export class TransactionPanelComponent extends Component {
             {stateData.showActionButtons ? (
               <>
                 <div className={css.mobileActionButtonSpacer}></div>
-                <div className={css.mobileActionButtons}>{actionButtons}</div>
+                <div className={css.mobileActionButtons}>
+                  {actionButtons}
+                  {cancelButton}
+                </div>
               </>
             ) : null}
           </div>
@@ -399,61 +487,117 @@ export class TransactionPanelComponent extends Component {
                   <div className={css.desktopActionButtons}>{actionButtons}</div>
                 ) : null}
               </div>
+              {cancelButton}
 
               <DiminishedActionButtonMaybe
                 showDispute={stateData.showDispute}
                 onOpenDisputeModal={onOpenDisputeModal}
               />
-              {transaction?.attributes?.metadata?.tipAmount ? (<></>
-                // <div className={css.tipContainer}>
-                //   <div className={css.tipIconWrapper}>
-                //     <svg
-                //       style={{ fill: 'none', color: '#fff' }}
-                //       width="20"
-                //       height="20"
-                //       viewBox="0 0 24 24"
-                //       fill="none"
-                //       stroke="currentColor"
-                //       strokeWidth="2"
-                //       strokeLinecap="round"
-                //       strokeLinejoin="round"
-                //     >
-                //       <path d="M20 6 9 17l-5-5" />
-                //     </svg>
-                //   </div>
-                //   <div className={css.tipContent}>
-                //     {isProvider ? 
-                //     <>
-                //     <span className={css.tipLabel}>You've recieved a tip of </span>
-                //     <span className={css.tipAmount}>
-                //       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
-                //         style: 'currency',
-                //         currency,
-                //       })}
-                //     </span></>
-                //     :
-                //     <>
-                //     <span className={css.tipLabel}>You tipped</span>
-                //     <span className={css.tipAmount}>
-                //       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
-                //         style: 'currency',
-                //         currency,
-                //       })}
-                //     </span>
-                //     </>
-                //     } 
-                //   </div>
-                // </div>
-              ) : (isCustomer && transaction?.attributes?.lastTransition === "transition/accept" && isBookingEnded) ? (
+              {transaction?.attributes?.metadata?.tipAmount ? (
+                <></>
+              ) : // <div className={css.tipContainer}>
+              //   <div className={css.tipIconWrapper}>
+              //     <svg
+              //       style={{ fill: 'none', color: '#fff' }}
+              //       width="20"
+              //       height="20"
+              //       viewBox="0 0 24 24"
+              //       fill="none"
+              //       stroke="currentColor"
+              //       strokeWidth="2"
+              //       strokeLinecap="round"
+              //       strokeLinejoin="round"
+              //     >
+              //       <path d="M20 6 9 17l-5-5" />
+              //     </svg>
+              //   </div>
+              //   <div className={css.tipContent}>
+              //     {isProvider ?
+              //     <>
+              //     <span className={css.tipLabel}>You've recieved a tip of </span>
+              //     <span className={css.tipAmount}>
+              //       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
+              //         style: 'currency',
+              //         currency,
+              //       })}
+              //     </span></>
+              //     :
+              //     <>
+              //     <span className={css.tipLabel}>You tipped</span>
+              //     <span className={css.tipAmount}>
+              //       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
+              //         style: 'currency',
+              //         currency,
+              //       })}
+              //     </span>
+              //     </>
+              //     }
+              //   </div>
+              // </div>
+              isCustomer &&
+                transaction?.attributes?.lastTransition === 'transition/accept' &&
+                isBookingEnded ? (
                 <TipPayment
                   orderBreakdown={transaction}
                   provider={provider}
                   transactionId={transaction?.id?.uuid}
                 />
-              ) :  ''}
+              ) : (
+                ''
+              )}
             </div>
           </div>
         </div>
+        {/* Cancel Modal */}
+        <Modal
+          id="CancelTransactionModal"
+          isOpen={isCancelModalOpen}
+          onClose={this.closeCancelModal}
+          onManageDisableScrolling={() => {}}
+          containerClassName={css.cancelModalRoot}
+          contentClassName={css.cancelModalContent}
+        >
+          <p className={css.modalTitle}>
+            <FormattedMessage
+              id="TransactionPanel.cancelModal.title"
+              defaultMessage="Cancel Transaction"
+            />
+          </p>
+          <p className={css.modalMessage}>
+            <FormattedMessage
+              id="TransactionPanel.cancelModal.message"
+              defaultMessage="Are you sure you want to cancel this transaction?"
+            />
+            {!isBetweenTimeFrame && (
+              <div className={css.cancelModalDescription}>
+                {isProvider
+                  ? 'Warning: Customer will be refunded an you will not get any money.'
+                  : 'Warning: You will not get any refund.'}
+              </div>
+            )}
+          </p>
+          <div className={css.cancellationFeedbackContainer}>
+            <label>Cancellation Feedback (optional)</label>
+            <textarea
+              onChange={e => this.setState({ cancellationFeetback: e.target.value })}
+              className={css.cancellationFeedback}
+            />
+          </div>
+          {cancelError ? <p className={css.actionError}>{cancelError}</p> : null}
+          <div className={css.cancelModalActions}>
+            <Button
+              type="button"
+              inProgress={cancelInProgress}
+              onClick={() => this.handleCancelTransaction()}
+              className={css.cancelDirectly}
+            >
+              <FormattedMessage
+                id="TransactionPanel.cancelModal.cancelDirect"
+                defaultMessage="Cancel"
+              />
+            </Button>
+          </div>
+        </Modal>
       </div>
     );
   }
