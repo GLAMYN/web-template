@@ -47,6 +47,8 @@ export const transitions = {
 
   // Admin can also cancel the transition.
   CANCEL: 'transition/cancel',
+  // Admin can also cancel the transition.
+  CANCEL_NO_REFUND: 'transition/cancel-no-refund',
 
   // The backend will mark the transaction completed.
   COMPLETE: 'transition/complete',

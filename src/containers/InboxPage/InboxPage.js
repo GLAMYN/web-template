@@ -136,7 +136,10 @@ export const InboxItem = props => {
     stockType = STOCK_MULTIPLE_ITEMS,
   } = props;
   const { customer, provider, listing } = tx;
-  const { processName, processState, actionNeeded, isSaleNotification, isFinal } = stateData;
+  const { processName, actionNeeded, isSaleNotification } = stateData;
+  let {processState, isFinal} = stateData;
+  processState ||= tx?.attributes?.lastTransition?.replace("transition/", "");
+  isFinal = processState?.trim()?.toLowerCase() == "cancel-no-refund" ? true : isFinal
   const isCustomer = transactionRole === TX_TRANSITION_ACTOR_CUSTOMER;
 
   const lineItems = tx.attributes?.lineItems;

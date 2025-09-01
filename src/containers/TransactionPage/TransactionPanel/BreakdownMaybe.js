@@ -12,7 +12,7 @@ const BreakdownMaybe = props => {
   const classes = classNames(rootClassName || css.breakdownMaybe, className);
 
 const locationUrl = transaction?.attributes?.metadata?.selectedLocationType === "providerLocation" ? `https://www.google.com/maps?q=${transaction?.listing?.attributes?.geolocation?.lat},${transaction?.listing?.attributes?.geolocation?.lng}` : `https://www.google.com/maps?q=${transaction?.attributes?.metadata?.location?.selectedPlace?.origin?.lat},${transaction?.attributes?.metadata?.location?.selectedPlace?.origin?.lng}`
- console.log('transaction >>exxx',transaction)
+
 return orderBreakdown ? (
     <div className={classes}>
       {priceVariantName ? (

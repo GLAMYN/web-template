@@ -72,25 +72,9 @@ module.exports = async (req, res) => {
   };
 
   //cancel if the user has cancelled the transaction directly
-  if (isBetweenTimeFrame) {
-    await cancelTransaction();
-  } else if (cancelBy === 'customer') {
+  if (isBetweenTimeFrame && cancelBy === 'customer') {
     await cancelTransaction('transition/cancel-no-refund');
   } else {
-    //if provider has cancelled the listing
-    const noCancelled = currentUser.attributes.profile.publicData.cancelledTransactions || 0;
-    const currentFine = currentUser.attributes.profile.publicData.cancellationFine || 0;
-    let toUpdate = { cancelledTransactions: noCancelled + 1 };
-    //check the number of cancelled transaction
-    if (noCancelled >= 2) {
-      const newFine = currentFine + 20;
-      toUpdate = { ...toUpdate, cancellationFine: newFine, accountOnHold: newFine > 0 };
-    }
-    //update seller public data
-    await integration.users.updateProfile({
-      id: currentUser.id.uuid,
-      publicData: toUpdate,
-    });
     await cancelTransaction();
   }
 

@@ -453,6 +453,7 @@
   "InboxPage.fetchFailed": "Couldn't load all messages. Please try again.",
   "InboxPage.noOrdersFound": "You haven't made any orders yet.",
   "InboxPage.noSalesFound": "Nobody has ordered anything from you yet.",
+  "InboxPage.default-booking.cancel-no-refund.status": "Canceled",
   "InboxPage.ordersTabTitle": "As a customer",
   "InboxPage.ordersTitle": "Inbox: As a customer",
   "InboxPage.quantity": "Number of items: {quantity}",

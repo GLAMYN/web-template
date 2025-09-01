@@ -211,14 +211,11 @@ const getCurrentUserTypeConfig = (config, currentUser) => {
   }
   
   const { userTypes } = config.user;
-  console.log('getCurrentUserTypeConfig - userTypes:', userTypes);
-  console.log('getCurrentUserTypeConfig - currentUser userType:', currentUser?.attributes?.profile?.publicData?.userType);
   
   const userTypeConfig = userTypes.find(
     ut => ut.userType === currentUser?.attributes?.profile?.publicData?.userType
   );
   
-  console.log('getCurrentUserTypeConfig - found userTypeConfig:', userTypeConfig);
   return userTypeConfig;
 };
 
@@ -271,13 +268,9 @@ export const showPaymentDetailsForUser = (config, currentUser) => {
  */
 export const showCouponsForUser = (config, currentUser) => {
   const currentUserTypeConfig = getCurrentUserTypeConfig(config, currentUser);
-  console.log('showCouponsForUser - config:', config);
-  console.log('showCouponsForUser - currentUser:', currentUser);
-  console.log('showCouponsForUser - currentUserTypeConfig:', currentUserTypeConfig?.userType);
-  
+
   // Default roles if no user type config is found
   const roles = currentUserTypeConfig?.roles || { customer: true, provider: true };
-  console.log('showCouponsForUser - roles:', roles);
   
   // For debugging: always show coupons tab
   return currentUserTypeConfig?.userType !== 'customer';

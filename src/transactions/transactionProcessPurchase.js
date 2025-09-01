@@ -45,6 +45,7 @@ export const transitions = {
 
   // Operator can cancel the purchase before product has been marked as delivered / received
   CANCEL: 'transition/cancel',
+  CANCEL_NO_REFUND: 'transition/cancel-no-refund',
 
   // If provider has marked the product delivered (e.g. shipped),
   // customer can then mark the product received

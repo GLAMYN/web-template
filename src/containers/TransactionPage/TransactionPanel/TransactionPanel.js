@@ -571,7 +571,7 @@ export class TransactionPanelComponent extends Component {
               id="TransactionPanel.cancelModal.message"
               defaultMessage="Are you sure you want to cancel this transaction?"
             />
-            {!isBetweenTimeFrame && (
+            {isBetweenTimeFrame && (
               <div className={css.cancelModalDescription}>
                 {isProvider
                   ? 'Warning: Customer will be refunded an you will not get any money.'
