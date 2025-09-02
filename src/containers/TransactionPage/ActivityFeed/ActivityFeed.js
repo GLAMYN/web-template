@@ -339,7 +339,7 @@ export const ActivityFeed = props => {
           </InlineTextButton>
         </li>
       ) : null}
-      {items.map(item => {
+      {items?.filter(item => item.transition !== "transition/cancel").map(item => {
         if (isMessage(item)) {
           return messageListItem(item);
         } else {

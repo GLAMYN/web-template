@@ -29,6 +29,7 @@ import css from './TransactionPanel.module.css';
 import TipPayment from './TipPayment';
 import moment from 'moment';
 import { transactionTransitionApi } from '../../../util/api';
+import cssActivity from '../ActivityFeed/ActivityFeed.module.css';
 
 // Helper function to get display names for different roles
 const displayNames = (currentUser, provider, customer, intl) => {
@@ -276,17 +277,20 @@ export class TransactionPanelComponent extends Component {
     const bookingStartDate = this.props.booking?.attributes?.start;
     const timeFrame = (listing?.attributes?.publicData?.cancellation_listingfield || 0) * 24;
     const isBetweenTimeFrame = timeFrame >= moment(bookingStartDate).diff(moment(), 'hours');
+    const isNotStarted = moment(bookingStartDate).diff(moment(), 'minutes') > 0;
     const endDate = new Date(transaction?.booking?.attributes?.start);
     const now = new Date();
     // Check if end date is valid and still in the future
     const isBeforeEndDate = endDate instanceof Date && !isNaN(endDate) && now < endDate;
 
     const cancelButton =
-      showCancelButton && !this.alreadyCancelled && includedStates.includes(transactionState) ? (
+      showCancelButton && !this.alreadyCancelled && includedStates.includes(transactionState) && isNotStarted ? (
         <Button type="button" rootClassName={css.cancelButton} onClick={this.openCancelModal}>
           <FormattedMessage id="TransactionPanel.cancelButton" defaultMessage="Cancel Booking" />
         </Button>
       ) : null;
+
+    console.log('activityFeed', activityFeed);
     return (
       <div className={classes}>
         <div className={css.container}>
@@ -384,31 +388,83 @@ export class TransactionPanelComponent extends Component {
               isConversation={isInquiryProcess}
             />
             {this.cancellationObject ? (
-              <div className={css.feedContainer}>
-                <div className={css.cancellationMessage}>
-                  {this.cancellationObject?.cancelBy === transactionRole ? (
-                    'You have'
-                  ) : this.cancellationObject?.cancelBy === 'provider' ? (
-                    <>{authorDisplayName} has</>
-                  ) : (
-                    <>{customerDisplayName} has</>
-                  )}{' '}
-                  cancelled the booking.
-                </div>
-                <div className={css.cancelledAt}>
-                  Cancelled at: {moment(this.cancellationObject?.cancelledAt).fromNow()}
-                </div>
-                <div className={css.cancelledAt}>
-                  {this.cancellationObject?.refundIssued ? 'A full refund has been issued for this transaction.' : 'No refund has been issued for this transaction.'}
-                </div>
-                {this.cancellationObject?.cancellationFeedback && (
-                  <div className={css.cancellationMessage}>
-                    <div>
-                      <b>Cancellation Feedback:</b>
+              <div className={classNames(css.feedContent,css.customCancelContainer)}>
+                <ul className={cssActivity.root}>
+                  <li className={cssActivity.transitionItem}>
+                    <div className={cssActivity.transition}>
+                      <div class={cssActivity.bullet}>
+                        <p class={cssActivity.transitionContent}>•</p>
+                      </div>
+                      <div>
+                        <div className={cssActivity.transitionContent}>
+                          {this.cancellationObject?.cancelBy === transactionRole ? (
+                            'You have'
+                          ) : this.cancellationObject?.cancelBy === 'provider' ? (
+                            <>{authorDisplayName} has</>
+                          ) : (
+                            <>{customerDisplayName} has</>
+                          )}{' '}
+                          cancelled the booking.
+                        </div>
+                        <div className={cssActivity.transitionDate}>
+                          {moment(this.cancellationObject?.cancelledAt).calendar(null, {
+                            sameDay: '[Today], h:mm a', // Today, 6:09 a.m.
+                            nextDay: '[Tomorrow], h:mm a',
+                            nextWeek: 'dddd, h:mm a',
+                            lastDay: '[Yesterday], h:mm a',
+                            lastWeek: '[Last] dddd, h:mm a',
+                            sameElse: 'MMM D, h:mm a',
+                          })}
+                        </div>
+                      </div>
                     </div>
-                    {this.cancellationObject?.cancellationFeedback}
-                  </div>
-                )}
+                  </li>
+                  <li className={cssActivity.transitionItem}>
+                    <div className={cssActivity.transition}>
+                      <div class={cssActivity.bullet}>
+                        <p class={cssActivity.transitionContent}>•</p>
+                      </div>
+                      <div>
+                        <div className={cssActivity.transitionContent}>
+                          {this.cancellationObject?.refundIssued
+                            ? 'A full refund has been issued for this transaction.'
+                            : 'No refund has been issued for this transaction.'}
+                        </div>
+                        <div className={cssActivity.transitionDate}>
+                          {moment(this.cancellationObject?.cancelledAt).calendar(null, {
+                            sameDay: '[Today], h:mm a', // Today, 6:09 a.m.
+                            nextDay: '[Tomorrow], h:mm a',
+                            nextWeek: 'dddd, h:mm a',
+                            lastDay: '[Yesterday], h:mm a',
+                            lastWeek: '[Last] dddd, h:mm a',
+                            sameElse: 'MMM D, h:mm a',
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  {this.cancellationObject?.cancellationFeedback && (
+                    <li className={cssActivity.transitionItem}>
+                      <div className={cssActivity.transition}>
+                        <div class={cssActivity.bullet}>
+                          <p class={cssActivity.transitionContent}>•</p>
+                        </div>
+                        <div>
+                          <div className={cssActivity.transitionContent}>
+                            {this.cancellationObject?.cancellationFeedback && (
+                              <div className={css.cancellationMessage}>
+                                <div>
+                                  <b>Cancellation Feedback:</b>
+                                </div>
+                                {this.cancellationObject?.cancellationFeedback}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  )}
+                </ul>
               </div>
             ) : (
               <></>
