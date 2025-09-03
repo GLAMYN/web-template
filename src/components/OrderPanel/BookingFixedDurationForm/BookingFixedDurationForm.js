@@ -43,21 +43,34 @@ const handleFetchLineItems = props => formValues => {
     fetchLineItemsInProgress,
     onFetchTransactionLineItems,
     seatsEnabled,
+    listing,
   } = props;
   const {
     bookingStartTime,
     bookingEndTime,
     seats,
     priceVariantName,
-    priceVariantNames,
+    priceVariantNames = [],
     coupon,
   } = formValues.values;
+  const allVariants = listing?.attributes?.publicData?.priceVariants;
+  const selectedVariants = allVariants?.filter(v => priceVariantNames?.includes(v.name));
+  const totalTimeInMinutes = selectedVariants?.reduce((total, item) => {
+    return total + (item?.bookingLengthInMinutes || 0);
+  }, 0);
+  
   const startDate = bookingStartTime ? timestampToDate(bookingStartTime) : null;
-  const endDate = bookingEndTime ? timestampToDate(bookingEndTime) : null;
-
+  
+  // Calculate endDate based on startDate + totalTimeInMinutes
+  let endDate = null;
+  if (startDate && totalTimeInMinutes > 0) {
+    endDate = new Date(startDate.getTime() + totalTimeInMinutes * 60000);
+    console.log('handleFetchLineItems - Calculated endDate:', endDate, 'from totalTimeInMinutes:', totalTimeInMinutes);
+  }
+  
   // Note: we expect values bookingStartTime and bookingEndTime to be strings
   // which is the default case when the value has been selected through the form
-  const isStartBeforeEnd = bookingStartTime < bookingEndTime;
+  const isStartBeforeEnd = startDate && endDate && startDate < endDate;
   const seatsMaybe = seatsEnabled && seats > 0 ? { seats: parseInt(seats, 10) } : {};
 
   const priceVariantMaybe = priceVariantName ? { priceVariantName } : {};
@@ -103,9 +116,27 @@ const onPriceVariantChange = props => value => {
 };
 
 const onPriceVariantNamesChange = props => value => {
-  const { form: formApi } = props;
+  const { form: formApi, listing } = props;
   formApi.batch(() => {
     formApi.change('priceVariantNames', value);
+    
+    // Recalculate end time when price variants change
+    const currentValues = formApi.getState().values;
+    const startTime = currentValues?.bookingStartTime;
+    
+    if (startTime && value && value.length > 0) {
+      const allVariants = listing?.attributes?.publicData?.priceVariants;
+      const selectedVariants = allVariants?.filter(v => value?.includes(v.name));
+      const totalTimeInMinutes = selectedVariants?.reduce((total, item) => {
+        return total + (item?.bookingLengthInMinutes || 0);
+      }, 0);
+      
+      if (totalTimeInMinutes > 0) {
+        const startDate = timestampToDate(startTime);
+        const endDate = new Date(startDate.getTime() + totalTimeInMinutes * 60000);
+        formApi.change('bookingEndTime', endDate.getTime());
+      }
+    }
   });
 };
 
@@ -192,13 +223,24 @@ export const BookingFixedDurationForm = props => {
         } = formRenderProps;
 
         const startTime = values?.bookingStartTime ? values.bookingStartTime : null;
-        const endTime = values?.bookingEndTime ? values.bookingEndTime : null;
         const startDate = startTime ? timestampToDate(startTime) : null;
-        const endDate = endTime ? timestampToDate(endTime) : null;
         const priceVariantName = values?.priceVariantName || null;
         const priceVariantNames = values?.priceVariantNames || null;
-        
 
+        // Calculate endDate based on startDate + totalTimeInMinutes (same logic as handleFetchLineItems)
+        let endDate = null;
+        if (startDate && priceVariantNames && priceVariantNames.length > 0) {
+          const allVariants = listing?.attributes?.publicData?.priceVariants;
+          const selectedVariants = allVariants?.filter(v => priceVariantNames?.includes(v.name));
+          const totalTimeInMinutes = selectedVariants?.reduce((total, item) => {
+            return total + (item?.bookingLengthInMinutes || 0);
+          }, 0);
+          
+          if (totalTimeInMinutes > 0) {
+            endDate = new Date(startDate.getTime() + totalTimeInMinutes * 60000);
+            console.log('Render function - Calculated endDate:', endDate, 'from totalTimeInMinutes:', totalTimeInMinutes);
+          }
+        }
 
         // This is the place to collect breakdown estimation data. See the
         // EstimatedCustomerBreakdownMaybe component to change the calculations
@@ -221,7 +263,7 @@ export const BookingFixedDurationForm = props => {
         const handleCouponApplied = coupon => {
           setAppliedCoupon(coupon);
           // Refetch line items with coupon data
-          if (startTime && endTime) {
+          if (startTime && endDate) {
             onHandleFetchLineItems({
               values: {
                 priceVariantName,
@@ -229,7 +271,7 @@ export const BookingFixedDurationForm = props => {
                 bookingStartDate: startDate,
                 bookingStartTime: startTime,
                 bookingEndDate: endDate,
-                bookingEndTime: endTime,
+                bookingEndTime: endDate.getTime(),
                 seats: values?.seats,
                 coupon: coupon,
               },
@@ -241,14 +283,14 @@ export const BookingFixedDurationForm = props => {
         const handleCouponRemoved = () => {
           setAppliedCoupon(null);
           // Refetch line items without coupon
-          if (startTime && endTime) {
+          if (startTime && endDate) {
             onHandleFetchLineItems({
               values: {
                 priceVariantName,
                 bookingStartDate: startDate,
                 bookingStartTime: startTime,
                 bookingEndDate: endDate,
-                bookingEndTime: endTime,
+                bookingEndTime: endDate.getTime(),
                 seats: values?.seats,
                 priceVariantNames,
               },
@@ -269,7 +311,6 @@ export const BookingFixedDurationForm = props => {
           bookingQuestion3,
         } = listing?.attributes?.publicData;
 
-
         return (
           <Form onSubmit={handleSubmit} className={classes} enforcePagePreloadFor="CheckoutPage">
             {PriceVariantFieldComponent ? (
@@ -282,8 +323,6 @@ export const BookingFixedDurationForm = props => {
                 disabled={!isPublishedListing}
               />
             ) : null}
-            
-
 
             {listing?.attributes?.publicData?.providerStudio_listingfield === 'yes_option' && (
               <FieldSelect
@@ -404,6 +443,7 @@ export const BookingFixedDurationForm = props => {
                 timeZone={timeZone}
                 dayCountAvailableForBooking={dayCountAvailableForBooking}
                 handleFetchLineItems={onHandleFetchLineItems}
+                listing={listing}
               />
             ) : null}
             {seatsEnabled ? (
@@ -420,7 +460,7 @@ export const BookingFixedDurationForm = props => {
                       priceVariantName,
                       priceVariantNames,
                       bookingStartTime: startTime,
-                      bookingEndTime: endTime,
+                      bookingEndTime: endDate ? endDate.getTime() : null,
                       seats: values,
                     },
                   });
@@ -437,7 +477,7 @@ export const BookingFixedDurationForm = props => {
               </FieldSelect>
             ) : null}
 
-            {startTime && endTime && !isOwnListing ? (
+            {startTime && endDate && !isOwnListing ? (
               <CouponCodeField
                 className={css.field}
                 listingId={rest.listingId}

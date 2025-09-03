@@ -106,7 +106,6 @@ export const OrderBreakdownComponent = props => {
    * LineItemTotalPrice: prints total price of the transaction
    *
    */
-  console.log('lineItems',lineItems);
   return (
     <div className={classes}>
       <LineItemBookingPeriod

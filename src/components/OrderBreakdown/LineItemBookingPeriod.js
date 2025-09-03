@@ -53,6 +53,13 @@ const BookingPeriod = props => {
     day: 'numeric',
   };
 
+  const timeOnlyFormatOptions = {
+    hour: 'numeric',
+    minute: 'numeric',
+  };
+
+
+
   return (
     <>
       <div className={css.bookingPeriod}>
@@ -73,6 +80,9 @@ const BookingPeriod = props => {
             dateType={dateType}
             timeZone={timeZone}
           />
+          <div className={css.itemLabel}>
+            <FormattedDate value={startDate} {...timeOnlyFormatOptions} {...timeZoneMaybe} />
+          </div>
         </div>
 
         <div className={css.bookingPeriodSectionRight}>
@@ -92,6 +102,9 @@ const BookingPeriod = props => {
             dateType={dateType}
             timeZone={timeZone}
           />
+          <div className={css.itemLabel}>
+            <FormattedDate value={endDate} {...timeOnlyFormatOptions} {...timeZoneMaybe} />
+          </div>
         </div>
       </div>
     </>

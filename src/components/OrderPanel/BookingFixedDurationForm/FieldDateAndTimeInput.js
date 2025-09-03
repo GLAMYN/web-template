@@ -396,6 +396,7 @@ const onBookingStartDateChange = (props, setCurrentMonth) => value => {
     startTimeInterval,
     priceVariants,
     values,
+    listing,
   } = props;
   if (!value || !value.date) {
     formApi.batch(() => {
@@ -411,9 +412,22 @@ const onBookingStartDateChange = (props, setCurrentMonth) => value => {
     return;
   }
   const priceVariantName = values.priceVariantName || null;
-  const bookingLengthInMinutes = priceVariantName
-    ? priceVariants.find(pv => pv.name === priceVariantName)?.bookingLengthInMinutes
-    : priceVariants?.[0]?.bookingLengthInMinutes;
+  const priceVariantNames = values.priceVariantNames || [];
+  
+  // Calculate total time from multiple selected variants (same logic as main form)
+  let bookingLengthInMinutes = 0;
+  if (priceVariantNames && priceVariantNames.length > 0) {
+    const allVariants = listing?.attributes?.publicData?.priceVariants;
+    const selectedVariants = allVariants?.filter(v => priceVariantNames?.includes(v.name));
+    bookingLengthInMinutes = selectedVariants?.reduce((total, item) => {
+      return total + (item?.bookingLengthInMinutes || 0);
+    }, 0);
+  } else {
+    // Fallback to single variant logic for backward compatibility
+    bookingLengthInMinutes = priceVariantName
+      ? priceVariants.find(pv => pv.name === priceVariantName)?.bookingLengthInMinutes
+      : priceVariants?.[0]?.bookingLengthInMinutes;
+  }
 
   // This callback function (onBookingStartDateChange) is called from DatePicker component.
   // It gets raw value as a param - browser's local time instead of time in listing's timezone.
@@ -471,16 +485,30 @@ const onBookingStartDateChange = (props, setCurrentMonth) => value => {
 };
 
 const onBookingStartTimeChange = props => value => {
-  const { form: formApi, handleFetchLineItems, seatsEnabled, priceVariants, values } = props;
+  const { form: formApi, handleFetchLineItems, seatsEnabled, priceVariants, values, listing } = props;
   const priceVariantName = values.priceVariantName || null;
-  const bookingLengthInMinutes = priceVariantName
-    ? priceVariants.find(pv => pv.name === priceVariantName)?.bookingLengthInMinutes
-    : priceVariants?.[0]?.bookingLengthInMinutes;
+  const priceVariantNames = values.priceVariantNames || [];
+  
+  // Calculate total time from multiple selected variants (same logic as main form)
+  let totalTimeInMinutes = 0;
+  if (priceVariantNames && priceVariantNames.length > 0) {
+    const allVariants = listing?.attributes?.publicData?.priceVariants;
+    const selectedVariants = allVariants?.filter(v => priceVariantNames?.includes(v.name));
+    totalTimeInMinutes = selectedVariants?.reduce((total, item) => {
+      return total + (item?.bookingLengthInMinutes || 0);
+    }, 0);
+  } else {
+    // Fallback to single variant logic for backward compatibility
+    totalTimeInMinutes = priceVariantName
+      ? priceVariants.find(pv => pv.name === priceVariantName)?.bookingLengthInMinutes
+      : priceVariants?.[0]?.bookingLengthInMinutes;
+  }
 
   const endTime = getBookingEndTimeAsDate(
     new Date(Number.parseInt(value, 10)),
-    bookingLengthInMinutes
+    totalTimeInMinutes
   );
+  console.log('FieldDateAndTimeInput - Calculated endTime:', endTime, 'from totalTimeInMinutes:', totalTimeInMinutes);
 
   formApi.batch(() => {
     formApi.change('bookingEndTime', endTime.getTime());
