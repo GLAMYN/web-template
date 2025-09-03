@@ -454,7 +454,7 @@ export class TransactionPanelComponent extends Component {
                             {this.cancellationObject?.cancellationFeedback && (
                               <div className={css.cancellationMessage}>
                                 <div>
-                                  <b>Cancellation Feedback:</b>
+                                  Cancellation Feedback:
                                 </div>
                                 {this.cancellationObject?.cancellationFeedback}
                               </div>

@@ -104,6 +104,9 @@ export { default as FieldCheckboxGroup } from './FieldCheckboxGroup/FieldCheckbo
 export { default as FieldPhoneNumberInput } from './FieldPhoneNumberInput/FieldPhoneNumberInput';
 export { default as LocationAutocompleteInput, FieldLocationAutocompleteInput } from './LocationAutocompleteInput/LocationAutocompleteInput';
 
+// Custom form components
+export { default as MultiSelect } from './MultiSelect/MultiSelect';
+
 // NOTE: these are code-splitted since these components are heavy and needed only on couple of pages
 export const FieldDateRangePicker = loadable(() => import(/* webpackChunkName: "FieldDateRangePicker" */ './DatePicker/FieldDateRangePicker/FieldDateRangePicker'));
 export const FieldSingleDatePicker = loadable(() => import(/* webpackChunkName: "FieldSingleDatePicker" */ './DatePicker/FieldSingleDatePicker/FieldSingleDatePicker'));

@@ -271,16 +271,27 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
    * By default OrderBreakdown prints line items inside LineItemUnknownItemsMaybe if the lineItem code is not recognized. */
 
   const quantityOrSeats = !!units && !!seats ? { units, seats } : { quantity };
-  const order = {
-    code,
-    unitPrice,
-    ...quantityOrSeats,
-    includeFor: ['customer', 'provider'],
-  };
+  // const order = {
+  //   code,
+  //   unitPrice,
+  //   ...quantityOrSeats,
+  //   includeFor: ['customer', 'provider'],
+  // };
+  orderData?.priceVariantNames?.forEach(priceVariantName => {
+    const currentVariant = publicData?.priceVariants?.find(variant => variant.name === priceVariantName);
+    if(currentVariant){
+      extraLineItems.push({
+        code: `line-item/${priceVariantName} (${currentVariant?.bookingLengthInMinutes} minutes)`,
+        unitPrice: new Money(currentVariant?.priceInSubunits, currency),
+        quantity: quantityOrSeats?.quantity || quantityOrSeats?.seats || 1,
+        includeFor: ['customer', 'provider'],
+      })
+    }
+  })
 
   // Calculate base line items before applying coupons
   const baseLineItems = [
-    order,
+    // order,
     ...extraLineItems,
   ];
 
@@ -291,7 +302,7 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
 
   // Create line items including coupon discount for commission calculation
   const baseLineItemsWithCoupon = [
-    order,
+    // order,
     ...extraLineItems,
     ...couponLineItems,
   ];
@@ -299,7 +310,7 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   // Let's keep the base price (order) as first line item, then coupon discount, and provider and customer commissions as last.
   // Note: the order matters only if OrderBreakdown component doesn't recognize line-item.
   const lineItems = [
-    order,
+    // order,
     ...extraLineItems,
     ...couponLineItems,
     ...getProviderCommissionMaybe(providerCommission, baseLineItemsWithCoupon, priceAttribute),

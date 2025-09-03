@@ -106,6 +106,7 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
 
   // price variant data for fixed duration bookings
   const priceVariantName = pageData.orderData?.priceVariantName;
+  const priceVariantNames = pageData.orderData?.priceVariantNames;
   const priceVariantNameMaybe = priceVariantName ? { priceVariantName } : {};
   const priceVariant = priceVariants?.find(pv => pv.name === priceVariantName);
   const priceVariantMaybe = priceVariant ? prefixPriceVariantProperties(priceVariant) : {};
@@ -116,6 +117,7 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
       ...deliveryMethodMaybe,
       ...shippingDetails,
       ...priceVariantMaybe,
+      priceVariantNames,
     },
   };
 
@@ -137,6 +139,7 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
     ...priceVariantNameMaybe,
     ...protectedDataMaybe,
     ...optionalPaymentParams,
+    priceVariantNames: priceVariantNames,
   };
   return orderParams;
 };

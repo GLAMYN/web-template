@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form as FinalForm } from 'react-final-form';
+import { Form as FinalForm, Field } from 'react-final-form';
 import classNames from 'classnames';
 
 import { FormattedMessage, useIntl } from '../../../util/reactIntl';
@@ -7,7 +7,14 @@ import { timestampToDate } from '../../../util/dates';
 import { propTypes } from '../../../util/types';
 import { BOOKING_PROCESS_NAME } from '../../../transactions/transaction';
 
-import { Form, H6, PrimaryButton, FieldSelect, FieldLocationAutocompleteInput, FieldTextInput } from '../../../components';
+import {
+  Form,
+  H6,
+  PrimaryButton,
+  FieldSelect,
+  FieldLocationAutocompleteInput,
+  FieldTextInput,
+} from '../../../components';
 
 import EstimatedCustomerBreakdownMaybe from '../EstimatedCustomerBreakdownMaybe';
 import FieldDateAndTimeInput from './FieldDateAndTimeInput';
@@ -16,7 +23,11 @@ import CouponCodeField from '../CouponCodeField/CouponCodeField';
 import FetchLineItemsError from '../FetchLineItemsError/FetchLineItemsError.js';
 
 import css from './BookingFixedDurationForm.module.css';
-import { autocompletePlaceSelected, autocompleteSearchRequired, composeValidators } from '../../../util/validators.js';
+import {
+  autocompletePlaceSelected,
+  autocompleteSearchRequired,
+  composeValidators,
+} from '../../../util/validators.js';
 import * as validators from '../../../util/validators';
 
 const identity = v => v;
@@ -25,7 +36,7 @@ const identity = v => v;
 // lineItems from this template's backend for the EstimatedTransactionMaybe
 // In case you add more fields to the form, make sure you add
 // the values here to the orderData object.
-const handleFetchLineItems = (props) => formValues => {
+const handleFetchLineItems = props => formValues => {
   const {
     listingId,
     isOwnListing,
@@ -33,22 +44,32 @@ const handleFetchLineItems = (props) => formValues => {
     onFetchTransactionLineItems,
     seatsEnabled,
   } = props;
-  const { bookingStartTime, bookingEndTime, seats, priceVariantName ,coupon} = formValues.values;
+  const {
+    bookingStartTime,
+    bookingEndTime,
+    seats,
+    priceVariantName,
+    priceVariantNames,
+    coupon,
+  } = formValues.values;
   const startDate = bookingStartTime ? timestampToDate(bookingStartTime) : null;
   const endDate = bookingEndTime ? timestampToDate(bookingEndTime) : null;
-console.log('coupon>>>>>>>>>>>>>',formValues)
+
   // Note: we expect values bookingStartTime and bookingEndTime to be strings
   // which is the default case when the value has been selected through the form
   const isStartBeforeEnd = bookingStartTime < bookingEndTime;
   const seatsMaybe = seatsEnabled && seats > 0 ? { seats: parseInt(seats, 10) } : {};
 
   const priceVariantMaybe = priceVariantName ? { priceVariantName } : {};
-  
+  const priceVariantNamesMaybe =
+    priceVariantNames && priceVariantNames.length > 0 ? { priceVariantNames } : {};
   // Include both coupon object and couponCode for backward compatibility
-  const couponMaybe = coupon ? { 
-    coupon,
-    couponCode: coupon.code 
-  } : {};
+  const couponMaybe = coupon
+    ? {
+        coupon,
+        couponCode: coupon.code,
+      }
+    : {};
 
   if (startDate && endDate && isStartBeforeEnd && !fetchLineItemsInProgress) {
     const orderData = {
@@ -56,9 +77,10 @@ console.log('coupon>>>>>>>>>>>>>',formValues)
       bookingEnd: endDate,
       ...seatsMaybe,
       ...priceVariantMaybe,
+      ...priceVariantNamesMaybe,
       ...couponMaybe,
     };
-    
+
     onFetchTransactionLineItems({
       orderData,
       listingId,
@@ -77,6 +99,13 @@ const onPriceVariantChange = props => value => {
     if (seatsEnabled) {
       formApi.change('seats', 1);
     }
+  });
+};
+
+const onPriceVariantNamesChange = props => value => {
+  const { form: formApi } = props;
+  formApi.batch(() => {
+    formApi.change('priceVariantNames', value);
   });
 };
 
@@ -137,7 +166,6 @@ export const BookingFixedDurationForm = props => {
     return Math.min(min, priceVariant.bookingLengthInMinutes);
   }, Number.MAX_SAFE_INTEGER);
   const classes = classNames(rootClassName || css.root, className);
-
   return (
     <FinalForm
       {...initialValuesMaybe}
@@ -168,6 +196,9 @@ export const BookingFixedDurationForm = props => {
         const startDate = startTime ? timestampToDate(startTime) : null;
         const endDate = endTime ? timestampToDate(endTime) : null;
         const priceVariantName = values?.priceVariantName || null;
+        const priceVariantNames = values?.priceVariantNames || null;
+        
+
 
         // This is the place to collect breakdown estimation data. See the
         // EstimatedCustomerBreakdownMaybe component to change the calculations
@@ -187,22 +218,21 @@ export const BookingFixedDurationForm = props => {
         const submitDisabled = isPriceVariationsInUse && !isPublishedListing;
 
         // Handle coupon application
-        const handleCouponApplied = (coupon) => {
-          console.log('coupon>>>>>>>>>>>>>code',coupon)
+        const handleCouponApplied = coupon => {
           setAppliedCoupon(coupon);
           // Refetch line items with coupon data
           if (startTime && endTime) {
             onHandleFetchLineItems({
               values: {
                 priceVariantName,
+                priceVariantNames,
                 bookingStartDate: startDate,
                 bookingStartTime: startTime,
                 bookingEndDate: endDate,
                 bookingEndTime: endTime,
                 seats: values?.seats,
-                coupon: coupon
+                coupon: coupon,
               },
-             
             });
           }
         };
@@ -220,125 +250,135 @@ export const BookingFixedDurationForm = props => {
                 bookingEndDate: endDate,
                 bookingEndTime: endTime,
                 seats: values?.seats,
+                priceVariantNames,
               },
             });
           }
         };
 
-  const addressRequiredMessage = intl.formatMessage({
-        id: 'EditListingLocationForm.addressRequired',
-      });
-      const addressNotRecognizedMessage = intl.formatMessage({
-        id: 'EditListingLocationForm.addressNotRecognized',
-      });
+        const addressRequiredMessage = intl.formatMessage({
+          id: 'EditListingLocationForm.addressRequired',
+        });
+        const addressNotRecognizedMessage = intl.formatMessage({
+          id: 'EditListingLocationForm.addressNotRecognized',
+        });
 
-       const {bookingQuestion1,bookingQuestion2,bookingQuestion3}=listing?.attributes?.publicData
+        const {
+          bookingQuestion1,
+          bookingQuestion2,
+          bookingQuestion3,
+        } = listing?.attributes?.publicData;
+
+
         return (
           <Form onSubmit={handleSubmit} className={classes} enforcePagePreloadFor="CheckoutPage">
-            <PriceVariantFieldComponent
-              priceVariants={priceVariants}
-              priceVariantName={priceVariantName}
-              onPriceVariantChange={onPriceVariantChange(formRenderProps)}
-              disabled={!isPublishedListing}
-            />
+            {PriceVariantFieldComponent ? (
+              <PriceVariantFieldComponent
+                priceVariants={priceVariants}
+                priceVariantName={priceVariantName}
+                onPriceVariantChange={onPriceVariantChange(formRenderProps)}
+                onPriceVariantNamesChange={onPriceVariantNamesChange(formRenderProps)}
+                formApi={form}
+                disabled={!isPublishedListing}
+              />
+            ) : null}
+            
 
-{listing?.attributes?.publicData?.providerStudio_listingfield === "yes_option" &&
+
+            {listing?.attributes?.publicData?.providerStudio_listingfield === 'yes_option' && (
               <FieldSelect
-          id={`locationChoice`}
-          name="locationChoice"
-          className={css.field}
-          label={"Location Choice"}
-          // validate={validators.required(
-          //   "offersInStudio Required"
-          // )}
-        >
-          <option disabled value="">
-            Select Location
-          </option>
-         <option value="mylocation">
-            At my location
-          </option>
-          <option value="providerLocation">
-            At provider’s location
-          </option>
-        </FieldSelect>
-}
-        {(values?.locationChoice === "mylocation" || listing?.attributes?.publicData?.providerStudio_listingfield !== "yes_option") &&
-
-<div               className={css.field}
->
-
-
-        <FieldLocationAutocompleteInput
-            rootClassName={css.locationAddress}
-            inputClassName={css.locationAutocompleteInput}
-            iconClassName={css.locationAutocompleteInputIcon}
-            predictionsClassName={css.predictionsRoot}
-            validClassName={css.validLocation}
-            autoFocus={false}
-            name="location"
-            label={intl.formatMessage({ id: 'EditListingLocationForm.address' })}
-            placeholder={intl.formatMessage({
-              id: 'EditListingLocationForm.addressPlaceholder',
-            })}
-            useDefaultPredictions={false}
-            format={identity}
-            valueFromForm={values.location}
-            validate={composeValidators(
-              autocompleteSearchRequired(addressRequiredMessage),
-              autocompletePlaceSelected(addressNotRecognizedMessage)
+                id={`locationChoice`}
+                name="locationChoice"
+                className={css.field}
+                label={'Location Choice'}
+                // validate={validators.required(
+                //   "offersInStudio Required"
+                // )}
+              >
+                <option disabled value="">
+                  Select Location
+                </option>
+                <option value="mylocation">At my location</option>
+                <option value="providerLocation">At provider’s location</option>
+              </FieldSelect>
             )}
-            hideLocationIcon={true}
-            // CustomIcon={()=> <></>}
-          />
-          </div>
-      }
-      {
-        values?.locationChoice === "providerLocation" && 
-        
-        <div className={classNames(css.field,css.providerLocation)}>Provider Location : <a href={`https://www.google.com/maps?q=${listing.attributes.geolocation.lat},${listing.attributes.geolocation.lng}`} target='_blank' >{listing.attributes.publicData.location.address}</a></div>
-      }
+            {(values?.locationChoice === 'mylocation' ||
+              listing?.attributes?.publicData?.providerStudio_listingfield !== 'yes_option') && (
+              <div className={css.field}>
+                <FieldLocationAutocompleteInput
+                  rootClassName={css.locationAddress}
+                  inputClassName={css.locationAutocompleteInput}
+                  iconClassName={css.locationAutocompleteInputIcon}
+                  predictionsClassName={css.predictionsRoot}
+                  validClassName={css.validLocation}
+                  autoFocus={false}
+                  name="location"
+                  label={intl.formatMessage({ id: 'EditListingLocationForm.address' })}
+                  placeholder={intl.formatMessage({
+                    id: 'EditListingLocationForm.addressPlaceholder',
+                  })}
+                  useDefaultPredictions={false}
+                  format={identity}
+                  valueFromForm={values.location}
+                  validate={composeValidators(
+                    autocompleteSearchRequired(addressRequiredMessage),
+                    autocompletePlaceSelected(addressNotRecognizedMessage)
+                  )}
+                  hideLocationIcon={true}
+                  // CustomIcon={()=> <></>}
+                />
+              </div>
+            )}
+            {values?.locationChoice === 'providerLocation' && (
+              <div className={classNames(css.field, css.providerLocation)}>
+                Provider Location :{' '}
+                <a
+                  href={`https://www.google.com/maps?q=${listing.attributes.geolocation.lat},${listing.attributes.geolocation.lng}`}
+                  target="_blank"
+                >
+                  {listing.attributes.publicData.location.address}
+                </a>
+              </div>
+            )}
 
-      {bookingQuestion1 &&
+            {bookingQuestion1 && (
+              <FieldTextInput
+                id={`bookingQuestion1`}
+                name="bookingQuestion1"
+                className={css.field}
+                type="text"
+                label={bookingQuestion1}
+                placeholder={'Enter answer'}
+                validate={composeValidators(validators.required('Required'))}
+                autoFocus={true}
+              />
+            )}
 
-       <FieldTextInput
-              id={`bookingQuestion1`}
-              name="bookingQuestion1"
-              className={css.field}
-              type="text"
-              label={bookingQuestion1}
-              placeholder={"Enter answer"}
-              validate={composeValidators(validators.required("Required"))}
-              autoFocus={true}
-            />
-      
-      }
+            {bookingQuestion2 && (
+              <FieldTextInput
+                id={`bookingQuestion2`}
+                name="bookingQuestion2"
+                className={css.field}
+                type="text"
+                label={bookingQuestion2}
+                placeholder={'Enter answer'}
+                validate={composeValidators(validators.required('Required'))}
+                autoFocus={true}
+              />
+            )}
 
-      {bookingQuestion2 &&
-      <FieldTextInput
-              id={`bookingQuestion2`}
-              name="bookingQuestion2"
-              className={css.field}
-              type="text"
-              label={bookingQuestion2}
-              placeholder={"Enter answer"}
-              validate={composeValidators(validators.required("Required"))}
-              autoFocus={true}
-            />
-      }
-
-      {bookingQuestion3 &&
-       <FieldTextInput
-              id={`bookingQuestion3`}
-              name="bookingQuestion3"
-              className={css.field}
-              type="text"
-              label={bookingQuestion3}
-              placeholder={"Enter answer"}
-              validate={composeValidators(validators.required("Required"))}
-              autoFocus={true}
-            />
-      }
+            {bookingQuestion3 && (
+              <FieldTextInput
+                id={`bookingQuestion3`}
+                name="bookingQuestion3"
+                className={css.field}
+                type="text"
+                label={bookingQuestion3}
+                placeholder={'Enter answer'}
+                validate={composeValidators(validators.required('Required'))}
+                autoFocus={true}
+              />
+            )}
 
             {monthlyTimeSlots && timeZone ? (
               <FieldDateAndTimeInput
@@ -378,6 +418,7 @@ export const BookingFixedDurationForm = props => {
                   onHandleFetchLineItems({
                     values: {
                       priceVariantName,
+                      priceVariantNames,
                       bookingStartTime: startTime,
                       bookingEndTime: endTime,
                       seats: values,
@@ -407,17 +448,17 @@ export const BookingFixedDurationForm = props => {
                 disabled={fetchLineItemsInProgress}
               />
             ) : null}
-           
-            {appliedCoupon?.code &&
-<FieldTextInput
-              id={`coupanCode`}
-              name="coupanCode"
-              className={css.field}
-              type="hidden"
-              value={appliedCoupon?.code}
-              defaultValue={appliedCoupon?.code}
-            />
-      }
+
+            {appliedCoupon?.code && (
+              <FieldTextInput
+                id={`coupanCode`}
+                name="coupanCode"
+                className={css.field}
+                type="hidden"
+                value={appliedCoupon?.code}
+                defaultValue={appliedCoupon?.code}
+              />
+            )}
             {showEstimatedBreakdown ? (
               <div className={css.priceBreakdownContainer}>
                 <H6 as="h3" className={css.bookingBreakdownTitle}>

@@ -461,6 +461,7 @@ const onBookingStartDateChange = (props, setCurrentMonth) => value => {
     handleFetchLineItems({
       values: {
         priceVariantName,
+        priceVariantNames: values?.priceVariantNames,
         bookingStartTime: startTime,
         bookingEndTime: endTime,
         seats: seatsEnabled ? 1 : undefined,
@@ -490,6 +491,7 @@ const onBookingStartTimeChange = props => value => {
   handleFetchLineItems({
     values: {
       priceVariantName,
+      priceVariantNames: values?.priceVariantNames,
       bookingStartTime: value,
       bookingEndTime: endTime.getTime(),
       seats: seatsEnabled ? 1 : undefined,
