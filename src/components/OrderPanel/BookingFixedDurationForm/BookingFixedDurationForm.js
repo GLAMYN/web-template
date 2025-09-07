@@ -6,6 +6,8 @@ import { FormattedMessage, useIntl } from '../../../util/reactIntl';
 import { timestampToDate } from '../../../util/dates';
 import { propTypes } from '../../../util/types';
 import { BOOKING_PROCESS_NAME } from '../../../transactions/transaction';
+import { types as sdkTypes } from '../../../util/sdkLoader';
+import { formatMoney } from '../../../util/currency';
 
 import {
   Form,
@@ -31,6 +33,15 @@ import {
 import * as validators from '../../../util/validators';
 
 const identity = v => v;
+const { Money } = sdkTypes;
+
+const formatDuration = minutes => {
+  const hrs = Math.floor((minutes || 0) / 60);
+  const mins = (minutes || 0) % 60;
+  if (hrs && mins) return `${hrs}h ${mins}m`;
+  if (hrs) return `${hrs}h`;
+  return `${mins}m`;
+};
 
 // When the values of the form are updated we need to fetch
 // lineItems from this template's backend for the EstimatedTransactionMaybe
@@ -313,6 +324,47 @@ export const BookingFixedDurationForm = props => {
 
         return (
           <Form onSubmit={handleSubmit} className={classes} enforcePagePreloadFor="CheckoutPage">
+            {priceVariants?.length > 0 ? (
+              <div className={css.field}>
+                <H6 as="h3" className={css.bookingBreakdownTitle}>
+                  <FormattedMessage id="BookingFixedDurationForm.priceVariantDescriptionsTitle" defaultMessage="Option details" />
+                </H6>
+                <ul>
+                  {priceVariants.map(variant => {
+                    const money =
+                      variant?.priceInSubunits != null && unitPrice?.currency
+                        ? new Money(variant.priceInSubunits, unitPrice.currency)
+                        : null;
+                    const priceStr = money ? formatMoney(intl, money) : '';
+                    return (
+                      <li key={variant?.name || variant?.priceInSubunits}>
+                        <strong>{variant?.name || intl.formatMessage({ id: 'BookingFixedDurationForm.priceVariant.unnamed', defaultMessage: 'Option' })}</strong>
+                        {` — `}
+                        <span>
+                          <FormattedMessage
+                            id="BookingFixedDurationForm.priceVariant.duration"
+                            defaultMessage="Duration: {duration}"
+                            values={{ duration: formatDuration(variant?.bookingLengthInMinutes) }}
+                          />
+                        </span>
+                        {priceStr ? (
+                          <>
+                            {` — `}
+                            <span>
+                              <FormattedMessage
+                                id="BookingFixedDurationForm.priceVariant.price"
+                                defaultMessage="Price: {price}"
+                                values={{ price: priceStr }}
+                              />
+                            </span>
+                          </>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
             {PriceVariantFieldComponent ? (
               <PriceVariantFieldComponent
                 priceVariants={priceVariants}

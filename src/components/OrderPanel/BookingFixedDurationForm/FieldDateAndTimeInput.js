@@ -600,9 +600,19 @@ const FieldDateAndTimeInput = props => {
 
   const classes = classNames(rootClassName || css.root, className);
   const priceVariantName = values.priceVariantName;
+  // Compute required booking length based on selected price variants.
+  // If multiple variants are selected, use the sum of their durations so
+  // that availability is limited to dates that can accommodate all.
+  const selectedVariantNames = Array.isArray(values?.priceVariantNames)
+    ? values.priceVariantNames
+    : priceVariantName
+    ? [priceVariantName]
+    : [];
   const bookingLengthInMinutes =
-    priceVariants?.length > 1
-      ? priceVariants.find(pv => pv.name === priceVariantName)?.bookingLengthInMinutes
+    selectedVariantNames.length > 0
+      ? priceVariants
+          ?.filter(pv => selectedVariantNames.includes(pv?.name))
+          ?.reduce((sum, pv) => sum + (pv?.bookingLengthInMinutes || 0), 0)
       : priceVariants?.[0]?.bookingLengthInMinutes;
 
   const [currentMonth, setCurrentMonth] = useState(getStartOf(TODAY, 'month', timeZone));
@@ -619,7 +629,7 @@ const FieldDateAndTimeInput = props => {
 
   // Currently available monthly data (reduced set of time slots data using intervalDuration: P1D)
   const [startMonth, endMonth] = getMonthlyFetchRange(monthlyTimeSlots, timeZone);
-  const options = { minDurationStartingInDay: minDurationStartingInInterval };
+  const options = { minDurationStartingInDay: bookingLengthInMinutes };
   const monthlyTimeSlotsData = timeSlotsPerDate(
     startMonth,
     endMonth,
@@ -691,7 +701,7 @@ const FieldDateAndTimeInput = props => {
       // Note: endMonth is exclusive end time of the range.
       const tz = timeZone;
       const nextMonth = nextMonthFn(currentMonth, tz);
-      const options = { minDurationStartingInDay: minDurationStartingInInterval };
+      const options = { minDurationStartingInDay: bookingLengthInMinutes };
       const monthlyTimeSlotsData = timeSlotsPerDate(
         currentMonth,
         nextMonth,
@@ -731,7 +741,7 @@ const FieldDateAndTimeInput = props => {
     timeZone,
     listingId,
     onFetchTimeSlots,
-    minDurationStartingInInterval
+    bookingLengthInMinutes
   );
 
   const endOfAvailableRange = dayCountAvailableForBooking;
