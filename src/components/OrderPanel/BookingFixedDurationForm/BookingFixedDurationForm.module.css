@@ -107,3 +107,98 @@
 .myloccation{
   margin-bottom: 20px;
 }
+
+/* Price Variant Description Styles */
+.descriptionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 16px 20px;
+  background-color: var(--colorGrey50);
+  border: 1px solid var(--colorGrey200);
+  border-radius: 8px;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.descriptionHeader:hover {
+  background-color: var(--colorGrey100);
+  border-color: var(--colorGrey300);
+}
+
+.descriptionTitle {
+  margin: 0;
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorGrey800);
+  font-size: 16px;
+}
+
+.descriptionToggle {
+  color: var(--colorGrey600);
+  transition: transform 0.2s ease-in-out;
+}
+
+.descriptionContent {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+  background-color: var(--colorGrey50);
+  border-left: 1px solid var(--colorGrey200);
+  border-right: 1px solid var(--colorGrey200);
+  border-bottom: 1px solid var(--colorGrey200);
+  border-radius: 0 0 8px 8px;
+}
+
+.descriptionExpanded {
+  max-height: 500px;
+}
+
+.variantList {
+  padding: 16px 20px;
+}
+
+.variantItem {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--colorGrey200);
+}
+
+.variantItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.variantItem:first-child {
+  padding-top: 0;
+}
+
+.variantName {
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorGrey800);
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.variantDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.variantDuration,
+.variantPrice {
+  font-size: 14px;
+  color: var(--colorGrey600);
+}
+
+.variantPrice {
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorSuccess);
+}
+
+@media (--viewportMedium) {
+  .variantDetails {
+    flex-direction: row;
+    gap: 16px;
+  }
+}

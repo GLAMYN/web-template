@@ -49,6 +49,7 @@ import NotFoundPage from '../../containers/NotFoundPage/NotFoundPage';
 import { stateDataShape, getStateData } from './InboxPage.stateData';
 import css from './InboxPage.module.css';
 import { getCurrentUserTypeRoles } from '../../util/userHelpers';
+import moment from 'moment';
 
 // Check if the transaction line-items use booking-related units
 const getUnitLineItem = lineItems => {
@@ -162,6 +163,7 @@ export const InboxItem = props => {
     [css.stateNoActionNeeded]: !actionNeeded,
   });
 
+  console.log('InboxItem - tx:', tx);
   return (
     <div className={css.item}>
       <div className={css.itemAvatar}>
@@ -177,7 +179,8 @@ export const InboxItem = props => {
         <div className={css.itemTitle}>{listing?.attributes?.title}</div>
         <div className={css.itemDetails}>
           {isBooking ? (
-            <BookingTimeInfoMaybe transaction={tx} />
+            // <BookingTimeInfoMaybe transaction={tx} />
+            moment(tx.booking.attributes.displayStart).format('MMM DD, YYYY')
           ) : hasPricingData && showStock ? (
             <FormattedMessage id="InboxPage.quantity" values={{ quantity }} />
           ) : null}

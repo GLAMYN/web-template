@@ -16,6 +16,7 @@ import {
   FieldSelect,
   FieldLocationAutocompleteInput,
   FieldTextInput,
+  IconArrowHead,
 } from '../../../components';
 
 import EstimatedCustomerBreakdownMaybe from '../EstimatedCustomerBreakdownMaybe';
@@ -197,6 +198,7 @@ export const BookingFixedDurationForm = props => {
 
   const [seatsOptions, setSeatsOptions] = useState([1]);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
   const initialValuesMaybe =
     priceVariants.length > 1 && preselectedPriceVariant
       ? { initialValues: { priceVariantName: preselectedPriceVariant?.name } }
@@ -326,43 +328,52 @@ export const BookingFixedDurationForm = props => {
           <Form onSubmit={handleSubmit} className={classes} enforcePagePreloadFor="CheckoutPage">
             {priceVariants?.length > 0 ? (
               <div className={css.field}>
-                <H6 as="h3" className={css.bookingBreakdownTitle}>
-                  <FormattedMessage id="BookingFixedDurationForm.priceVariantDescriptionsTitle" defaultMessage="Option details" />
-                </H6>
-                <ul>
-                  {priceVariants.map(variant => {
-                    const money =
-                      variant?.priceInSubunits != null && unitPrice?.currency
-                        ? new Money(variant.priceInSubunits, unitPrice.currency)
-                        : null;
-                    const priceStr = money ? formatMoney(intl, money) : '';
-                    return (
-                      <li key={variant?.name || variant?.priceInSubunits}>
-                        <strong>{variant?.name || intl.formatMessage({ id: 'BookingFixedDurationForm.priceVariant.unnamed', defaultMessage: 'Option' })}</strong>
-                        {` — `}
-                        <span>
-                          <FormattedMessage
-                            id="BookingFixedDurationForm.priceVariant.duration"
-                            defaultMessage="Duration: {duration}"
-                            values={{ duration: formatDuration(variant?.bookingLengthInMinutes) }}
-                          />
-                        </span>
-                        {priceStr ? (
-                          <>
-                            {` — `}
-                            <span>
+                <div className={css.descriptionHeader} onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+                  <H6 as="h3" className={css.descriptionTitle}>
+                    <FormattedMessage id="BookingFixedDurationForm.priceVariantDescriptionsTitle" defaultMessage="Available Packages" />
+                  </H6>
+                  <IconArrowHead 
+                    direction={isDescriptionExpanded ? 'up' : 'down'} 
+                    size="small" 
+                    className={css.descriptionToggle}
+                  />
+                </div>
+                <div className={`${css.descriptionContent} ${isDescriptionExpanded ? css.descriptionExpanded : ''}`}>
+                  <div className={css.variantList}>
+                    {priceVariants.map((variant, index) => {
+                      const money =
+                        variant?.priceInSubunits != null && unitPrice?.currency
+                          ? new Money(variant.priceInSubunits, unitPrice.currency)
+                          : null;
+                      const priceStr = money ? formatMoney(intl, money) : '';
+                      return (
+                        <div key={variant?.name || variant?.priceInSubunits || index} className={css.variantItem}>
+                          <div className={css.variantName}>
+                            {variant?.name || intl.formatMessage({ id: 'BookingFixedDurationForm.priceVariant.unnamed', defaultMessage: 'Option' })}
+                          </div>
+                          <div className={css.variantDetails}>
+                            <span className={css.variantDuration}>
                               <FormattedMessage
-                                id="BookingFixedDurationForm.priceVariant.price"
-                                defaultMessage="Price: {price}"
-                                values={{ price: priceStr }}
+                                id="BookingFixedDurationForm.priceVariant.duration"
+                                defaultMessage="Duration: {duration}"
+                                values={{ duration: formatDuration(variant?.bookingLengthInMinutes) }}
                               />
                             </span>
-                          </>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
+                            {priceStr && (
+                              <span className={css.variantPrice}>
+                                <FormattedMessage
+                                  id="BookingFixedDurationForm.priceVariant.price"
+                                  defaultMessage="Price: {price}"
+                                  values={{ price: priceStr }}
+                                />
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             ) : null}
             {PriceVariantFieldComponent ? (
