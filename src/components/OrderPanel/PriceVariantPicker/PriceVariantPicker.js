@@ -3,6 +3,8 @@ import { Field } from 'react-final-form';
 
 import { FormattedMessage, useIntl } from '../../../util/reactIntl';
 import { createSlug } from '../../../util/urlHelpers';
+import { types as sdkTypes } from '../../../util/sdkLoader';
+import { formatMoney } from '../../../util/currency';
 
 import { MultiSelect } from '../../../components';
 
@@ -31,6 +33,8 @@ const FieldHidden = props => {
   );
 };
 
+const { Money } = sdkTypes;
+
 const PriceVariantPicker = props => {
   const intl = useIntl();
   const {
@@ -39,6 +43,7 @@ const PriceVariantPicker = props => {
     onPriceVariantNamesChange,
     formApi,
     disabled,
+    currency,
   } = props;
   const hasMultiplePriceVariants = priceVariants?.length > 1;
   const hasOnePriceVariant = priceVariants?.length === 1;
@@ -75,6 +80,18 @@ const PriceVariantPicker = props => {
             disabled={disabled}
             placeholder={intl.formatMessage({ id: 'PriceVariantPicker.priceVariantUnselected' })}
             className={css.priceVariantFieldSelect}
+            getOptionLabel={(option) => {
+              const money = option?.priceInSubunits != null && currency ? new Money(option.priceInSubunits, currency) : null;
+              const priceStr = money ? formatMoney(intl, money) : '';
+              const durationStr = option?.bookingLengthInMinutes != null ? `${Math.floor(option.bookingLengthInMinutes / 60) ? Math.floor(option.bookingLengthInMinutes / 60) + 'h ' : ''}${(option.bookingLengthInMinutes || 0) % 60}minutes` : '';
+              return [option?.name, durationStr && `(${durationStr})`, priceStr && `- ${priceStr}`].filter(Boolean).join(' ');
+            }}
+            getTagLabel={(option) => {
+              const money = option?.priceInSubunits != null && currency ? new Money(option.priceInSubunits, currency) : null;
+              const priceStr = money ? formatMoney(intl, money) : '';
+              const durationStr = option?.bookingLengthInMinutes != null ? `${Math.floor(option.bookingLengthInMinutes / 60) ? Math.floor(option.bookingLengthInMinutes / 60) + 'h ' : ''}${(option.bookingLengthInMinutes || 0) % 60}minutes` : '';
+              return [option?.name, durationStr && `(${durationStr})`, priceStr && `- ${priceStr}`].filter(Boolean).join(' ');
+            }}
             onChange={selectedValues => {
               // Update priceVariantName field to the first selected value
               const firstSelected =

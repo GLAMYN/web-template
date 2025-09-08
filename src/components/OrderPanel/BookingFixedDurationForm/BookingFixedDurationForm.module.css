@@ -108,6 +108,15 @@
   margin-bottom: 20px;
 }
 
+/* Show only on mobile (hide on medium and up) */
+.mobileOnly {
+  display: block;
+
+  @media (--viewportMedium) {
+    display: none;
+  }
+}
+
 /* Price Variant Description Styles */
 .descriptionHeader {
   display: flex;

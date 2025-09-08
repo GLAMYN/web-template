@@ -10,7 +10,6 @@ import { useRouteConfiguration } from '../../context/routeConfigurationContext';
 // Utils
 import { FormattedMessage, useIntl } from '../../util/reactIntl';
 import { LISTING_STATE_PENDING_APPROVAL, LISTING_STATE_CLOSED, propTypes } from '../../util/types';
-import { types as sdkTypes } from '../../util/sdkLoader';
 import {
   LISTING_PAGE_DRAFT_VARIANT,
   LISTING_PAGE_PENDING_APPROVAL_VARIANT,
@@ -80,6 +79,8 @@ import {
 } from './ListingPage.shared';
 import ActionBarMaybe from './ActionBarMaybe';
 import SectionTextMaybe from './SectionTextMaybe';
+import { types as sdkTypes } from '../../util/sdkLoader';
+import { formatMoney } from '../../util/currency';
 import SectionReviews from './SectionReviews';
 import SectionAuthorMaybe from './SectionAuthorMaybe';
 import SectionMapMaybe from './SectionMapMaybe';
@@ -365,6 +366,47 @@ console.log('publicData',publicData?.providerStudio_listingfield==="yes_option")
               )}
             </div>
             <SectionTextMaybe text={description} showAsIngress />
+
+            {/* Mobile-only Available Packages below description */}
+            {currentListing?.attributes?.publicData?.priceVariants?.length > 0 ? (
+              <div className={classNames(css.packagesBox, css.mobileOnly)}>
+                <div className={css.packagesHeader}>
+                  <H4 as="h3" className={css.packagesTitle}>
+                    <FormattedMessage id="BookingFixedDurationForm.priceVariantDescriptionsTitle" defaultMessage="Available Packages" />
+                  </H4>
+                </div>
+                <div className={css.packagesContent}>
+                  <div className={css.packagesList}>
+                    {currentListing.attributes.publicData.priceVariants.map((variant, index) => {
+                      const money =
+                        variant?.priceInSubunits != null && config?.currency
+                          ? new sdkTypes.Money(variant.priceInSubunits, config.currency)
+                          : null;
+                      const priceStr = money ? formatMoney(intl, money) : '';
+                      const minutes = variant?.bookingLengthInMinutes || 0;
+                      const hrs = Math.floor(minutes / 60);
+                      const mins = minutes % 60;
+                      const durationStr = hrs && mins ? `${hrs}h ${mins}minutes` : hrs ? `${hrs}h` : `${mins}minutes`;
+                      return (
+                        <div key={variant?.name || variant?.priceInSubunits || index} className={css.packageItem}>
+                          <div className={css.packageName}>{variant?.name || 'Option'}</div>
+                          <div className={css.packageMeta}>
+                            <span className={css.packageDuration}>
+                              <FormattedMessage id="BookingFixedDurationForm.priceVariant.duration" defaultMessage="Duration: {duration}" values={{ duration: durationStr }} />
+                            </span>
+                            {priceStr && (
+                              <span className={css.packagePrice}>
+                                <FormattedMessage id="BookingFixedDurationForm.priceVariant.price" defaultMessage="Price: {price}" values={{ price: priceStr }} />
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <CustomListingFields
               publicData={publicData}

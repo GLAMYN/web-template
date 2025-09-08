@@ -16,6 +16,8 @@ import css from './MultiSelect.module.css';
  * @param {string} props.placeholder - Placeholder text when no items selected
  * @param {string} props.className - Additional CSS classes
  * @param {Function} props.onChange - Custom onChange handler called with selected values
+ * @param {Function} props.getOptionLabel - Function(option) => string to render in dropdown list
+ * @param {Function} props.getTagLabel - Function(option) => string to render for selected tags
  */
 const MultiSelect = ({ 
   options, 
@@ -25,7 +27,9 @@ const MultiSelect = ({
   disabled = false, 
   placeholder = 'Select options...',
   className = '',
-  onChange
+  onChange,
+  getOptionLabel,
+  getTagLabel
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -136,7 +140,7 @@ const MultiSelect = ({
                           className={css.checkbox}
                         />
                       </div>
-                      <span className={css.optionLabel}>{option.name}</span>
+                      <span className={css.optionLabel}>{getOptionLabel ? getOptionLabel(option) : option.name}</span>
                     </div>
                   ))}
                 </div>
@@ -146,9 +150,12 @@ const MultiSelect = ({
             {/* Selected items display */}
             {selectedValues.length > 0 && (
               <div className={css.selectedItems}>
-                {selectedValues.map((item) => (
+                {selectedValues.map((item) => {
+                  const option = options.find(o => o.name === item);
+                  const labelForTag = option ? (getTagLabel ? getTagLabel(option) : option.name) : item;
+                  return (
                   <span key={item} className={css.selectedTag}>
-                    {item}
+                    {labelForTag}
                     <button
                       type="button"
                       className={css.removeButton}
@@ -158,7 +165,7 @@ const MultiSelect = ({
                       ×
                     </button>
                   </span>
-                ))}
+                )})}
               </div>
             )}
           </div>

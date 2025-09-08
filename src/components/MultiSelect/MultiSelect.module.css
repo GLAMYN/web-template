@@ -6,8 +6,6 @@
 
 .label {
   display: block;
-  font-size: 16px;
-  font-weight: 600;
   color: #333;
   margin-bottom: 12px;
 }
@@ -29,7 +27,6 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 16px;
   color: #333;
 }
 
@@ -49,9 +46,12 @@
 }
 
 .selectedText {
+  composes: textSmall from global;
   flex: 1;
   text-align: left;
   color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .arrow {
@@ -118,9 +118,11 @@
 }
 
 .optionLabel {
+  composes: textSmall from global;
   flex: 1;
-  font-size: 16px;
   color: #333;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 /* Selected items display */
@@ -132,14 +134,15 @@
 }
 
 .selectedTag {
+  composes: textSmall from global;
   display: inline-flex;
   align-items: center;
   background-color: #007cba;
   color: white;
   padding: 6px 12px;
   border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .removeButton {

@@ -163,7 +163,6 @@ export const InboxItem = props => {
     [css.stateNoActionNeeded]: !actionNeeded,
   });
 
-  console.log('InboxItem - tx:', tx);
   return (
     <div className={css.item}>
       <div className={css.itemAvatar}>

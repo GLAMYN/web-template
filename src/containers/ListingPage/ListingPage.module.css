@@ -608,6 +608,71 @@
   }
 }
 
+/* Mobile-only visibility helper */
+.mobileOnly {
+  display: block;
+  @media (--viewportMedium) {
+    display: none;
+  }
+}
+
+/* Packages box styling (reuse similar look from booking form) */
+.packagesBox {
+  padding: 0 24px;
+  margin-bottom: 24px;
+}
+.packagesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 16px 20px;
+  background-color: var(--colorGrey50);
+  border: 1px solid var(--colorGrey200);
+  border-radius: 8px;
+}
+.packagesTitle {
+  margin: 0;
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorGrey800);
+}
+.packagesContent {
+  background-color: var(--colorGrey50);
+  border-left: 1px solid var(--colorGrey200);
+  border-right: 1px solid var(--colorGrey200);
+  border-bottom: 1px solid var(--colorGrey200);
+  border-radius: 0 0 8px 8px;
+}
+.packagesList {
+  padding: 16px 20px;
+}
+.packageItem {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--colorGrey200);
+}
+.packageItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.packageName {
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorGrey800);
+  margin-bottom: 4px;
+}
+.packageMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.packageDuration,
+.packagePrice {
+  color: var(--colorGrey600);
+}
+.packagePrice {
+  font-weight: var(--fontWeightMedium);
+  color: var(--colorSuccess);
+}
+
 .ingress {
   composes: p from global;
   margin: 0;
