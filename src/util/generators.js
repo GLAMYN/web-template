@@ -1,3 +1,4 @@
+import moment from 'moment';
 import {
   isAfterDate,
   isInRange,
@@ -565,6 +566,12 @@ const toTimeSlotsPerDate = (timeSlots, timeZone, minSeats = 1, minDurationStarti
  * @returns hashmap of date info grouped by date id (e.g. "2023-01-01" )
  */
 export const timeSlotsPerDate = (start, end, timeSlots, timeZone, options) => {
+  // manually set the start and end time to make the date available
+  timeSlots = timeSlots?.map(t => {
+    t.attributes.start = moment.tz(t.attributes.start, timeZone).set({ hour: 1, minute: 0, second: 0, millisecond: 0 })?.toDate();
+    t.attributes.end = moment.tz(t.attributes.end, timeZone).set({ hour: 23, minute: 0, second: 0, millisecond: 0 })?.toDate();
+    return t
+  })
   const { seats = 1, minDurationStartingInDay = 5 } = options || {};
   const s = getStartOf(start, 'day', timeZone);
   const e = getStartOf(end, 'day', timeZone);
