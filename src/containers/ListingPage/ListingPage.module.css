@@ -635,6 +635,9 @@
   margin: 0;
   font-weight: var(--fontWeightMedium);
   color: var(--colorGrey800);
+  font-family: var(--fontFamily);
+  font-size: 16px;
+  line-height: 24px;
 }
 .packagesContent {
   background-color: var(--colorGrey50);
