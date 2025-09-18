@@ -14,7 +14,8 @@ async function getTransactions(integrationSdk, customerId, listingId) {
   return integrationSdk.transactions.query({
     customerId,
     listingId,
-    lastTransitions: "transition/accept,transition/complete,transition/operator-accept,transition/review-1-by-provider,transition/review-2-by-provider,transition/review-1-by-customer,transition/review-2-by-customer,transition/expire-customer-review-period,transition/expire-provider-review-period,transition/expire-review-period,transition/confirm-payment"
+    lastTransitions:
+      'transition/accept,transition/complete,transition/operator-accept,transition/review-1-by-provider,transition/review-2-by-provider,transition/review-1-by-customer,transition/review-2-by-customer,transition/expire-customer-review-period,transition/expire-provider-review-period,transition/expire-review-period,transition/confirm-payment',
   });
 }
 
@@ -24,7 +25,7 @@ async function updateCouponUsage(integrationSdk, providerId, couponCode) {
     console.log('Missing providerId or couponCode for updating usage count');
     return false;
   }
-  
+
   try {
     // Get provider data
     const providerResponse = await integrationSdk.users.show({
@@ -32,42 +33,44 @@ async function updateCouponUsage(integrationSdk, providerId, couponCode) {
       include: ['profileImage'],
       'fields.user': ['profile.privateData.coupons'],
     });
-    
+
     const privateData = providerResponse.data.data.attributes.profile?.privateData;
     const coupons = privateData?.coupons || [];
-    
+
     // Find the coupon by code
     const couponIndex = coupons.findIndex(c => c.code === couponCode);
     if (couponIndex === -1) {
       console.log(`Coupon ${couponCode} not found for provider ${providerId}`);
       return false;
     }
-    
+
     // Increment the usage count
     const updatedCoupons = [...coupons];
     updatedCoupons[couponIndex] = {
       ...updatedCoupons[couponIndex],
       usedCount: (updatedCoupons[couponIndex].usedCount || 0) + 1,
     };
-    
+
     // Check if max redemptions reached and update isActive if needed
-    if (updatedCoupons[couponIndex].maxRedemptions && 
-        updatedCoupons[couponIndex].usedCount >= updatedCoupons[couponIndex].maxRedemptions) {
+    if (
+      updatedCoupons[couponIndex].maxRedemptions &&
+      updatedCoupons[couponIndex].usedCount >= updatedCoupons[couponIndex].maxRedemptions
+    ) {
       updatedCoupons[couponIndex].isActive = false;
     }
-    console.log('updatedCouponssecccccccc',providerId,{
+    console.log('updatedCouponssecccccccc', providerId, {
       ...privateData,
-      coupons: updatedCoupons
-    })
+      coupons: updatedCoupons,
+    });
     // Update provider profile
     await integrationSdk.users.updateProfile({
       id: new UUID(providerId),
       privateData: {
         ...privateData,
-        coupons: updatedCoupons
-      }
+        coupons: updatedCoupons,
+      },
     });
-    
+
     console.log(`Coupon ${couponCode} usage count updated successfully`);
     return true;
   } catch (error) {
@@ -78,11 +81,14 @@ async function updateCouponUsage(integrationSdk, providerId, couponCode) {
 
 module.exports = (req, res) => {
   const { isSpeculative, orderData, bodyParams, queryParams, pageData, coupanCode } = req.body;
-const selectedLocationType=pageData?.orderData?.locationChoice
-const selectedLocation=selectedLocationType === "mylocation" ? pageData?.orderData?.location?.selectedPlace?.address : `https://www.google.com/maps?q=${pageData?.listing?.attributes?.geolocation?.lat},${pageData?.listing?.attributes?.geolocation?.lng}`
+  const selectedLocationType = pageData?.orderData?.locationChoice;
+  const selectedLocation =
+    selectedLocationType === 'mylocation'
+      ? pageData?.orderData?.location?.selectedPlace?.address
+      : `https://www.google.com/maps?q=${pageData?.listing?.attributes?.geolocation?.lat},${pageData?.listing?.attributes?.geolocation?.lng}`;
 
-const coupanCodes= coupanCode || pageData?.orderData?.coupanCode
-console.log('coupanCode',coupanCode)
+  const coupanCodes = coupanCode || pageData?.orderData?.coupanCode;
+  console.log('coupanCode', coupanCode);
 
   const integrationSdk = getIntegrationSdk();
 
@@ -91,11 +97,12 @@ console.log('coupanCode',coupanCode)
   let couponData = {};
   let listing = null; // Store listing for later use
 
-  const listingPromise = () => sdk.listings.show({ id: bodyParams?.params?.listingId,include: ['author'] });
+  const listingPromise = () =>
+    sdk.listings.show({ id: bodyParams?.params?.listingId, include: ['author'] });
 
   // Get current user to get customerId
   const currentUserPromise = sdk.currentUser.show();
-  
+
   Promise.all([listingPromise(), fetchCommission(sdk), currentUserPromise])
     .then(async ([showListingResponse, fetchAssetsResponse, currentUserResponse]) => {
       listing = showListingResponse.data.data; // Assign to outer variable
@@ -103,19 +110,35 @@ console.log('coupanCode',coupanCode)
       const customerId = currentUserResponse.data.data.id.uuid;
       const listing_Id = bodyParams?.params?.listingId?.uuid || bodyParams?.params?.listingId;
 
+      const user = showListingResponse.data.included?.find(i => i.type === 'user');
+      const author = await sdk.users.show({id: user.id?.uuid})
+      const customCommission = author?.data?.data?.attributes?.profile?.publicData?.customCommission;
+
       const { providerCommission, customerCommission } =
         commissionAsset?.type === 'jsonAsset' ? commissionAsset.attributes.data : {};
-      
+
       // Get previous transactions between this customer and listing
       const transactions = await getTransactions(integrationSdk, customerId, listing_Id);
-      
+
       // Apply the same logic as in transaction-line-items.js
-      customerCommission.percentage = transactions?.data?.data?.length > 0 ? recurringCommission.customerCommission.percentage : customerCommission.percentage;
-      customerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recurringCommission.customerCommission.minimum_amount : customerCommission.minimum_amount;
-// console.log('providerCommission',providerCommission)
-providerCommission.percentage = transactions?.data?.data?.length > 0 ? recurringCommission.providerCommission.percentage : providerCommission.percentage;
-providerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recurringCommission.providerCommission.minimum_amount : providerCommission.minimum_amount;
-// console.log('customerCommission',providerCommission)
+      customerCommission.percentage =
+        transactions?.data?.data?.length > 0
+          ? recurringCommission.customerCommission.percentage
+          : customerCommission.percentage;
+      customerCommission.minimum_amount =
+        transactions?.data?.data?.length > 0
+          ? recurringCommission.customerCommission.minimum_amount
+          : customerCommission.minimum_amount;
+      // console.log('providerCommission',providerCommission)
+      providerCommission.percentage =
+        transactions?.data?.data?.length > 0
+          ? recurringCommission.providerCommission.percentage
+          : Number(customCommission?.percentage) || providerCommission.percentage;
+      providerCommission.minimum_amount =
+        transactions?.data?.data?.length > 0
+          ? recurringCommission.providerCommission.minimum_amount
+          : Number(customCommission?.minimum_amount) || providerCommission.minimum_amount;
+      // console.log('customerCommission',providerCommission)
 
       // We need to fetch coupon details from the provider's private data
       // Using the outer couponData variable
@@ -123,7 +146,7 @@ providerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recur
         try {
           // Get provider ID from listing
           const providerId = listing.relationships?.author?.data?.id?.uuid;
-          console.log('providerId>>>>>>>>>>>>>>>>',providerId)
+          console.log('providerId>>>>>>>>>>>>>>>>', providerId);
           if (providerId) {
             // Use Integration SDK to get provider's coupons
             const providerResponse = await integrationSdk.users.show({
@@ -131,24 +154,27 @@ providerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recur
               include: ['profileImage'],
               'fields.user': ['profile.privateData.coupons'],
             });
-            
+
             const privateData = providerResponse.data.data.attributes.profile?.privateData;
             const providerCoupons = privateData?.coupons || [];
-            console.log('privateData>>>>>>>>>>>>>>>>',privateData)
+            console.log('privateData>>>>>>>>>>>>>>>>', privateData);
 
             // Find the matching coupon - validate code, active status and expiration date
-            const coupon = providerCoupons.find(c => 
-              c.code === coupanCodes.toUpperCase() && 
-              c.isActive && 
-              (!c.expiresAt || new Date(c.expiresAt) > new Date()) &&
-              (!c.maxRedemptions || c.usedCount < c.maxRedemptions)
+            const coupon = providerCoupons.find(
+              c =>
+                c.code === coupanCodes.toUpperCase() &&
+                c.isActive &&
+                (!c.expiresAt || new Date(c.expiresAt) > new Date()) &&
+                (!c.maxRedemptions || c.usedCount < c.maxRedemptions)
             );
-            
+
             if (coupon) {
               // Check if coupon is applicable to this listing
-              if (coupon.applicableListingIds && 
-                  coupon.applicableListingIds.length > 0 && 
-                  !coupon.applicableListingIds.includes(bodyParams?.params?.listingId)) {
+              if (
+                coupon.applicableListingIds &&
+                coupon.applicableListingIds.length > 0 &&
+                !coupon.applicableListingIds.includes(bodyParams?.params?.listingId)
+              ) {
                 console.log(`Coupon ${coupon.code} is not applicable to this listing`);
               } else {
                 console.log('Found valid coupon for checkout:', coupon);
@@ -156,9 +182,9 @@ providerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recur
                   coupon: {
                     code: coupon.code,
                     type: coupon.type,
-                    amount: coupon.amount
+                    amount: coupon.amount,
                   },
-                  couponCode: coupon.code
+                  couponCode: coupon.code,
                 };
               }
             }
@@ -195,9 +221,9 @@ providerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recur
       }
       return trustedSdk.transactions.initiate(body, queryParams);
     })
-    .then( async apiResponse => {
+    .then(async apiResponse => {
       const { status, statusText, data } = apiResponse;
-      
+
       // Only update coupon usage for non-speculative transactions
       if (!isSpeculative && couponData?.coupon) {
         // Get provider ID from the listing
@@ -207,35 +233,38 @@ providerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? recur
           await updateCouponUsage(integrationSdk, providerId, couponData.coupon.code);
         }
       }
-      
-      if(pageData?.listing?.attributes?.geolocation?.lat){
-        const {bookingQuestion1,bookingQuestion2,bookingQuestion3}=pageData?.orderData
-        console.log('selectedLocationType',pageData?.orderData?.location)
-        await integrationSdk.transactions.updateMetadata({
-          id: data.data.id,
-          metadata: {
-            selectedLocationType: selectedLocationType,
-            selectedLocation: selectedLocation,
-            location: pageData?.orderData?.location,
-            ...(bookingQuestion1 && { bookingQuestion1 }),
-            ...(bookingQuestion2 && { bookingQuestion2 }),
-            ...(bookingQuestion3 && { bookingQuestion3 }),
-            ...(couponData?.coupon && { 
-              couponCode: couponData.coupon.code,
-              couponType: couponData.coupon.type,
-              couponAmount: couponData.coupon.amount
-            }),
-            ...(coupanCodes && !couponData?.coupon && { couponCode: coupanCodes })
-          }
-        }, {
-          expand: true
-        }).then(res => {
-          // res.data contains the response data
-        });
-}
 
+      if (pageData?.listing?.attributes?.geolocation?.lat) {
+        const { bookingQuestion1, bookingQuestion2, bookingQuestion3 } = pageData?.orderData;
+        console.log('selectedLocationType', pageData?.orderData?.location);
+        await integrationSdk.transactions
+          .updateMetadata(
+            {
+              id: data.data.id,
+              metadata: {
+                selectedLocationType: selectedLocationType,
+                selectedLocation: selectedLocation,
+                location: pageData?.orderData?.location,
+                ...(bookingQuestion1 && { bookingQuestion1 }),
+                ...(bookingQuestion2 && { bookingQuestion2 }),
+                ...(bookingQuestion3 && { bookingQuestion3 }),
+                ...(couponData?.coupon && {
+                  couponCode: couponData.coupon.code,
+                  couponType: couponData.coupon.type,
+                  couponAmount: couponData.coupon.amount,
+                }),
+                ...(coupanCodes && !couponData?.coupon && { couponCode: coupanCodes }),
+              },
+            },
+            {
+              expand: true,
+            }
+          )
+          .then(res => {
+            // res.data contains the response data
+          });
+      }
 
-      
       res
         .status(status)
         .set('Content-Type', 'application/transit+json')
