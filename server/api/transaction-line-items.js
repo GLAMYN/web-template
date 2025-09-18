@@ -63,15 +63,16 @@ module.exports = async (req, res) => {
         transactions?.data?.data?.length > 0
           ? recurringCommission.customerCommission.minimum_amount
           : customerCommission.minimum_amount;
-      // console.log('providerCommission',providerCommission)
       providerCommission.percentage =
         transactions?.data?.data?.length > 0
           ? recurringCommission.providerCommission.percentage
-          : Number(customCommission?.percentage) || providerCommission.percentage;
+          : 
+          Number(customCommission?.percentage) || providerCommission.percentage;
       providerCommission.minimum_amount =
         transactions?.data?.data?.length > 0
           ? recurringCommission.providerCommission.minimum_amount
-          : Number(customCommission?.minimum_amount) || providerCommission.minimum_amount;
+          :
+           Number(customCommission?.minimum_amount) || providerCommission.minimum_amount;
 
       // If there's a coupon code but no coupon object, validate and get the coupon
       let updatedOrderData = { ...orderData };
