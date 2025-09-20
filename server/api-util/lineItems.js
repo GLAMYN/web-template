@@ -124,23 +124,23 @@ const getCouponDiscountLineItem = (coupon, baseLineItems, currency) => {
   }
 
   // Calculate subtotal from base line items (customer-facing)
-  const customerLineItems = baseLineItems.filter(item => 
-    item.includeFor.includes('customer') && !item.code.includes('commission')
+  const customerLineItems = baseLineItems.filter(
+    item => item.includeFor.includes('customer') && !item.code.includes('commission')
   );
-  
+
   const subtotal = customerLineItems.reduce((sum, item) => {
     if (item.quantity) {
-      return sum + (item.unitPrice.amount * item.quantity);
+      return sum + item.unitPrice.amount * item.quantity;
     } else if (item.units && item.seats) {
-      return sum + (item.unitPrice.amount * item.units * item.seats);
+      return sum + item.unitPrice.amount * item.units * item.seats;
     } else if (item.percentage) {
-      return sum + (item.unitPrice.amount * item.percentage / 100);
+      return sum + (item.unitPrice.amount * item.percentage) / 100;
     }
     return sum + item.unitPrice.amount;
   }, 0);
 
   let discountAmount = 0;
-  
+
   if (coupon.type === 'percentage') {
     const percentage = Number(coupon.discount) || Number(coupon.amount) || 0;
     discountAmount = Math.round(subtotal * (percentage / 100));
@@ -160,7 +160,7 @@ const getCouponDiscountLineItem = (coupon, baseLineItems, currency) => {
     code: 'line-item/coupon-discount',
     unitPrice: new Money(-discountAmount, currency),
     quantity: 1,
-    includeFor: ['customer','provider'], // Only reduce customer's payment
+    includeFor: ['customer', 'provider'], // Only reduce customer's payment
   };
 };
 
@@ -271,23 +271,30 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
    * By default OrderBreakdown prints line items inside LineItemUnknownItemsMaybe if the lineItem code is not recognized. */
 
   const quantityOrSeats = !!units && !!seats ? { units, seats } : { quantity };
-  // const order = {
-  //   code,
-  //   unitPrice,
-  //   ...quantityOrSeats,
-  //   includeFor: ['customer', 'provider'],
-  // };
-  orderData?.priceVariantNames?.forEach(priceVariantName => {
-    const currentVariant = publicData?.priceVariants?.find(variant => variant.name === priceVariantName);
-    if(currentVariant){
-      extraLineItems.push({
-        code: `line-item/${priceVariantName} (${currentVariant?.bookingLengthInMinutes} minutes)`,
-        unitPrice: new Money(currentVariant?.priceInSubunits, currency),
-        quantity: quantityOrSeats?.quantity || quantityOrSeats?.seats || 1,
-        includeFor: ['customer', 'provider'],
-      })
-    }
-  })
+
+  if (!orderData?.priceVariantNames || orderData?.priceVariantNames.length === 0) {
+    const order = {
+      code,
+      unitPrice,
+      ...quantityOrSeats,
+      includeFor: ['customer', 'provider'],
+    };
+    extraLineItems.push(order);
+  } else {
+    orderData?.priceVariantNames?.forEach(priceVariantName => {
+      const currentVariant = publicData?.priceVariants?.find(
+        variant => variant.name === priceVariantName
+      );
+      if (currentVariant) {
+        extraLineItems.push({
+          code: `line-item/${priceVariantName} (${currentVariant?.bookingLengthInMinutes} minutes)`,
+          unitPrice: new Money(currentVariant?.priceInSubunits, currency),
+          quantity: quantityOrSeats?.quantity || quantityOrSeats?.seats || 1,
+          includeFor: ['customer', 'provider'],
+        });
+      }
+    });
+  }
 
   // Calculate base line items before applying coupons
   const baseLineItems = [
