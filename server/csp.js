@@ -65,6 +65,7 @@ const defaultDirectives = {
     'sentry.io',
     '*.sentry.io',
     '*.stripe.com',
+    '*.cookiebot.com',
   ],
   fontSrc: [self, data, 'assets-sharetribecom.sharetribe.com', 'fonts.gstatic.com'],
   formAction: [self],
@@ -74,6 +75,8 @@ const defaultDirectives = {
     '*.youtube-nocookie.com',
     'https://bid.g.doubleclick.net',
     'https://td.doubleclick.net',
+    '*.cookiebot.com',
+
   ],
   imgSrc: [
     self,
@@ -109,6 +112,8 @@ const defaultDirectives = {
 
     // Stripe
     '*.stripe.com',
+    '*.cookiebot.com',
+
   ],
   scriptSrc: [
     self,
@@ -123,8 +128,11 @@ const defaultDirectives = {
     'js.stripe.com',
     // Plausible analytics
     'plausible.io',
+    '*.cookiebot.com',
+
   ],
-  styleSrc: [self, unsafeInline, 'fonts.googleapis.com', 'api.mapbox.com'],
+  styleSrc: [self, unsafeInline, 'fonts.googleapis.com', 'api.mapbox.com',    '*.cookiebot.com',
+  ],
 };
 
 /**
