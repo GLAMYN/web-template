@@ -8,6 +8,6 @@ exports.recurringCommission = {
   },
   customerCommission: {
     percentage: 0.5,
-    minimum_amount: 1.0,
+    minimum_amount:1,
   },
 };
