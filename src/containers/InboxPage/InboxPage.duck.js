@@ -4,6 +4,7 @@ import { storableError } from '../../util/errors';
 import { parse } from '../../util/urlHelpers';
 import { getAllTransitionsForEveryProcess } from '../../transactions/transaction';
 import { addMarketplaceEntities } from '../../ducks/marketplaceData.duck';
+import { getISODateString } from '../../components/DatePicker/DatePickers/DatePicker.helpers';
 
 const sortedTransactions = txs =>
   reverse(
@@ -88,7 +89,7 @@ export const loadData = (params, search) => (dispatch, getState, sdk) => {
 
   dispatch(fetchOrdersOrSalesRequest());
 
-  const { page = 1 } = parse(search);
+  const { page = 1, bookingStart, bookingEnd, bookingStates, meta_unread } = parse(search);
 
   const apiQueryParams = {
     only: onlyFilter,
@@ -116,6 +117,27 @@ export const loadData = (params, search) => (dispatch, getState, sdk) => {
     page,
     perPage: INBOX_PAGE_SIZE,
   };
+
+  if (bookingStart) {
+    apiQueryParams.bookingStart = bookingStart;
+  }
+  if (bookingEnd) {
+    apiQueryParams.bookingEnd = bookingEnd;
+  }
+  let states = [];
+  if (bookingStates && typeof bookingStates === 'string') {
+    states = bookingStates.split(',').map(s => s.trim());
+  }
+  if (Array.isArray(bookingStates)) {
+    states = bookingStates;
+  }
+  
+  if (states.length > 0) {
+    apiQueryParams.bookingStates = states;
+  }
+  if (meta_unread !== undefined) {
+    apiQueryParams.meta_unread = meta_unread;
+  }
 
   return sdk.transactions
     .query(apiQueryParams)
