@@ -149,10 +149,10 @@ const InboxFilterComponent = props => {
       }
     } else {
       if (values.bookingStartDate) {
-        filterValues.bookingStart = moment(values.bookingStartDate).tz(timeZone).startOf('day').toISOString();
+        filterValues.bookingStart = `${moment(values.bookingStartDate).tz(timeZone).startOf('day').toISOString()}, ${moment(values.bookingStartDate).tz(timeZone).endOf('day').toISOString()}`;
       }
       if (values.bookingEndDate) {
-        filterValues.bookingEnd = moment(values.bookingEndDate).tz(timeZone).endOf('day').toISOString();
+        filterValues.bookingEnd = `${moment(values.bookingEndDate).tz(timeZone).startOf('day').toISOString()}, ${moment(values.bookingEndDate).tz(timeZone).endOf('day').toISOString()}`;
       }
     }
     
