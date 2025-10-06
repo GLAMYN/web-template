@@ -221,7 +221,7 @@ const InboxFilterComponent = props => {
               </div>
 
               {/* Read/Unread Filter */}
-              <div className={css.filterSection}>
+              {/* <div className={css.filterSection}>
                 <h3 className={css.sectionTitle}>
                   <FormattedMessage id="InboxFilter.readStatus" />
                 </h3>
@@ -236,8 +236,8 @@ const InboxFilterComponent = props => {
                       className={css.radioButton}
                     />
                   ))}
-                </div>
-              </div>
+                </div> */}
+              {/* </div> */}
 
               {/* Date Range Filter */}
               <div className={css.filterSection}>
