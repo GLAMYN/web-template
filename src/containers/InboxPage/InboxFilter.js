@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import moment from 'moment';
 
 import { FormattedMessage, useIntl } from '../../util/reactIntl';
-import { Button, FieldCheckboxGroup, FieldTextInput, FieldRadioButton } from '../../components';
+import { Button, FieldCheckboxGroup, FieldTextInput, FieldRadioButton, ModalInMobile } from '../../components';
 
 import css from './InboxFilter.module.css';
 
@@ -39,6 +39,8 @@ const InboxFilterComponent = props => {
     isOpen = false,
     history,
     location,
+    onManageDisableScrolling=()=>{},
+    isFiltersOpenOnMobile, setIsFiltersOpenOnMobile
   } = props;
 
   const [quickFilter, setQuickFilter] = useState(null);
@@ -148,11 +150,10 @@ const InboxFilterComponent = props => {
         filterValues.bookingEnd = tomorrow.endOf('day').toISOString();
       }
     } else {
-      if (values.bookingStartDate) {
-        filterValues.bookingStart = moment(values.bookingStartDate).tz(timeZone).startOf('day').toISOString();
-      }
-      if (values.bookingEndDate) {
-        filterValues.bookingEnd = moment(values.bookingEndDate).tz(timeZone).endOf('day').toISOString();
+      if (values.bookingStartDate && values.bookingEndDate) {
+        filterValues.bookingStart = `${moment(values.bookingStartDate).tz(timeZone).startOf('day').toISOString()}, ${moment(values.bookingEndDate).tz(timeZone).endOf('day').toISOString()}`;
+      } else if (values.bookingStartDate) {
+        filterValues.bookingStart = `${moment(values.bookingStartDate).tz(timeZone).startOf('day').toISOString()}, ${moment(values.bookingStartDate).tz(timeZone).endOf('day').toISOString()}`;
       }
     }
     
@@ -176,123 +177,133 @@ const InboxFilterComponent = props => {
 
   return (
     <div className={classes}>
-      {/* Quick Filters */}
-      <div className={css.quickFilters}>
-        <h3 className={css.sectionTitle}>
-          <FormattedMessage id="InboxFilter.quickFilters" />
-        </h3>
-        <div className={css.chipContainer}>
-          {QUICK_FILTER_OPTIONS.map(option => (
-            <button
-              key={option.key}
-              type="button"
-              className={classNames(css.chip, {
-                [css.chipActive]: quickFilter === option.key,
-              })}
-              onClick={() => handleQuickFilter(option.key)}
-            >
-              {option.label}
-            </button>
-          ))}
+      {/* Mobile-only open filters button */}
+      <div className={css.mobileFilterBar}>
+        <Button
+          type="button"
+          className={css.mobileFilterButton}
+          onClick={() => setIsFiltersOpenOnMobile(true)}
+        >
+          <FormattedMessage id="InboxFilter.openFilters" defaultMessage="Filters" />
+        </Button>
+      </div>
+
+      <ModalInMobile
+        id="InboxFilter.filters"
+        isModalOpenOnMobile={isFiltersOpenOnMobile}
+        onClose={() => setIsFiltersOpenOnMobile(false)}
+        showAsModalMaxWidth={767}
+        onManageDisableScrolling={onManageDisableScrolling}
+        containerClassName={css.modalContainer}
+        closeButtonMessage={
+          <FormattedMessage id="InboxFilter.close" defaultMessage="Close" />
+        }
+      >
+        {/* Quick Filters */}
+        <div className={css.quickFilters}>
+          <h3 className={css.sectionTitle}>
+            <FormattedMessage id="InboxFilter.quickFilters" />
+          </h3>
+          <div className={css.chipContainer}>
+            {QUICK_FILTER_OPTIONS.map(option => (
+              <button
+                key={option.key}
+                type="button"
+                className={classNames(css.chip, {
+                  [css.chipActive]: quickFilter === option.key,
+                })}
+                onClick={() => handleQuickFilter(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Filter Panel */}
-      <div className={filterClasses}>
-        <FinalForm
-          onSubmit={handleFormSubmit}
-          initialValues={getCurrentFilterValues()}
-          mutators={{
-            ...arrayMutators,
-          }}
-          render={({ handleSubmit, form, values }) => (
-            <form onSubmit={handleSubmit} className={css.filterForm}>
-              {/* Status Filter */}
-              <div className={css.filterSection}>
-                <h3 className={css.sectionTitle}>
-                  <FormattedMessage id="InboxFilter.status" />
-                </h3>
-                <FieldCheckboxGroup
-                  id="bookingStatus"
-                  name="bookingStates"
-                  options={BOOKING_STATUS_OPTIONS}
-                  className={css.checkboxGroup}
-                />
-              </div>
+        {/* Filter Panel */}
+        <div className={filterClasses}>
+          <FinalForm
+            onSubmit={values => {
+              handleFormSubmit(values);
+              setIsFiltersOpenOnMobile(false);
+            }}
+            initialValues={getCurrentFilterValues()}
+            mutators={{
+              ...arrayMutators,
+            }}
+            render={({ handleSubmit, form, values }) => (
+              <form onSubmit={handleSubmit} className={css.filterForm}>
+                {/* Status Filter */}
+                <div className={css.filterSection}>
+                  <h3 className={css.sectionTitle}>
+                    <FormattedMessage id="InboxFilter.status" />
+                  </h3>
+                  <FieldCheckboxGroup
+                    id="bookingStatus"
+                    name="bookingStates"
+                    options={BOOKING_STATUS_OPTIONS}
+                    className={css.checkboxGroup}
+                  />
+                </div>
 
-              {/* Read/Unread Filter */}
-              <div className={css.filterSection}>
-                <h3 className={css.sectionTitle}>
-                  <FormattedMessage id="InboxFilter.readStatus" />
-                </h3>
-                <div className={css.radioGroup}>
-                  {READ_STATUS_OPTIONS.map(option => (
-                    <FieldRadioButton
-                      key={option.key}
-                      id={`readStatus-${option.key}`}
-                      name="readStatus"
-                      label={option.label}
-                      value={option.key}
-                      className={css.radioButton}
+                {/* Date Range Filter */}
+                <div className={css.filterSection}>
+                  <h3 className={css.sectionTitle}>
+                    <FormattedMessage id="InboxFilter.dateRange" />
+                    {quickFilter && (
+                      <span className={css.disabledNote}>
+                        <FormattedMessage id="InboxFilter.disabledByQuickFilter" />
+                      </span>
+                    )}
+                  </h3>
+                  <div className={css.dateInputsInline}>
+                    <FieldTextInput
+                      id="bookingStartDate"
+                      name="bookingStartDate"
+                      type="date"
+                      label={intl.formatMessage({ id: 'InboxFilter.startDate' })}
+                      className={classNames(css.dateInput, {
+                        [css.dateInputDisabled]: !!quickFilter,
+                      })}
+                      disabled={!!quickFilter}
                     />
-                  ))}
+                    <FieldTextInput
+                      id="bookingEndDate"
+                      name="bookingEndDate"
+                      type="date"
+                      label={intl.formatMessage({ id: 'InboxFilter.endDate' })}
+                      className={classNames(css.dateInput, {
+                        [css.dateInputDisabled]: !!quickFilter,
+                      })}
+                      disabled={!!quickFilter}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Date Range Filter */}
-              <div className={css.filterSection}>
-                <h3 className={css.sectionTitle}>
-                  <FormattedMessage id="InboxFilter.dateRange" />
-                  {quickFilter && (
-                    <span className={css.disabledNote}>
-                      <FormattedMessage id="InboxFilter.disabledByQuickFilter" />
-                    </span>
-                  )}
-                </h3>
-                <div className={css.dateInputsInline}>
-                  <FieldTextInput
-                    id="bookingStartDate"
-                    name="bookingStartDate"
-                    type="date"
-                    label={intl.formatMessage({ id: 'InboxFilter.startDate' })}
-                    className={classNames(css.dateInput, {
-                      [css.dateInputDisabled]: !!quickFilter,
-                    })}
-                    disabled={!!quickFilter}
-                  />
-                  <FieldTextInput
-                    id="bookingEndDate"
-                    name="bookingEndDate"
-                    type="date"
-                    label={intl.formatMessage({ id: 'InboxFilter.endDate' })}
-                    className={classNames(css.dateInput, {
-                      [css.dateInputDisabled]: !!quickFilter,
-                    })}
-                    disabled={!!quickFilter}
-                  />
+                {/* Action Buttons */}
+                <div className={css.actionButtons}>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      handleClearAll();
+                      setIsFiltersOpenOnMobile(false);
+                    }}
+                    className={css.clearButton}
+                  >
+                    <FormattedMessage id="InboxFilter.clearAll" />
+                  </Button>
+                  <Button
+                    type="submit"
+                    className={css.applyButton}
+                  >
+                    <FormattedMessage id="InboxFilter.apply" />
+                  </Button>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className={css.actionButtons}>
-                <Button
-                  type="button"
-                  onClick={handleClearAll}
-                  className={css.clearButton}
-                >
-                  <FormattedMessage id="InboxFilter.clearAll" />
-                </Button>
-                <Button
-                  type="submit"
-                  className={css.applyButton}
-                >
-                  <FormattedMessage id="InboxFilter.apply" />
-                </Button>
-              </div>
-            </form>
-          )}
-        />
-      </div>
+              </form>
+            )}
+          />
+        </div>
+      </ModalInMobile>
     </div>
   );
 };

@@ -380,3 +380,7 @@
     color: var(--colorGrey300);
   }
 }
+
+.contentContainer {
+  z-index: 9999999999999;
+}

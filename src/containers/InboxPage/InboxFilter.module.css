@@ -86,11 +86,12 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease;
-
+  margin-right: unset;
+  
   @media (--viewportLarge) {
+    margin-right: 36px;
     max-height: none;
     overflow: visible;
   }
@@ -154,14 +155,17 @@
 }
 
 .actionButtons {
-  display: flex;
-  flex-direction: column;
+  display: flex;  
+  flex-direction: row;
+  gap: 12px;
+  margin-bottom: 12px;
+  
 
   padding-top: 16px;
   border-top: 1px solid var(--colorGrey200);
 
   @media (--viewportMedium) {
-    flex-direction: row;
+    flex-direction: column;
     justify-content: flex-end;
     gap: 16px;
   }
@@ -228,5 +232,31 @@
   @media (--viewportMedium) {
     order: 1;
   }
+}
+
+/* Mobile-only filter trigger bar */
+.mobileFilterBar {
+  display: flex;
+  justify-content: flex-end;
+  
+  @media (--viewportMedium) {
+    display: none;
+  }
+}
+
+.mobileFilterButton {
+  padding: 8px 16px;
+  border: 1px solid var(--colorGrey300);
+  border-radius: 4px;
+  background-color: var(--colorWhite);
+  color: var(--colorGrey700);
+  min-height: auto;
+}
+
+/* Modal container styling to align with other mobile modals */
+.modalContainer {
+  width: 100%;
+  padding: 24px 0 16px 0;
+  margin: 0 16px;
 }
 
