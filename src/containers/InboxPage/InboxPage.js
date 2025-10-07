@@ -28,7 +28,7 @@ import {
 } from '../../transactions/transaction';
 
 import { getMarketplaceEntities } from '../../ducks/marketplaceData.duck';
-import { isScrollingDisabled } from '../../ducks/ui.duck';
+import { manageDisableScrolling, isScrollingDisabled } from '../../ducks/ui.duck';
 import {
   H2,
   Avatar,
@@ -140,9 +140,9 @@ export const InboxItem = props => {
   } = props;
   const { customer, provider, listing } = tx;
   const { processName, actionNeeded, isSaleNotification } = stateData;
-  let {processState, isFinal} = stateData;
-  processState ||= tx?.attributes?.lastTransition?.replace("transition/", "");
-  isFinal = processState?.trim()?.toLowerCase() == "cancel-no-refund" ? true : isFinal
+  let { processState, isFinal } = stateData;
+  processState ||= tx?.attributes?.lastTransition?.replace('transition/', '');
+  isFinal = processState?.trim()?.toLowerCase() == 'cancel-no-refund' ? true : isFinal;
   const isCustomer = transactionRole === TX_TRANSITION_ACTOR_CUSTOMER;
 
   const lineItems = tx.attributes?.lineItems;
@@ -238,6 +238,7 @@ export const InboxPageComponent = props => {
   } = props;
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isFiltersOpenOnMobile, setIsFiltersOpenOnMobile] = useState(false);
 
   const { tab } = params;
   const validTab = tab === 'orders' || tab === 'sales';
@@ -345,6 +346,7 @@ export const InboxPageComponent = props => {
   return (
     <Page title={title} scrollingDisabled={scrollingDisabled}>
       <LayoutSideNavigation
+        containerClassName={classNames({[css.contentContainer]: isFiltersOpenOnMobile})}
         sideNavClassName={css.navigation}
         topbar={
           <TopbarContainer
@@ -359,11 +361,18 @@ export const InboxPageComponent = props => {
             </H2>
             <TabNav rootClassName={css.tabs} tabRootClassName={css.tab} tabs={tabs} />{' '}
             <InboxFilter
-            isOpen={isFilterOpen}
-            onToggle={() => setIsFilterOpen(!isFilterOpen)}
-            history={history}
-            location={location}
-          />
+              isOpen={isFilterOpen}
+              isFiltersOpenOnMobile={isFiltersOpenOnMobile}
+              setIsFiltersOpenOnMobile={setIsFiltersOpenOnMobile}
+              onToggle={() => setIsFilterOpen(!isFilterOpen)}
+              history={history}
+              location={location}
+              onManageDisableScrolling={(componentId, disable) =>
+                props.onManageDisableScrolling
+                  ? props.onManageDisableScrolling(componentId, disable)
+                  : undefined
+              }
+            />
           </>
         }
         footer={<FooterContainer />}
@@ -373,9 +382,7 @@ export const InboxPageComponent = props => {
             <FormattedMessage id="InboxPage.fetchFailed" />
           </p>
         ) : null}
-        
-       
-        
+
         <ul className={css.itemList}>
           {!fetchInProgress ? (
             transactions.map(toTxItem)
@@ -419,6 +426,11 @@ const mapStateToProps = state => {
   };
 };
 
+const mapDispatchToProps = dispatch => ({
+  onManageDisableScrolling: (componentId, disableScrolling) =>
+    dispatch(manageDisableScrolling(componentId, disableScrolling)),
+});
+
 // Note: it is important that the withRouter HOC is **outside** the
 // connect HOC, otherwise React Router won't rerender any Route
 // components since connect implements a shouldComponentUpdate
@@ -427,7 +439,10 @@ const mapStateToProps = state => {
 // See: https://github.com/ReactTraining/react-router/issues/4671
 const InboxPage = compose(
   withRouter,
-  connect(mapStateToProps)
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )
 )(InboxPageComponent);
 
 export default InboxPage;
