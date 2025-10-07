@@ -55,7 +55,6 @@ import InboxSearchForm from './InboxSearchForm/InboxSearchForm';
 
 import { stateDataShape, getStateData } from './InboxPage.stateData';
 import css from './InboxPage.module.css';
-import { getCurrentUserTypeRoles } from '../../util/userHelpers';
 import moment from 'moment';
 import InboxFilter from './InboxFilter';
 
