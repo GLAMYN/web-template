@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
+import { withRouter } from 'react-router-dom';
 import classNames from 'classnames';
 
 import { useConfiguration } from '../../context/configurationContext';
@@ -50,6 +51,7 @@ import { stateDataShape, getStateData } from './InboxPage.stateData';
 import css from './InboxPage.module.css';
 import { getCurrentUserTypeRoles } from '../../util/userHelpers';
 import moment from 'moment';
+import InboxFilter from './InboxFilter';
 
 // Check if the transaction line-items use booking-related units
 const getUnitLineItem = lineItems => {
@@ -231,7 +233,12 @@ export const InboxPageComponent = props => {
     providerNotificationCount = 0,
     scrollingDisabled,
     transactions,
+    history,
+    location,
   } = props;
+
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
   const { tab } = params;
   const validTab = tab === 'orders' || tab === 'sales';
   if (!validTab) {
@@ -351,6 +358,12 @@ export const InboxPageComponent = props => {
               <FormattedMessage id="InboxPage.title" />
             </H2>
             <TabNav rootClassName={css.tabs} tabRootClassName={css.tab} tabs={tabs} />{' '}
+            <InboxFilter
+            isOpen={isFilterOpen}
+            onToggle={() => setIsFilterOpen(!isFilterOpen)}
+            history={history}
+            location={location}
+          />
           </>
         }
         footer={<FooterContainer />}
@@ -360,6 +373,9 @@ export const InboxPageComponent = props => {
             <FormattedMessage id="InboxPage.fetchFailed" />
           </p>
         ) : null}
+        
+       
+        
         <ul className={css.itemList}>
           {!fetchInProgress ? (
             transactions.map(toTxItem)
@@ -403,6 +419,15 @@ const mapStateToProps = state => {
   };
 };
 
-const InboxPage = compose(connect(mapStateToProps))(InboxPageComponent);
+// Note: it is important that the withRouter HOC is **outside** the
+// connect HOC, otherwise React Router won't rerender any Route
+// components since connect implements a shouldComponentUpdate
+// lifecycle hook.
+//
+// See: https://github.com/ReactTraining/react-router/issues/4671
+const InboxPage = compose(
+  withRouter,
+  connect(mapStateToProps)
+)(InboxPageComponent);
 
 export default InboxPage;
