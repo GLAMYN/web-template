@@ -1,17 +1,8 @@
-import reverse from 'lodash/reverse';
-import sortBy from 'lodash/sortBy';
 import { storableError } from '../../util/errors';
-import { parse } from '../../util/urlHelpers';
+import { parse, getValidInboxSort } from '../../util/urlHelpers';
 import { getAllTransitionsForEveryProcess } from '../../transactions/transaction';
 import { addMarketplaceEntities } from '../../ducks/marketplaceData.duck';
 import { getISODateString } from '../../components/DatePicker/DatePickers/DatePicker.helpers';
-
-const sortedTransactions = txs =>
-  reverse(
-    sortBy(txs, tx => {
-      return tx.attributes ? tx.attributes.lastTransitionedAt : null;
-    })
-  );
 
 // ================ Action types ================ //
 
@@ -40,7 +31,7 @@ export default function inboxPageReducer(state = initialState, action = {}) {
     case FETCH_ORDERS_OR_SALES_REQUEST:
       return { ...state, fetchInProgress: true, fetchOrdersOrSalesError: null };
     case FETCH_ORDERS_OR_SALES_SUCCESS: {
-      const transactions = sortedTransactions(payload.data.data);
+      const transactions = payload.data.data;
       return {
         ...state,
         fetchInProgress: false,
@@ -116,6 +107,7 @@ export const loadData = (params, search) => (dispatch, getState, sdk) => {
     'fields.image': ['variants.square-small', 'variants.square-small2x'],
     page,
     perPage: INBOX_PAGE_SIZE,
+    ...getValidInboxSort(sort),
   };
 
   if (bookingStart) {
