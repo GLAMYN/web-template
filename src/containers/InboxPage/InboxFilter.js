@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form as FinalForm } from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
 import classNames from 'classnames';
@@ -45,18 +45,45 @@ const InboxFilterComponent = props => {
 
   const [quickFilter, setQuickFilter] = useState(null);
 
+  // Initialize quick filter from query parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const bookingStart = searchParams.get('bookingStart');
+    
+    if (bookingStart) {
+      // Parse comma-separated dates from bookingStart parameter
+      const dates = bookingStart.split(', ');
+      if (dates.length >= 2) {
+        const { timeZone } = Intl.DateTimeFormat().resolvedOptions();
+        const today = moment().tz(timeZone).startOf('day');
+        const tomorrow = moment().tz(timeZone).add(1, 'day').startOf('day');
+        
+        const startMoment = moment(dates[0]).tz(timeZone);
+        const endMoment = moment(dates[1]).tz(timeZone);
+        
+        // Check if the date range matches "today" quick filter
+        if (startMoment.isSame(today, 'day') && endMoment.isSame(today.endOf('day'), 'day')) {
+          setQuickFilter('today');
+        }
+        // Check if the date range matches "tomorrow" quick filter
+        else if (startMoment.isSame(tomorrow, 'day') && endMoment.isSame(tomorrow.endOf('day'), 'day')) {
+          setQuickFilter('tomorrow');
+        }
+      }
+    }
+  }, [location.search]);
 
   const getCurrentFilterValues = () => {
     const searchParams = new URLSearchParams(location.search);
     const currentFilters = {};
     
-
+    // Handle booking states filter
     const bookingStates = searchParams.get('bookingStates');
     if (bookingStates) {
       currentFilters.bookingStates = bookingStates.split(',');
     }
     
-
+    // Handle read status filter
     const metaUnread = searchParams.get('meta_unread');
     if (metaUnread !== null) {
       if (metaUnread === 'true') {
@@ -68,14 +95,19 @@ const InboxFilterComponent = props => {
       currentFilters.readStatus = 'all';
     }
     
-
-    const bookingStart = searchParams.get('bookingStart');
-    const bookingEnd = searchParams.get('bookingEnd');
-    if (bookingStart) {
-      currentFilters.bookingStartDate = moment(bookingStart).format('YYYY-MM-DD');
-    }
-    if (bookingEnd) {
-      currentFilters.bookingEndDate = moment(bookingEnd).format('YYYY-MM-DD');
+    // Handle date range filters - only set if no quick filter is active
+    if (!quickFilter) {
+      const bookingStart = searchParams.get('bookingStart');
+      if (bookingStart) {
+        // Parse comma-separated dates from bookingStart parameter
+        const dates = bookingStart.split(', ');
+        if (dates.length >= 1) {
+          currentFilters.bookingStartDate = moment(dates[0]).format('YYYY-MM-DD');
+        }
+        if (dates.length >= 2) {
+          currentFilters.bookingEndDate = moment(dates[1]).format('YYYY-MM-DD');
+        }
+      }
     }
     
     return currentFilters;
@@ -85,15 +117,12 @@ const InboxFilterComponent = props => {
   const handleApplyFilters = (filterValues) => {
     const searchParams = new URLSearchParams(location.search);
     searchParams.delete('bookingStart');
-    searchParams.delete('bookingEnd');
     searchParams.delete('bookingStates');
     searchParams.delete('meta_unread');
     searchParams.delete('page'); // Reset to first page when filtering
+    
     if (filterValues.bookingStart) {
       searchParams.set('bookingStart', filterValues.bookingStart);
-    }
-    if (filterValues.bookingEnd) {
-      searchParams.set('bookingEnd', filterValues.bookingEnd);
     }
     if (filterValues.bookingStates && filterValues.bookingStates.length > 0) {
       searchParams.set('bookingStates', filterValues.bookingStates.join(','));
@@ -107,7 +136,6 @@ const InboxFilterComponent = props => {
   const handleClearFilters = () => {
     const searchParams = new URLSearchParams(location.search);
     searchParams.delete('bookingStart');
-    searchParams.delete('bookingEnd');
     searchParams.delete('bookingStates');
     searchParams.delete('meta_unread');
     searchParams.delete('page');
