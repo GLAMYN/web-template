@@ -171,11 +171,11 @@ const InboxFilterComponent = props => {
       const tomorrow = moment().tz(timeZone).add(1, 'day').startOf('day');
       
       if (quickFilter === 'today') {
-        filterValues.bookingStart = today.toISOString();
-        filterValues.bookingEnd = today.endOf('day').toISOString();
+        filterValues.bookingStart = `${moment(today).tz(timeZone).startOf('day').toISOString()}, ${moment(today).tz(timeZone).endOf('day').toISOString()}`;
+        // filterValues.bookingEnd = today.endOf('day').toISOString();
       } else if (quickFilter === 'tomorrow') {
-        filterValues.bookingStart = tomorrow.toISOString();
-        filterValues.bookingEnd = tomorrow.endOf('day').toISOString();
+        filterValues.bookingStart = `${moment(tomorrow).tz(timeZone).startOf('day').toISOString()}, ${moment(tomorrow).tz(timeZone).endOf('day').toISOString()}`;
+        // filterValues.bookingEnd = tomorrow.endOf('day').toISOString();
       }
     } else {
       if (values.bookingStartDate && values.bookingEndDate) {
