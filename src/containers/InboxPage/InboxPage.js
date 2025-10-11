@@ -15,7 +15,9 @@ import {
   propTypes,
   DATE_TYPE_DATE,
   DATE_TYPE_DATETIME,
+  DATE_TYPE_TIME,
   LINE_ITEM_NIGHT,
+  LINE_ITEM_DAY,
   LINE_ITEM_HOUR,
   LISTING_UNIT_TYPES,
   STOCK_MULTIPLE_ITEMS,
@@ -77,11 +79,9 @@ const bookingData = (tx, lineItemUnitType, timeZone) => {
   const bookingStart = displayStart || start;
   const bookingEndRaw = displayEnd || end;
 
-  // When unit type is night, we can assume booking end to be inclusive.
-  const isNight = lineItemUnitType === LINE_ITEM_NIGHT;
-  const isHour = lineItemUnitType === LINE_ITEM_HOUR;
-  const bookingEnd =
-    isNight || isHour ? bookingEndRaw : subtractTime(bookingEndRaw, 1, 'days', timeZone);
+  // Only subtract 1 day for day-based bookings to show inclusive end date
+  const showInclusiveEndDate = lineItemUnitType === LINE_ITEM_DAY;
+  const bookingEnd = showInclusiveEndDate ? subtractTime(bookingEndRaw, 1, 'days', timeZone) : bookingEndRaw;
 
   return { bookingStart, bookingEnd };
 };
@@ -104,9 +104,9 @@ const BookingTimeInfoMaybe = props => {
     : null;
 
   const lineItemUnitType = unitLineItem ? unitLineItem.code : null;
-  const dateType = [LINE_ITEM_HOUR, LINE_ITEM_FIXED].includes(lineItemUnitType)
-    ? DATE_TYPE_DATETIME
-    : DATE_TYPE_DATE;
+  
+  // Always use DATE_TYPE_TIME to show only time without dates
+  const dateType = DATE_TYPE_TIME;
 
   const timeZone = transaction?.listing?.attributes?.availabilityPlan?.timezone || 'Etc/UTC';
   const { bookingStart, bookingEnd } = bookingData(transaction, lineItemUnitType, timeZone);
@@ -204,8 +204,10 @@ export const InboxItem = props => {
         <div className={css.itemTitle}>{listing?.attributes?.title}</div>
         <div className={css.itemDetails}>
           {isBooking ? (
-            // <BookingTimeInfoMaybe transaction={tx} />
-            moment(tx.booking.attributes.displayStart).format('MMM DD, YYYY')
+            <div>
+              <div>{moment(tx.booking.attributes.displayStart).format('MMM DD, YYYY')}</div>
+              <BookingTimeInfoMaybe transaction={tx} />
+            </div>
           ) : hasPricingData && showStock ? (
             <FormattedMessage id="InboxPage.quantity" values={{ quantity }} />
           ) : null}
