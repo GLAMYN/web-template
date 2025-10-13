@@ -203,7 +203,7 @@ export const InboxItem = props => {
         <div className={css.itemUsername}>{otherUserDisplayName}</div>
         <div className={css.itemTitle}>{listing?.attributes?.title}</div>
         <div className={css.itemDetails}>
-          {isBooking ? (
+          {isBooking && tx.booking ? (
             <div>
               <div>{moment(tx.booking.attributes.displayStart).format('MMM DD, YYYY')}</div>
               <BookingTimeInfoMaybe transaction={tx} />
@@ -211,6 +211,9 @@ export const InboxItem = props => {
           ) : hasPricingData && showStock ? (
             <FormattedMessage id="InboxPage.quantity" values={{ quantity }} />
           ) : null}
+          <div>
+            {tx?.attributes?.metadata?.selectedLocationType === "providerLocation" ? tx?.listing?.attributes?.publicData?.location?.address : tx?.attributes?.metadata?.location?.selectedPlace?.address}
+          </div>
         </div>
         {availabilityType == AVAILABILITY_MULTIPLE_SEATS && unitLineItem?.seats ? (
           <div className={css.itemSeats}>

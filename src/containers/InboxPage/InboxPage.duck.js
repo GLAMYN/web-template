@@ -80,7 +80,7 @@ export const loadData = (params, search) => (dispatch, getState, sdk) => {
 
   dispatch(fetchOrdersOrSalesRequest());
 
-  const { page = 1, bookingStart, bookingEnd, bookingStates, meta_unread, sort } = parse(search);
+  const { page = 1, bookingStart, bookingEnd, bookingStates, meta_unread, sort, hasBooking } = parse(search);
 
   const apiQueryParams = {
     only: onlyFilter,
@@ -101,8 +101,9 @@ export const loadData = (params, search) => (dispatch, getState, sdk) => {
       'payinTotal',
       'payoutTotal',
       'lineItems',
+      'metadata'
     ],
-    'fields.listing': ['title', 'availabilityPlan', 'publicData.listingType'],
+    'fields.listing': ['title', 'availabilityPlan', 'publicData.listingType', 'publicData.location'],
     'fields.user': ['profile.displayName', 'profile.abbreviatedName', 'deleted', 'banned'],
     'fields.image': ['variants.square-small', 'variants.square-small2x'],
     page,
@@ -122,6 +123,9 @@ export const loadData = (params, search) => (dispatch, getState, sdk) => {
   }
   if (Array.isArray(bookingStates)) {
     states = bookingStates;
+  }
+  if(hasBooking !== undefined){
+    apiQueryParams.hasBooking = hasBooking;
   }
   
   if (states.length > 0) {

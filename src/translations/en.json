@@ -469,6 +469,7 @@
   "InboxFilter.quickFilters": "Quick Filters",
   "InboxFilter.status": "Status",
   "InboxFilter.readStatus": "Read/Unread",
+  "InboxFilter.appointmentInquiries": "Appointments/Inquiries",
   "InboxFilter.dateRange": "Date Range",
   "InboxFilter.startDate": "From Date",
   "InboxFilter.endDate": "To Date",

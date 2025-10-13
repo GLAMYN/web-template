@@ -27,8 +27,8 @@ const BOOKING_STATUS_OPTIONS = [
 
 const READ_STATUS_OPTIONS = [
   { key: 'all', label: 'All' },
-  { key: 'unread', label: 'Unread' },
-  { key: 'read', label: 'Read' },
+  { key: 'appointments', label: 'Appointments ' },
+  { key: 'inquiries', label: 'Inquiries' },
 ];
 
 const InboxFilterComponent = props => {
@@ -83,16 +83,16 @@ const InboxFilterComponent = props => {
       currentFilters.bookingStates = bookingStates.split(',');
     }
     
-    // Handle read status filter
-    const metaUnread = searchParams.get('meta_unread');
-    if (metaUnread !== null) {
-      if (metaUnread === 'true') {
-        currentFilters.readStatus = 'unread';
-      } else if (metaUnread === 'false') {
-        currentFilters.readStatus = 'read';
+    // Handle inquiries status filter
+    const hasBooking = searchParams.get('hasBooking');
+    if (hasBooking !== null) {
+      if (hasBooking === 'true') {
+        currentFilters.appointmentInquiries = 'appointments';
+      } else if (hasBooking === 'false') {
+        currentFilters.appointmentInquiries = 'inquiries';
       }
     } else {
-      currentFilters.readStatus = 'all';
+      currentFilters.appointmentInquiries = 'all';
     }
     
     // Handle date range filters - only set if no quick filter is active
@@ -118,7 +118,7 @@ const InboxFilterComponent = props => {
     const searchParams = new URLSearchParams(location.search);
     searchParams.delete('bookingStart');
     searchParams.delete('bookingStates');
-    searchParams.delete('meta_unread');
+    searchParams.delete('hasBooking');
     searchParams.delete('page'); // Reset to first page when filtering
     
     if (filterValues.bookingStart) {
@@ -127,8 +127,8 @@ const InboxFilterComponent = props => {
     if (filterValues.bookingStates && filterValues.bookingStates.length > 0) {
       searchParams.set('bookingStates', filterValues.bookingStates.join(','));
     }
-    if (filterValues.meta_unread !== undefined) {
-      searchParams.set('meta_unread', filterValues.meta_unread);
+    if (filterValues.hasBooking !== undefined) {
+      searchParams.set('hasBooking', filterValues.hasBooking);
     }
     const newSearch = searchParams.toString();
     history.push(`${location.pathname}${newSearch ? `?${newSearch}` : ''}`);
@@ -137,7 +137,7 @@ const InboxFilterComponent = props => {
     const searchParams = new URLSearchParams(location.search);
     searchParams.delete('bookingStart');
     searchParams.delete('bookingStates');
-    searchParams.delete('meta_unread');
+    searchParams.delete('hasBooking');
     searchParams.delete('page');
     const newSearch = searchParams.toString();
     history.push(`${location.pathname}${newSearch ? `?${newSearch}` : ''}`);
@@ -186,13 +186,13 @@ const InboxFilterComponent = props => {
     }
     
 
-    if (values.readStatus) {
-      if (values.readStatus === 'all') {
-        delete filterValues.meta_unread;
-      } else if (values.readStatus === 'unread') {
-        filterValues.meta_unread = true;
-      } else if (values.readStatus === 'read') {
-        filterValues.meta_unread = false;
+    if (values.appointmentInquiries) {
+      if (values.appointmentInquiries === 'all') {
+        delete filterValues.hasBooking;
+      } else if (values.appointmentInquiries === 'appointments') {
+        filterValues.hasBooking = true;
+      } else if (values.appointmentInquiries === 'inquiries') {
+        filterValues.hasBooking = false;
       }
     }
     handleApplyFilters(filterValues);
@@ -273,6 +273,25 @@ const InboxFilterComponent = props => {
                     className={css.checkboxGroup}
                   />
                 </div>
+
+                {/* Read/Unread Filter */}
+              <div className={css.filterSection}>
+                <h3 className={css.sectionTitle}>
+                  <FormattedMessage id="InboxFilter.appointmentInquiries" />
+                </h3>
+                <div className={css.radioGroup}>
+                  {READ_STATUS_OPTIONS.map(option => (
+                    <FieldRadioButton
+                      key={option.key}
+                      id={`appointmentInquiries-${option.key}`}
+                      name="appointmentInquiries"
+                      label={option.label}
+                      value={option.key}
+                      className={css.radioButton}
+                    />
+                  ))}
+                </div>
+              </div>
 
                 {/* Date Range Filter */}
                 <div className={css.filterSection}>
