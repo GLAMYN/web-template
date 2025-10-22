@@ -475,6 +475,7 @@ const OrderPanel = props => {
           />
         ) : showBookingTimeForm ? (
           <BookingTimeForm
+            listing={listing}
             seatsEnabled={seatsEnabled}
             className={css.bookingForm}
             formId="OrderPanelBookingTimeForm"
@@ -490,6 +491,7 @@ const OrderPanel = props => {
           />
         ) : showBookingDatesForm ? (
           <BookingDatesForm
+            listing={listing}
             seatsEnabled={seatsEnabled}
             className={css.bookingForm}
             formId="OrderPanelBookingDatesForm"
@@ -502,6 +504,7 @@ const OrderPanel = props => {
           />
         ) : showProductOrderForm ? (
           <ProductOrderForm
+            listing={listing}
             formId="OrderPanelProductOrderForm"
             currentStock={currentStock}
             allowOrdersOfMultipleItems={allowOrdersOfMultipleItems}

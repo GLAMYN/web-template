@@ -37,6 +37,7 @@ import css from './OrderBreakdown.module.css';
 
 export const OrderBreakdownComponent = props => {
   const {
+    listing,
     rootClassName,
     className,
     userRole,
@@ -120,6 +121,12 @@ export const OrderBreakdownComponent = props => {
       <LineItemPickupFeeMaybe lineItems={lineItems} intl={intl} />
       {/* <LineItemCouponDiscount lineItems={lineItems} intl={intl} /> */}
       <LineItemUnknownItemsMaybe lineItems={lineItems} isProvider={isProvider} intl={intl} />
+
+      {
+        listing.attributes.publicData?.travel_time && (
+          <div className={css.travelTimeNote}>Note: A travel time of {listing.attributes.publicData?.travel_time?.match(/\d+/)?.[0]} minutes is included in the total price.</div>
+        )
+      }
 
       <LineItemSubTotalMaybe
         lineItems={lineItems}

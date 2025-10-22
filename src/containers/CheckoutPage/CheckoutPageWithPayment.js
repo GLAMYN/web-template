@@ -446,6 +446,7 @@ export const CheckoutPageWithPayment = props => {
   const breakdown =
     tx.id && tx.attributes.lineItems?.length > 0 ? (
       <OrderBreakdown
+        listing={listing}
         className={css.orderBreakdown}
         userRole="customer"
         transaction={tx}

@@ -102,6 +102,7 @@ const onPriceVariantChange = props => value => {
 export const BookingTimeForm = props => {
   const intl = useIntl();
   const {
+    listing,
     rootClassName,
     className,
     price: unitPrice,
@@ -300,6 +301,7 @@ export const BookingTimeForm = props => {
                 </H6>
                 <hr className={css.totalDivider} />
                 <EstimatedCustomerBreakdownMaybe
+                  listing={listing}
                   breakdownData={breakdownData}
                   lineItems={lineItems}
                   timeZone={timeZone}

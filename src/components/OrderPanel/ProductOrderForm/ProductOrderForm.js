@@ -61,6 +61,7 @@ const handleFetchLineItems = ({
 
 const DeliveryMethodMaybe = props => {
   const {
+    listing,
     displayDeliveryMethod,
     hasMultipleDeliveryMethods,
     deliveryMethod,
@@ -119,6 +120,7 @@ const renderForm = formRenderProps => {
   const [mounted, setMounted] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const {
+    listing,
     // FormRenderProps from final-form
     handleSubmit,
     form: formApi,
@@ -320,6 +322,7 @@ const renderForm = formRenderProps => {
           </H6>
           <hr className={css.totalDivider} />
           <EstimatedCustomerBreakdownMaybe
+            listing={listing}
             breakdownData={breakdownData}
             lineItems={lineItems}
             currency={price.currency}

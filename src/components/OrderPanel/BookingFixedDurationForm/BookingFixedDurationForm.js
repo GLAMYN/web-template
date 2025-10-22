@@ -68,7 +68,7 @@ const handleFetchLineItems = props => formValues => {
   const allVariants = listing?.attributes?.publicData?.priceVariants;
   let selectedVariants = [];
   let totalTimeInMinutes = 0;
-  
+
   // Handle single price variant case
   if (priceVariantNames && priceVariantNames.length > 0) {
     // Multiple price variants selected
@@ -84,16 +84,30 @@ const handleFetchLineItems = props => formValues => {
       totalTimeInMinutes = singleVariant?.bookingLengthInMinutes || 0;
     }
   }
-  
+
   const startDate = bookingStartTime ? timestampToDate(bookingStartTime) : null;
-  
+
   // Calculate endDate based on startDate + totalTimeInMinutes
   let endDate = null;
+  const timeMap = {
+    travel_time_15mins: 15,
+    travel_time_30mins: 30,
+    travel_time_45mins: 45,
+    travel_time_60mins: 60,
+  };
+  const publicData = listing?.attributes?.publicData;
+  const travelTime = timeMap[publicData?.travel_time] || 0;
+  totalTimeInMinutes += travelTime;
   if (startDate && totalTimeInMinutes > 0) {
-    endDate = new Date(startDate.getTime() + totalTimeInMinutes * 60000);
-    console.log('handleFetchLineItems - Calculated endDate:', endDate, 'from totalTimeInMinutes:', totalTimeInMinutes);
+    endDate = new Date(startDate.getTime() + (totalTimeInMinutes + travelTime) * 60000);
+    console.log(
+      'handleFetchLineItems - Calculated endDate:',
+      endDate,
+      'from totalTimeInMinutes:',
+      totalTimeInMinutes
+    );
   }
-  
+
   // Note: we expect values bookingStartTime and bookingEndTime to be strings
   // which is the default case when the value has been selected through the form
   const isStartBeforeEnd = startDate && endDate && startDate < endDate;
@@ -145,18 +159,18 @@ const onPriceVariantNamesChange = props => value => {
   const { form: formApi, listing } = props;
   formApi.batch(() => {
     formApi.change('priceVariantNames', value);
-    
+
     // Recalculate end time when price variants change
     const currentValues = formApi.getState().values;
     const startTime = currentValues?.bookingStartTime;
-    
+
     if (startTime && value && value.length > 0) {
       const allVariants = listing?.attributes?.publicData?.priceVariants;
       const selectedVariants = allVariants?.filter(v => value?.includes(v.name));
       const totalTimeInMinutes = selectedVariants?.reduce((total, item) => {
         return total + (item?.bookingLengthInMinutes || 0);
       }, 0);
-      
+
       if (totalTimeInMinutes > 0) {
         const startDate = timestampToDate(startTime);
         const endDate = new Date(startDate.getTime() + totalTimeInMinutes * 60000);
@@ -223,7 +237,7 @@ export const BookingFixedDurationForm = props => {
   const minDurationStartingInInterval = priceVariants.reduce((min, priceVariant) => {
     return Math.min(min, priceVariant.bookingLengthInMinutes);
   }, Number.MAX_SAFE_INTEGER);
-  
+
   const classes = classNames(rootClassName || css.root, className);
   return (
     <FinalForm
@@ -260,14 +274,14 @@ export const BookingFixedDurationForm = props => {
         if (startDate) {
           const allVariants = listing?.attributes?.publicData?.priceVariants;
           let totalTimeInMinutes = 0;
-          
+
           // Handle multiple price variants case
           if (priceVariantNames && priceVariantNames.length > 0) {
             const selectedVariants = allVariants?.filter(v => priceVariantNames?.includes(v.name));
             totalTimeInMinutes = selectedVariants?.reduce((total, item) => {
               return total + (item?.bookingLengthInMinutes || 0);
             }, 0);
-          } 
+          }
           // Handle single price variant case
           else if (priceVariantName && allVariants) {
             const singleVariant = allVariants.find(v => v.name === priceVariantName);
@@ -275,10 +289,24 @@ export const BookingFixedDurationForm = props => {
               totalTimeInMinutes = singleVariant?.bookingLengthInMinutes || 0;
             }
           }
-          
+          const timeMap = {
+            travel_time_15mins: 15,
+            travel_time_30mins: 30,
+            travel_time_45mins: 45,
+            travel_time_60mins: 60,
+          };
+          const publicData = listing?.attributes?.publicData;
+          const travelTime = timeMap[publicData?.travel_time] || 0;
+          totalTimeInMinutes += travelTime;
+
           if (totalTimeInMinutes > 0) {
             endDate = new Date(startDate.getTime() + totalTimeInMinutes * 60000);
-            console.log('Render function - Calculated endDate:', endDate, 'from totalTimeInMinutes:', totalTimeInMinutes);
+            console.log(
+              'Render function - Calculated endDate:',
+              endDate,
+              'from totalTimeInMinutes:',
+              totalTimeInMinutes
+            );
           }
         }
 
@@ -548,6 +576,7 @@ export const BookingFixedDurationForm = props => {
                 </H6>
                 <hr className={css.totalDivider} />
                 <EstimatedCustomerBreakdownMaybe
+                  listing={listing}
                   breakdownData={breakdownData}
                   lineItems={lineItems}
                   timeZone={timeZone}

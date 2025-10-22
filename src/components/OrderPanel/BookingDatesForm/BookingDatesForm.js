@@ -544,6 +544,7 @@ export const BookingDatesForm = props => {
     priceVariantFieldComponent: PriceVariantFieldComponent,
     preselectedPriceVariant,
     isPublishedListing,
+    listing,
     ...rest
   } = props;
   const intl = useIntl();
@@ -881,6 +882,7 @@ export const BookingDatesForm = props => {
                 </H6>
                 <hr className={css.totalDivider} />
                 <EstimatedCustomerBreakdownMaybe
+                  listing={listing}
                   breakdownData={breakdownData}
                   lineItems={lineItems}
                   timeZone={timeZone}
