@@ -287,20 +287,6 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
     });
   }
 
-  if (publicData?.travel_time) {
-    const pricePerHourInSubunits =
-      Number(publicData?.priceVariants?.[0]?.priceInSubunits) /
-      Number(publicData?.priceVariants?.[0]?.bookingLengthInMinutes);
-    const travelTimePrice =
-      pricePerHourInSubunits * Number(publicData?.travel_time?.match(/\d+/)?.[0]);
-    extraLineItems.push({
-      code: `line-item/travel-time (${publicData?.travel_time?.match(/\d+/)?.[0]} minutes)`,
-      unitPrice: new Money(travelTimePrice, currency),
-      quantity: 1,
-      includeFor: ['customer', 'provider'],
-    });
-  }
-
   // Calculate base line items before applying coupons
   const baseLineItems = [
     // order,
