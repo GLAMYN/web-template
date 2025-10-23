@@ -99,13 +99,7 @@ const handleFetchLineItems = props => formValues => {
   const travelTime = timeMap[publicData?.travel_time] || 0;
   totalTimeInMinutes += travelTime;
   if (startDate && totalTimeInMinutes > 0) {
-    endDate = new Date(startDate.getTime() + (totalTimeInMinutes + travelTime) * 60000);
-    console.log(
-      'handleFetchLineItems - Calculated endDate:',
-      endDate,
-      'from totalTimeInMinutes:',
-      totalTimeInMinutes
-    );
+    endDate = new Date(startDate.getTime() + (totalTimeInMinutes) * 60000);
   }
 
   // Note: we expect values bookingStartTime and bookingEndTime to be strings
@@ -301,12 +295,7 @@ export const BookingFixedDurationForm = props => {
 
           if (totalTimeInMinutes > 0) {
             endDate = new Date(startDate.getTime() + totalTimeInMinutes * 60000);
-            console.log(
-              'Render function - Calculated endDate:',
-              endDate,
-              'from totalTimeInMinutes:',
-              totalTimeInMinutes
-            );
+            form.change('bookingEndTime', endDate.getTime());
           }
         }
 

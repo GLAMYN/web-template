@@ -47,6 +47,7 @@ const DetailsSideCard = props => {
     breakdown,
     showListingImage,
     intl,
+    priceVariantNames,
   } = props;
 
   const { price, publicData } = listing?.attributes || {};
@@ -106,11 +107,13 @@ const DetailsSideCard = props => {
 
       {!!breakdown ? (
         <div className={css.orderBreakdownHeader}>
-          {priceVariantName ? (
-            <div className={css.bookingPriceVariant}>
-              <p>{priceVariantName}</p>
-            </div>
-          ) : null}
+          <div className={css.bookingPriceVariant}>
+            {priceVariantNames?.length > 1 ? (
+              'Multiple Packages'
+            ) : (
+              <p>{priceVariantNames?.[0] || priceVariantName}</p>
+            )}
+          </div>
 
           <H6 as="h3" className={css.orderBreakdownTitle}>
             <FormattedMessage id={`CheckoutPage.${processName}.orderBreakdown`} />

@@ -626,6 +626,7 @@ export const CheckoutPageWithPayment = props => {
           listing={listing}
           listingTitle={listingTitle}
           priceVariantName={priceVariantName}
+          priceVariantNames={pageData.orderData?.priceVariantNames}
           author={listing?.author}
           firstImage={firstImage}
           layoutListingImageConfig={config.layout.listingImage}
