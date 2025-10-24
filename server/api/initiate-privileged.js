@@ -111,8 +111,12 @@ module.exports = (req, res) => {
       const listing_Id = bodyParams?.params?.listingId?.uuid || bodyParams?.params?.listingId;
 
       const user = showListingResponse.data.included?.find(i => i.type === 'user');
-      const author = await sdk.users.show({id: user.id?.uuid})
-      const customCommission = author?.data?.data?.attributes?.profile?.publicData?.customCommission;
+      const author = await sdk.users.show({ id: user.id?.uuid });
+      const customer = await sdk.users.show({ id: customerId });
+      const customCommission =
+        author?.data?.data?.attributes?.profile?.publicData?.customCommission;
+      const customerCustomCommission =
+        customer?.data?.data?.attributes?.profile?.publicData?.customCommission;
 
       const { providerCommission, customerCommission } =
         commissionAsset?.type === 'jsonAsset' ? commissionAsset.attributes.data : {};
@@ -121,26 +125,45 @@ module.exports = (req, res) => {
       const transactions = await getTransactions(integrationSdk, customerId, listing_Id);
 
       // Apply the same logic as in transaction-line-items.js
-      customerCommission.percentage =
-        transactions?.data?.data?.length > 0
-          ? recurringCommission.customerCommission.percentage
-          : customerCommission.percentage;
-      customerCommission.minimum_amount =
-        transactions?.data?.data?.length > 0
-          ? recurringCommission.customerCommission.minimum_amount
-          : customerCommission.minimum_amount;
-          
-      providerCommission.percentage =
-        transactions?.data?.data?.length > 0
-          ? recurringCommission.providerCommission.percentage
-          : 
-          Number(customCommission?.percentage) || providerCommission.percentage;
-      providerCommission.minimum_amount =
-        transactions?.data?.data?.length > 0
-          ? recurringCommission.providerCommission.minimum_amount
-          : 
-          Number(customCommission?.minimum_amount) || providerCommission.minimum_amount;
-      // console.log('customerCommission',providerCommission)
+      const hasTransactions = transactions?.data?.data?.length > 0;
+
+      const getCommissionValue = (
+        recurringValue,
+        customValue,
+        defaultValue,
+        isCustomer = false
+      ) => {
+        if (hasTransactions && !isCustomer) return recurringValue;
+        customValue ||= undefined;
+        if (customValue || Number(customValue) === 0) return Number(customValue);
+        return defaultValue;
+      };
+
+      customerCommission.percentage = getCommissionValue(
+        recurringCommission.customerCommission.percentage,
+        customerCustomCommission?.percentage,
+        customerCommission.percentage,
+        true
+      );
+
+      customerCommission.minimum_amount = getCommissionValue(
+        recurringCommission.customerCommission.minimum_amount,
+        customerCustomCommission?.minimum_amount,
+        customerCommission.minimum_amount,
+        true
+      );
+
+      providerCommission.percentage = getCommissionValue(
+        recurringCommission.providerCommission.percentage,
+        customCommission?.percentage,
+        providerCommission.percentage
+      );
+
+      providerCommission.minimum_amount = getCommissionValue(
+        recurringCommission.providerCommission.minimum_amount,
+        customCommission?.minimum_amount,
+        providerCommission.minimum_amount
+      );
 
       // We need to fetch coupon details from the provider's private data
       // Using the outer couponData variable
