@@ -124,7 +124,7 @@ export const OrderBreakdownComponent = props => {
 
       {
         listing.attributes.publicData?.travel_time && (
-          <div className={css.travelTimeNote}>Please note: A travel time of {listing.attributes.publicData?.travel_time?.match(/\d+/)?.[0]} minutes will be included at the end of your appointment.</div>
+          <div className={css.feeInfo}>Please note: A travel time of {listing.attributes.publicData?.travel_time?.match(/\d+/)?.[0]} minutes will be included at the end of your appointment.</div>
         )
       }
 

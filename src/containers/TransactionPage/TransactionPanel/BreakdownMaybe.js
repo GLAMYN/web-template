@@ -18,7 +18,7 @@ const BreakdownMaybe = props => {
     listing,
   } = props;
   const classes = classNames(rootClassName || css.breakdownMaybe, className);
-  const priceVariants = transaction?.attributes?.metadata?.priceVariantNames || [priceVariantName];
+  const priceVariants = transaction?.attributes?.protectedData?.priceVariantNames || [priceVariantName];
   const locationUrl =
     transaction?.attributes?.metadata?.selectedLocationType === 'providerLocation'
       ? `https://www.google.com/maps?q=${transaction?.listing?.attributes?.geolocation?.lat},${transaction?.listing?.attributes?.geolocation?.lng}`

@@ -52,7 +52,7 @@ const SectionDetailsMaybe = props => {
         <FormattedMessage id="ListingPage.detailsTitle" />
       </Heading>
       <ul className={css.details}>
-        {existingListingFields.map(detail => (
+        {existingListingFields?.filter(d=>d.key != "travel_time").map(detail => (
           <li key={detail.key} className={css.detailsRow}>
             <span className={css.detailLabel}>{detail.label}</span>
             <span>{detail.value}</span>
