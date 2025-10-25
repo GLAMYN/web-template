@@ -573,6 +573,7 @@ export const CheckoutPageWithPayment = props => {
             speculateTransactionErrorMessage={errorMessages.speculateTransactionErrorMessage}
             breakdown={breakdown}
             priceVariantName={priceVariantName}
+            priceVariantNames={pageData.orderData?.priceVariantNames}
           />
           <section className={css.paymentContainer}>
             {errorMessages.initiateOrderErrorMessage}
