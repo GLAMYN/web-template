@@ -3,11 +3,11 @@
  */
 exports.recurringCommission = {
   providerCommission: {
-    percentage: 5,
-    minimum_amount: 2.5,
+    percentage: 15,
+    minimum_amount: 5,
   },
   customerCommission: {
-    percentage: 1.5,
+    percentage: 0,
     minimum_amount: 0,
   },
 };
