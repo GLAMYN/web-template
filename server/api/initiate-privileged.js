@@ -98,7 +98,7 @@ module.exports = (req, res) => {
   let listing = null; // Store listing for later use
 
   const listingPromise = () =>
-    sdk.listings.show({ id: bodyParams?.params?.listingId, include: ['author'] });
+    sdk.listings.show({ id: bodyParams?.params?.listingId, include: ['author', 'publicData.travel_time'] });
 
   // Get current user to get customerId
   const currentUserPromise = sdk.currentUser.show();
@@ -261,12 +261,12 @@ module.exports = (req, res) => {
 
       if (pageData?.listing?.attributes?.geolocation?.lat) {
         const { bookingQuestion1, bookingQuestion2, bookingQuestion3 } = pageData?.orderData;
-        console.log('selectedLocationType', pageData?.orderData?.location);
         await integrationSdk.transactions
           .updateMetadata(
             {
               id: data.data.id,
               metadata: {
+                travelTime: listing?.attributes?.publicData?.travel_time,
                 selectedLocationType: selectedLocationType,
                 selectedLocation: selectedLocation,
                 location: pageData?.orderData?.location,
