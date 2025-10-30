@@ -600,7 +600,8 @@ export const fetchTransaction = (id, txRole, config) => (dispatch, getState, sdk
           'reviews',
           'reviews.author',
           'reviews.subject',
-          'metadata.tipAmount'
+          'metadata.tipAmount',
+          'metadata.travel_time',
         ],
         ...getImageVariants(config.layout.listingImage),
       },

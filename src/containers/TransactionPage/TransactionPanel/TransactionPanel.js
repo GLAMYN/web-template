@@ -284,7 +284,10 @@ export class TransactionPanelComponent extends Component {
     const isBeforeEndDate = endDate instanceof Date && !isNaN(endDate) && now < endDate;
 
     const cancelButton =
-      showCancelButton && !this.alreadyCancelled && includedStates.includes(transactionState) && isNotStarted ? (
+      showCancelButton &&
+      !this.alreadyCancelled &&
+      includedStates.includes(transactionState) &&
+      isNotStarted ? (
         <Button type="button" rootClassName={css.cancelButton} onClick={this.openCancelModal}>
           <FormattedMessage id="TransactionPanel.cancelButton" defaultMessage="Cancel Booking" />
         </Button>
@@ -305,6 +308,7 @@ export class TransactionPanelComponent extends Component {
               showListingImage={showListingImage}
               listingImageConfig={config.layout.listingImage}
             />
+
             {isProvider ? (
               <div className={css.avatarWrapperProviderDesktop}>
                 <AvatarLarge user={customer} className={css.avatarDesktop} />
@@ -338,6 +342,10 @@ export class TransactionPanelComponent extends Component {
             {!isInquiryProcess ? (
               <div className={css.orderDetails}>
                 <div className={css.orderDetailsMobileSection}>
+                  <div className={css.orderBreakdownTitle}>
+                    <b>Transaction Id:</b>{' '}
+                    <span className={css.marketPlaceText}>{transaction?.id?.uuid}</span>
+                  </div>
                   <BreakdownMaybe
                     orderBreakdown={orderBreakdown}
                     processName={stateData.processName}
@@ -388,7 +396,7 @@ export class TransactionPanelComponent extends Component {
               isConversation={isInquiryProcess}
             />
             {this.cancellationObject ? (
-              <div className={classNames(css.feedContent,css.customCancelContainer)}>
+              <div className={classNames(css.feedContent, css.customCancelContainer)}>
                 <ul className={cssActivity.root}>
                   <li className={cssActivity.transitionItem}>
                     <div className={cssActivity.transition}>
@@ -453,9 +461,7 @@ export class TransactionPanelComponent extends Component {
                           <div className={cssActivity.transitionContent}>
                             {this.cancellationObject?.cancellationFeedback && (
                               <div className={css.cancellationMessage}>
-                                <div>
-                                  Cancellation Feedback:
-                                </div>
+                                <div>Cancellation Feedback:</div>
                                 {this.cancellationObject?.cancellationFeedback}
                               </div>
                             )}
@@ -533,6 +539,10 @@ export class TransactionPanelComponent extends Component {
                   intl={intl}
                 />
                 {showOrderPanel ? orderPanel : null}
+                <div className={css.orderBreakdownTitle}>
+                  <b>Transaction Id:</b>{' '}
+                  <span className={css.marketPlaceText}>{transaction?.id?.uuid}</span>
+                </div>
                 <BreakdownMaybe
                   className={css.breakdownContainer}
                   orderBreakdown={orderBreakdown}

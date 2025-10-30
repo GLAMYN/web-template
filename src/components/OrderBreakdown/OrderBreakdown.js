@@ -54,7 +54,7 @@ export const OrderBreakdownComponent = props => {
   const allLineItems = transaction.attributes.lineItems || [];
   // We'll show only line-items that are specific for the current userRole (customer vs provider)
   const lineItems = allLineItems.filter(lineItem => lineItem.includeFor.includes(userRole));
-  
+
   const unitLineItem = lineItems.find(
     item => LISTING_UNIT_TYPES.includes(item.code) && !item.reversal
   );
@@ -122,11 +122,19 @@ export const OrderBreakdownComponent = props => {
       {/* <LineItemCouponDiscount lineItems={lineItems} intl={intl} /> */}
       <LineItemUnknownItemsMaybe lineItems={lineItems} isProvider={isProvider} intl={intl} />
 
-      {
-        listing.attributes.publicData?.travel_time && (
-          <div className={css.feeInfo}>Please note: A travel time of {listing.attributes.publicData?.travel_time?.match(/\d+/)?.[0]} minutes will be included at the end of your appointment.</div>
-        )
-      }
+      {(props?.fromTransactionPanel && transaction.attributes.metadata?.travelTime) ? (
+            <div className={css.feeInfo}>
+              Please note: A travel time of{' '}
+              {transaction.attributes.metadata?.travelTime?.match(/\d+/)?.[0]} minutes has been included.
+            </div>
+          )
+        : listing.attributes.publicData?.travel_time && (
+            <div className={css.feeInfo}>
+              Please note: A travel time of{' '}
+              {listing.attributes.publicData?.travel_time?.match(/\d+/)?.[0]} minutes will be
+              included at the end of your appointment.
+            </div>
+          )}
 
       <LineItemSubTotalMaybe
         lineItems={lineItems}

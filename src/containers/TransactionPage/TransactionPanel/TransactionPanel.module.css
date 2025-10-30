@@ -732,3 +732,7 @@
 .customCancelContainer{
   margin-top: -8px
 }
+
+.marketPlaceText{
+  color: var(--marketplaceColor);
+}

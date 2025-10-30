@@ -460,6 +460,7 @@ export const TransactionPageComponent = props => {
         orderBreakdown: (
           <OrderBreakdown
             listing={listing}
+            fromTransactionPanel={true}
             className={css.breakdown}
             userRole={transactionRole}
             transaction={transaction}
