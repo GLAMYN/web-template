@@ -63,6 +63,8 @@ const handleFetchLineItems = props => formValues => {
     seats,
     priceVariantName,
     priceVariantNames = [],
+    location,
+    locationChoice,
     coupon,
   } = formValues.values;
   const allVariants = listing?.attributes?.publicData?.priceVariants;
@@ -126,6 +128,8 @@ const handleFetchLineItems = props => formValues => {
       ...priceVariantMaybe,
       ...priceVariantNamesMaybe,
       ...couponMaybe,
+      location: location,
+      locationChoice: locationChoice
     };
 
     onFetchTransactionLineItems({
@@ -331,6 +335,8 @@ export const BookingFixedDurationForm = props => {
                 bookingEndTime: endDate.getTime(),
                 seats: values?.seats,
                 coupon: coupon,
+                location: values?.location,
+                locationChoice: values?.locationChoice,
               },
             });
           }
@@ -350,6 +356,8 @@ export const BookingFixedDurationForm = props => {
                 bookingEndTime: endDate.getTime(),
                 seats: values?.seats,
                 priceVariantNames,
+                location: values?.location,
+                locationChoice: values?.locationChoice,
               },
             });
           }
@@ -521,6 +529,8 @@ export const BookingFixedDurationForm = props => {
                       bookingStartTime: startTime,
                       bookingEndTime: endDate ? endDate.getTime() : null,
                       seats: values,
+                      location: values?.location,
+                      locationChoice: values?.locationChoice,
                     },
                   });
                 }}

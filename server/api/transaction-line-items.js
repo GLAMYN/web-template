@@ -140,7 +140,7 @@ module.exports = async (req, res) => {
         }
       }
 
-      const lineItems = transactionLineItems(
+      const lineItems = await transactionLineItems(
         listing,
         updatedOrderData,
         providerCommission,

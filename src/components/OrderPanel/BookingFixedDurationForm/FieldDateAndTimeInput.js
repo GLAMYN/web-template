@@ -479,6 +479,8 @@ const onBookingStartDateChange = (props, setCurrentMonth) => value => {
         bookingStartTime: startTime,
         bookingEndTime: endTime,
         seats: seatsEnabled ? 1 : undefined,
+        location: values?.location,
+        locationChoice: values?.locationChoice,
       },
     });
   });
@@ -523,6 +525,8 @@ const onBookingStartTimeChange = props => value => {
       bookingStartTime: value,
       bookingEndTime: endTime.getTime(),
       seats: seatsEnabled ? 1 : undefined,
+      location: values?.location,
+      locationChoice: values?.locationChoice,
     },
   });
 };

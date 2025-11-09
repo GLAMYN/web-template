@@ -123,6 +123,8 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
       ...shippingDetails,
       ...priceVariantMaybe,
       priceVariantNames,
+      location: pageData.orderData?.location,
+      locationChoice: pageData.orderData?.locationChoice,
     },
   };
 
@@ -145,6 +147,8 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
     ...protectedDataMaybe,
     ...optionalPaymentParams,
     priceVariantNames: priceVariantNames,
+    location: pageData.orderData?.location,
+    locationChoice: pageData.orderData?.locationChoice,
   };
   return orderParams;
 };

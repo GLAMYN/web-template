@@ -9,6 +9,7 @@ const {
 } = require('../api-util/sdk');
 const { recurringCommission } = require('../constants/commissions');
 const { UUID } = require('sharetribe-flex-integration-sdk').types;
+const { geocodeAddress } = require('../api-util/geocodeAddress');
 
 async function getTransactions(integrationSdk, customerId, listingId) {
   return integrationSdk.transactions.query({
@@ -220,7 +221,7 @@ module.exports = (req, res) => {
         }
       }
 
-      lineItems = transactionLineItems(
+      lineItems = await transactionLineItems(
         listing,
         { ...orderData, ...bodyParams.params, ...couponData },
         providerCommission,
@@ -261,6 +262,11 @@ module.exports = (req, res) => {
 
       if (pageData?.listing?.attributes?.geolocation?.lat) {
         const { bookingQuestion1, bookingQuestion2, bookingQuestion3 } = pageData?.orderData;
+        
+        // Extract state/province and country from listing address using geocoding API
+        const address = listing?.attributes?.publicData?.location?.address;
+        const locationMetadata = await geocodeAddress(address);
+        
         await integrationSdk.transactions
           .updateMetadata(
             {
@@ -270,6 +276,9 @@ module.exports = (req, res) => {
                 selectedLocationType: selectedLocationType,
                 selectedLocation: selectedLocation,
                 location: pageData?.orderData?.location,
+                ...(locationMetadata.stateName && { stateName: locationMetadata.stateName }),
+                ...(locationMetadata.stateCode && { stateCode: locationMetadata.stateCode }),
+                ...(locationMetadata.country && { country: locationMetadata.country }),
                 ...(bookingQuestion1 && { bookingQuestion1 }),
                 ...(bookingQuestion2 && { bookingQuestion2 }),
                 ...(bookingQuestion3 && { bookingQuestion3 }),

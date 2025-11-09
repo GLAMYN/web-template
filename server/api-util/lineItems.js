@@ -7,6 +7,8 @@ const {
 } = require('./lineItemHelpers');
 const { types } = require('sharetribe-flex-sdk');
 const { Money } = types;
+const salesTaxJsonData = require('./salesTax.json');
+const { geocodeAddress } = require('./geocodeAddress');
 
 /**
  * Get quantity and add extra line-items that are related to delivery method
@@ -182,7 +184,12 @@ const getCouponDiscountLineItem = (coupon, baseLineItems, currency) => {
  * @param {Object} customerCommission
  * @returns {Array} lineItems
  */
-exports.transactionLineItems = (listing, orderData, providerCommission, customerCommission) => {
+exports.transactionLineItems = async (
+  listing,
+  orderData,
+  providerCommission,
+  customerCommission
+) => {
   const publicData = listing.attributes.publicData;
   // Note: the unitType needs to be one of the following:
   // day, night, hour, fixed, or item (these are related to payment processes)
@@ -293,6 +300,32 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
     ...extraLineItems,
   ];
 
+  // Sales tax line item
+  const salesTaxLineItem = [];
+  let stateName = orderData?.selectedPlace?.stateName;
+  let salesTax = null;
+
+  if (orderData?.locationChoice === 'providerLocation') {
+    const address = listing?.attributes?.publicData?.location?.address;
+    // Use geocoding API to extract state/province information from address
+    if (address) {
+      const locationMetadata = await geocodeAddress(address);
+      stateName = locationMetadata?.stateName;
+    }
+  }
+  salesTax = salesTaxJsonData.find(
+    tax => tax.province.toLowerCase() === (stateName || '').toLowerCase()
+  );
+
+  if (salesTax && stateName) {
+    salesTaxLineItem.push({
+      code: `line-item/Sales Tax (${stateName})`,
+      unitPrice: new Money(salesTax?.total_applicable_tax_rate, currency),
+      quantity: 1,
+      includeFor: ['customer', 'provider'],
+    });
+  }
+
   // Add coupon discount if present
   const coupon = orderData?.coupon;
   const couponDiscountLineItem = getCouponDiscountLineItem(coupon, baseLineItems, currency);
@@ -310,6 +343,7 @@ exports.transactionLineItems = (listing, orderData, providerCommission, customer
   const lineItems = [
     // order,
     ...extraLineItems,
+    ...salesTaxLineItem,
     ...couponLineItems,
     ...getProviderCommissionMaybe(providerCommission, baseLineItemsWithCoupon, priceAttribute),
     ...getCustomerCommissionMaybe(customerCommission, baseLineItemsWithCoupon, priceAttribute),

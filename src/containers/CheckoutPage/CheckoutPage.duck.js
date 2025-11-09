@@ -412,6 +412,8 @@ export const speculateTransaction = (
     priceVariantNames,
     quantity,
     bookingDates,
+    location,
+    locationChoice,
     ...otherOrderParams
   } = orderParams;
   const quantityMaybe = quantity ? { stockReservationQuantity: quantity } : {};
@@ -421,7 +423,9 @@ export const speculateTransaction = (
   const orderData = {
     ...(deliveryMethod ? { deliveryMethod } : {}),
     ...(priceVariantName ? { priceVariantName } : {}),
-    ...(priceVariantNames ? {priceVariantNames} : {})
+    ...(priceVariantNames ? {priceVariantNames} : {}),
+    ...(location ? { location } : {}),
+    ...(locationChoice ? { locationChoice } : {}),
   };
 
   // Parameters for Marketplace API

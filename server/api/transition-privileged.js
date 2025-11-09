@@ -154,7 +154,7 @@ module.exports = (req, res) => {
         }
       }
 
-      lineItems = transactionLineItems(
+      lineItems = await transactionLineItems(
         listing,
         { ...orderData, ...bodyParams.params, ...couponData },
         providerCommission,

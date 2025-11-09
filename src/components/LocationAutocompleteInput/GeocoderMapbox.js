@@ -6,6 +6,7 @@ const { LatLng: SDKLatLng, LatLngBounds: SDKLatLngBounds } = sdkTypes;
 export const CURRENT_LOCATION_ID = 'current-location';
 
 const GENERATED_BOUNDS_DEFAULT_DISTANCE = 500; // meters
+
 // Distances for generated bounding boxes for different Mapbox place types
 const PLACE_TYPE_BOUNDS_DISTANCES = {
   address: 500,
@@ -20,40 +21,47 @@ const PLACE_TYPE_BOUNDS_DISTANCES = {
   'poi.landmark': 2000,
 };
 
+/**
+ * Generate bounds around a lat/lng with a given distance.
+ */
 const locationBounds = (latlng, distance) => {
-  if (!latlng) {
-    return null;
-  }
+  if (!latlng) return null;
 
   const bounds = new window.mapboxgl.LngLat(latlng.lng, latlng.lat).toBounds(distance);
+
+  // Correct coordinate order: southwest -> northeast
   return new SDKLatLngBounds(
-    new SDKLatLng(bounds.getNorth(), bounds.getEast()),
-    new SDKLatLng(bounds.getSouth(), bounds.getWest())
+    new SDKLatLng(bounds.getSouth(), bounds.getWest()),
+    new SDKLatLng(bounds.getNorth(), bounds.getEast())
   );
 };
 
+/**
+ * Extract origin (lat/lng) from a Mapbox prediction.
+ */
 const placeOrigin = prediction => {
   if (prediction && Array.isArray(prediction.center) && prediction.center.length === 2) {
-    // Coordinates in Mapbox features are represented as [longitude, latitude].
+    // Mapbox stores coordinates as [lng, lat]
     return new SDKLatLng(prediction.center[1], prediction.center[0]);
   }
   return null;
 };
 
+/**
+ * Compute bounds for a given Mapbox prediction.
+ */
 const placeBounds = prediction => {
   if (prediction) {
     if (Array.isArray(prediction.bbox) && prediction.bbox.length === 4) {
-      // Bounds in Mapbox features are represented as [minX, minY, maxX, maxY]
+      // bbox format: [west, south, east, north]
+      const [west, south, east, north] = prediction.bbox;
       return new SDKLatLngBounds(
-        new SDKLatLng(prediction.bbox[3], prediction.bbox[2]),
-        new SDKLatLng(prediction.bbox[1], prediction.bbox[0])
+        new SDKLatLng(south, west),
+        new SDKLatLng(north, east)
       );
     } else {
-      // If bounds are not available, generate them around the origin
-
-      // Resolve bounds distance based on place type
+      // Fallback: generate bounds around origin
       const placeType = Array.isArray(prediction.place_type) && prediction.place_type[0];
-
       const distance =
         (placeType && PLACE_TYPE_BOUNDS_DISTANCES[placeType]) || GENERATED_BOUNDS_DEFAULT_DISTANCE;
 
@@ -61,6 +69,37 @@ const placeBounds = prediction => {
     }
   }
   return null;
+};
+
+/**
+ * Extracts state and country information from Mapbox prediction context.
+ *
+ * @param {Object} prediction - Mapbox prediction/feature object
+ * @returns {Object} Object containing stateName, stateCode, and country
+ */
+const extractMapboxLocationMetadata = prediction => {
+  let stateName = null;
+  let stateCode = null;
+  let country = null;
+
+  if (prediction && Array.isArray(prediction.context)) {
+    prediction.context.forEach(contextItem => {
+      const id = contextItem.id || '';
+
+      // region.* represents a state/province
+      if (id.startsWith('region.')) {
+        stateName = contextItem.text || null;
+        stateCode = contextItem.short_code?.toUpperCase() || contextItem.text || null;
+      }
+
+      // country.* represents the country
+      if (id.startsWith('country.')) {
+        country = contextItem.short_code?.toUpperCase() || contextItem.text || null;
+      }
+    });
+  }
+
+  return { stateName, stateCode, country };
 };
 
 export const GeocoderAttribution = () => null;
@@ -75,26 +114,28 @@ class GeocoderMapbox {
     if (!libLoaded) {
       throw new Error('Mapbox libraries are required for GeocoderMapbox');
     }
-    if (!this._client && window?.mapboxgl?.accessToken) {
+
+    if (!window.mapboxgl.accessToken) {
+      throw new Error('Mapbox access token not found in window.mapboxgl.accessToken');
+    }
+
+    if (!this._client) {
       this._client = window.mapboxSdk({
         accessToken: window.mapboxgl.accessToken,
       });
     }
+
     return this._client;
   }
-
-  // Public API
-  //
 
   /**
    * Search places with the given name.
    *
-   * @param {String} search query for place names
+   * @param {String} search - query for place names
+   * @param {String[]} countryLimit - optional list of country codes to limit search
+   * @param {String} locale - optional language code
    *
    * @return {Promise<{ search: String, predictions: Array<Object>}>}
-   * results of the geocoding, should have the original search query
-   * and an array of predictions. The format of the predictions is
-   * only relevant for the `getPlaceDetails` function below.
    */
   getPlacePredictions(search, countryLimit, locale) {
     const limitCountriesMaybe = countryLimit ? { countries: countryLimit } : {};
@@ -104,15 +145,13 @@ class GeocoderMapbox {
         query: search,
         limit: 5,
         ...limitCountriesMaybe,
-        language: [locale],
+        language: locale ? [locale] : undefined,
       })
       .send()
-      .then(response => {
-        return {
-          search,
-          predictions: response.body.features,
-        };
-      });
+      .then(response => ({
+        search,
+        predictions: response.body.features,
+      }));
   }
 
   /**
@@ -127,39 +166,40 @@ class GeocoderMapbox {
    */
   getPredictionAddress(prediction) {
     if (prediction.predictionPlace) {
-      // default prediction defined above
       return prediction.predictionPlace.address;
     }
-    // prediction from Mapbox geocoding API
     return prediction.place_name;
   }
 
   /**
    * Fetch or read place details from the selected prediction.
    *
-   * @param {Object} prediction selected prediction object
+   * @param {Object} prediction - selected prediction object
+   * @param {Number} currentLocationBoundsDistance - optional bounds distance
    *
-   * @return {Promise<util.propTypes.place>} a place object
+   * @return {Promise<Object>} a place object
    */
   getPlaceDetails(prediction, currentLocationBoundsDistance) {
     if (this.getPredictionId(prediction) === CURRENT_LOCATION_ID) {
-      return userLocation().then(latlng => {
-        return {
-          address: '',
-          origin: latlng,
-          bounds: locationBounds(latlng, currentLocationBoundsDistance),
-        };
-      });
+      return userLocation().then(latlng => ({
+        address: '',
+        origin: latlng,
+        bounds: locationBounds(latlng, currentLocationBoundsDistance),
+      }));
     }
 
     if (prediction.predictionPlace) {
       return Promise.resolve(prediction.predictionPlace);
     }
 
+    // Extract location metadata (state, country, etc.)
+    const locationMetadata = extractMapboxLocationMetadata(prediction);
+
     return Promise.resolve({
       address: this.getPredictionAddress(prediction),
       origin: placeOrigin(prediction),
       bounds: placeBounds(prediction),
+      ...locationMetadata,
     });
   }
 }

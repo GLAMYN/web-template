@@ -1,0 +1,100 @@
+[
+  {
+    "province": "Quebec",
+    "code": "QC",
+    "total_applicable_tax_rate": 14.975,
+    "tax_type": "GST 5% + QST 9.975%",
+    "notes": "Both applied separately (QST not on GST base)"
+  },
+  {
+    "province": "Ontario",
+    "code": "ON",
+    "total_applicable_tax_rate": 13,
+    "tax_type": "HST",
+    "notes": ""
+  },
+  {
+    "province": "Nova Scotia",
+    "code": "NS",
+    "total_applicable_tax_rate": 14,
+    "tax_type": "HST",
+    "notes": "Rate since Apr 1, 2025"
+  },
+  {
+    "province": "New Brunswick",
+    "code": "NB",
+    "total_applicable_tax_rate": 15,
+    "tax_type": "HST",
+    "notes": ""
+  },
+  {
+    "province": "Newfoundland & Labrador",
+    "code": "NL",
+    "total_applicable_tax_rate": 15,
+    "tax_type": "HST",
+    "notes": ""
+  },
+  {
+    "province": "Newfoundland and Labrador",
+    "code": "NL",
+    "total_applicable_tax_rate": 15,
+    "tax_type": "HST",
+    "notes": ""
+  },
+  {
+    "province": "Prince Edward Island",
+    "code": "PE",
+    "total_applicable_tax_rate": 15,
+    "tax_type": "HST",
+    "notes": ""
+  },
+  {
+    "province": "British Columbia",
+    "code": "BC",
+    "total_applicable_tax_rate": 5,
+    "tax_type": "GST only",
+    "notes": "PST not on personal services (only on goods)"
+  },
+  {
+    "province": "Saskatchewan",
+    "code": "SK",
+    "total_applicable_tax_rate": 5,
+    "tax_type": "GST only",
+    "notes": "PST not on beauty/wellness services"
+  },
+  {
+    "province": "Manitoba",
+    "code": "MB",
+    "total_applicable_tax_rate": 5,
+    "tax_type": "GST only",
+    "notes": "RST removed for personal services (Dec 2021)"
+  },
+  {
+    "province": "Alberta",
+    "code": "AB",
+    "total_applicable_tax_rate": 5,
+    "tax_type": "GST only",
+    "notes": ""
+  },
+  {
+    "province": "Yukon",
+    "code": "YT",
+    "total_applicable_tax_rate": 5,
+    "tax_type": "GST only",
+    "notes": ""
+  },
+  {
+    "province": "Northwest Territories",
+    "code": "NT",
+    "total_applicable_tax_rate": 5,
+    "tax_type": "GST only",
+    "notes": ""
+  },
+  {
+    "province": "Nunavut",
+    "code": "NU",
+    "total_applicable_tax_rate": 5,
+    "tax_type": "GST only",
+    "notes": ""
+  }
+]
