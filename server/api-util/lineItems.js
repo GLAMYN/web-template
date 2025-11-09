@@ -300,9 +300,21 @@ exports.transactionLineItems = async (
     ...extraLineItems,
   ];
 
+  // Add coupon discount if present
+  const coupon = orderData?.coupon;
+  const couponDiscountLineItem = getCouponDiscountLineItem(coupon, baseLineItems, currency);
+  const couponLineItems = couponDiscountLineItem ? [couponDiscountLineItem] : [];
+
+  // Create line items including coupon discount for commission calculation
+  const baseLineItemsWithCoupon = [
+    // order,
+    ...extraLineItems,
+    ...couponLineItems,
+  ];
+
   // Sales tax line item
   const salesTaxLineItem = [];
-  let stateName = orderData?.selectedPlace?.stateName;
+  let stateName = orderData?.location?.selectedPlace?.stateName;
   let salesTax = null;
 
   if (orderData?.locationChoice === 'providerLocation') {
@@ -318,25 +330,18 @@ exports.transactionLineItems = async (
   );
 
   if (salesTax && stateName) {
+    const totalAmountBeforeTax = baseLineItemsWithCoupon.reduce(
+      (sum, item) => sum + item.unitPrice.amount * item.quantity,
+      0
+    );
+    const taxAmount = totalAmountBeforeTax * (salesTax.total_applicable_tax_rate / 100);
     salesTaxLineItem.push({
       code: `line-item/Sales Tax (${stateName})`,
-      unitPrice: new Money(salesTax?.total_applicable_tax_rate, currency),
+      unitPrice: new Money(taxAmount, currency),
       quantity: 1,
       includeFor: ['customer', 'provider'],
     });
   }
-
-  // Add coupon discount if present
-  const coupon = orderData?.coupon;
-  const couponDiscountLineItem = getCouponDiscountLineItem(coupon, baseLineItems, currency);
-  const couponLineItems = couponDiscountLineItem ? [couponDiscountLineItem] : [];
-
-  // Create line items including coupon discount for commission calculation
-  const baseLineItemsWithCoupon = [
-    // order,
-    ...extraLineItems,
-    ...couponLineItems,
-  ];
 
   // Let's keep the base price (order) as first line item, then coupon discount, and provider and customer commissions as last.
   // Note: the order matters only if OrderBreakdown component doesn't recognize line-item.
