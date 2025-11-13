@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { intlShape } from '../../util/reactIntl';
 import { formatMoney } from '../../util/currency';
 import { humanizeLineItemCode } from '../../util/data';
 import { LINE_ITEMS, propTypes } from '../../util/types';
+import { types as sdkTypes } from '../../util/sdkLoader';
 
 import css from './OrderBreakdown.module.css';
 
@@ -26,14 +27,28 @@ import css from './OrderBreakdown.module.css';
  */
 const LineItemUnknownItemsMaybe = props => {
   const { lineItems, isProvider, intl } = props;
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [salesItems, setSalesItems] = useState();
+  const { Money, UUID } = sdkTypes;
+
+  useEffect(() => {
+    if (allItems?.length > 0) {
+      const saleItem = allItems?.find(item => item.code.includes('Sales Tax'));
+      const removedSaleItem = allItems?.filter(item => !item.code.includes('Sales Tax'));
+      setSalesItems(saleItem);
+      setFilteredItems([...removedSaleItem]);
+    }
+  }, [lineItems]);
 
   // resolve unknown non-reversal line items
   const allItems = lineItems.filter(item => LINE_ITEMS.indexOf(item.code) === -1 && !item.reversal);
 
   const items = isProvider
-    ? allItems.filter(item => item.includeFor.includes('provider'))
-    : allItems.filter(item => item.includeFor.includes('customer'));
+    ? filteredItems.filter(item => item.includeFor.includes('provider'))
+    : filteredItems.filter(item => item.includeFor.includes('customer'));
 
+  const serviceSubtotal = new Money(items.reduce((total, item) => total + item.lineTotal?.amount, 0), items[0]?.lineTotal?.currency);
+  
   return items.length > 0 ? (
     <React.Fragment>
       {items.map((item, i) => {
@@ -52,6 +67,20 @@ const LineItemUnknownItemsMaybe = props => {
           </div>
         );
       })}
+
+      <hr className={css.totalDivider} />
+      <div className={css.lineItem}>
+        <span className={css.itemLabel}>Service subtotal</span>
+        <span className={css.itemValue}>{formatMoney(intl, serviceSubtotal)}</span>
+      </div>
+      <hr className={css.totalDivider} />
+
+      {salesItems && (
+        <div className={css.lineItem}>
+          <span className={css.itemLabel}>{humanizeLineItemCode(salesItems.code)}</span>
+          <span className={css.itemValue}>{formatMoney(intl, salesItems.lineTotal)}</span>
+        </div>
+      )}
     </React.Fragment>
   ) : null;
 };

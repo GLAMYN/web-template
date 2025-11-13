@@ -114,6 +114,9 @@ export const OrderBreakdownComponent = props => {
         code={lineItemUnitType}
         dateType={dateType}
         timeZone={timeZone}
+        transaction={transaction}
+        fromTransactionPanel={props?.fromTransactionPanel}
+        listing={listing}
       />
 
       <LineItemBasePriceMaybe lineItems={lineItems} code={lineItemUnitType} intl={intl} />
@@ -121,20 +124,6 @@ export const OrderBreakdownComponent = props => {
       <LineItemPickupFeeMaybe lineItems={lineItems} intl={intl} />
       {/* <LineItemCouponDiscount lineItems={lineItems} intl={intl} /> */}
       <LineItemUnknownItemsMaybe lineItems={lineItems} isProvider={isProvider} intl={intl} />
-
-      {(props?.fromTransactionPanel && transaction.attributes.metadata?.travelTime) ? (
-            <div className={css.feeInfo}>
-              Please note: A travel time of{' '}
-              {transaction.attributes.metadata?.travelTime?.match(/\d+/)?.[0]} minutes has been included.
-            </div>
-          )
-        : listing.attributes.publicData?.travel_time && (
-            <div className={css.feeInfo}>
-              Please note: A travel time of{' '}
-              {listing.attributes.publicData?.travel_time?.match(/\d+/)?.[0]} minutes will be
-              included at the end of your appointment.
-            </div>
-          )}
 
       <LineItemSubTotalMaybe
         lineItems={lineItems}

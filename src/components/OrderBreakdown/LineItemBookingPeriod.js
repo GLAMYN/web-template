@@ -58,8 +58,6 @@ const BookingPeriod = props => {
     minute: 'numeric',
   };
 
-
-
   return (
     <>
       <div className={css.bookingPeriod}>
@@ -123,7 +121,7 @@ const BookingPeriod = props => {
  * @returns {JSX.Element} line-item element for the order breakdown
  */
 const LineItemBookingPeriod = props => {
-  const { booking, code, dateType, timeZone } = props;
+  const { booking, code, dateType, timeZone, transaction, fromTransactionPanel, listing } = props;
 
   if (!booking) {
     return null;
@@ -148,6 +146,23 @@ const LineItemBookingPeriod = props => {
           dateType={dateType}
           timeZone={timeZone}
         />
+      </div>
+      <div style={{ marginBottom: '-10px' }}>
+        {props?.fromTransactionPanel && transaction.attributes.metadata?.travelTime ? (
+          <div className={css.feeInfo}>
+            Please note: A travel time of{' '}
+            {transaction.attributes.metadata?.travelTime?.match(/\d+/)?.[0]} minutes has been
+            included.
+          </div>
+        ) : (
+          listing.attributes.publicData?.travel_time && (
+            <div className={css.feeInfo}>
+              Please note: A travel time of{' '}
+              {listing.attributes.publicData?.travel_time?.match(/\d+/)?.[0]} minutes will be
+              included at the end of your appointment.
+            </div>
+          )
+        )}
       </div>
       <hr className={css.totalDivider} />
     </>
