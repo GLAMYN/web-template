@@ -325,9 +325,26 @@ exports.transactionLineItems = async (
       stateName = locationMetadata?.stateName;
     }
   }
-  salesTax = salesTaxJsonData.find(
-    tax => tax.province.toLowerCase() === (stateName || '').toLowerCase()
-  );
+  if (stateName) {
+    salesTax = salesTaxJsonData.find(
+      tax => tax.province.toLowerCase() === (stateName || '').toLowerCase()
+    );
+  } else {
+    const address = orderData?.location?.selectedPlace?.address;
+    console.log('addressaddress', address);
+    const parts = address?.split(',') || [];
+    for (const part of parts) {
+      const trimmed = part.trim().toLowerCase();
+      console.log('state part:', part);
+
+      salesTax = salesTaxJsonData.find(tax => tax.province.toLowerCase() === trimmed);
+
+      if (salesTax) {
+        stateName = part;
+        break;
+      }
+    }
+  }
 
   if (salesTax && stateName) {
     const totalAmountBeforeTax = baseLineItemsWithCoupon.reduce(

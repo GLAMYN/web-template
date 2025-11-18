@@ -6,6 +6,7 @@ import { LINE_ITEMS, propTypes } from '../../util/types';
 import { types as sdkTypes } from '../../util/sdkLoader';
 
 import css from './OrderBreakdown.module.css';
+import classNames from 'classnames';
 
 /**
  * Renders non-reversal line items that are not listed in the
@@ -70,14 +71,14 @@ const LineItemUnknownItemsMaybe = props => {
 
       <hr className={css.totalDivider} />
       <div className={css.lineItem}>
-        <span className={css.itemLabel}>Service subtotal</span>
+        <span className={classNames(css.itemLabel)}>Service subtotal</span>
         <span className={css.itemValue}>{formatMoney(intl, serviceSubtotal)}</span>
       </div>
       <hr className={css.totalDivider} />
 
       {salesItems && (
         <div className={css.lineItem}>
-          <span className={css.itemLabel}>{humanizeLineItemCode(salesItems.code)}</span>
+          <span className={classNames(css.itemLabel, css.salesTax)}>{humanizeLineItemCode(salesItems.code)}</span>
           <span className={css.itemValue}>{formatMoney(intl, salesItems.lineTotal)}</span>
         </div>
       )}

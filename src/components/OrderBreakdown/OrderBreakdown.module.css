@@ -123,6 +123,7 @@
 
 .totalLabel {
   composes: marketplaceSmallFontStyles from global;
+  font-weight: var(--fontWeightBold);
 }
 
 .feeInfo {
@@ -141,4 +142,7 @@
 .travelTimeNote{
   color: orange;
   font-size: 14px;
+}
+.salesTax{
+  font-weight: var(--fontWeightBold);
 }
