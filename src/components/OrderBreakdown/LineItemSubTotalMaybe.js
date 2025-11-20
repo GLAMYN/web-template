@@ -11,6 +11,7 @@ import {
 } from '../../util/types';
 
 import css from './OrderBreakdown.module.css';
+import classNames from 'classnames';
 
 const { Money } = sdkTypes;
 
@@ -85,8 +86,8 @@ const LineItemSubTotalMaybe = props => {
 
   return formattedSubTotal && showSubTotal ? (
     <>
-      <hr className={css.totalDivider} />
-      <div className={css.subTotalLineItem}>
+      {/* <hr className={css.totalDivider} /> */}
+      <div className={classNames(css.subTotalLineItem, css.salesTax)}>
         <span className={css.itemLabel}>
           <FormattedMessage id="OrderBreakdown.subTotal" />
         </span>

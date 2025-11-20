@@ -99,7 +99,10 @@ module.exports = (req, res) => {
   let listing = null; // Store listing for later use
 
   const listingPromise = () =>
-    sdk.listings.show({ id: bodyParams?.params?.listingId, include: ['author', 'publicData.travel_time'] });
+    sdk.listings.show({
+      id: bodyParams?.params?.listingId,
+      include: ['author', 'publicData.travel_time'],
+    });
 
   // Get current user to get customerId
   const currentUserPromise = sdk.currentUser.show();
@@ -260,18 +263,79 @@ module.exports = (req, res) => {
         }
       }
 
+      // Helper function to serialize line items for metadata storage
+      // Converts Money objects to plain objects with amount and currency
+      const serializeLineItem = lineItem => {
+        const serialized = { ...lineItem };
+        if (
+          lineItem.unitPrice &&
+          typeof lineItem.unitPrice === 'object' &&
+          lineItem.unitPrice.amount !== undefined
+        ) {
+          serialized.unitPrice = {
+            amount: lineItem.unitPrice.amount,
+            currency: lineItem.unitPrice.currency,
+          };
+        }
+        if (
+          lineItem.lineTotal &&
+          typeof lineItem.lineTotal === 'object' &&
+          lineItem.lineTotal.amount !== undefined
+        ) {
+          serialized.lineTotal = {
+            amount: lineItem.lineTotal.amount,
+            currency: lineItem.lineTotal.currency,
+          };
+        }
+        return serialized;
+      };
+
+      // Helper function to identify sale line items
+      // Sale line items are base price items (night, day, hour, item, fixed) or price variant items
+      const isSaleLineItem = lineItem => {
+        return lineItem.code.includes('Sales Tax');
+      };
+
+      // Extract sale line items and other line items, then serialize them
+      const saleLineItems = lineItems
+        ? lineItems.filter(isSaleLineItem).map(serializeLineItem)
+        : [];
+      const lineItemsWithoutSale = lineItems
+        ? lineItems.filter(item => !isSaleLineItem(item)).map(serializeLineItem)
+        : [];
+
+      // Prepare base metadata with sale line items and line items
+      const baseMetadata = {
+        // Add sale line items and line items without sale line items
+        ...(saleLineItems.length > 0 && {
+          saleLineItem: saleLineItems?.map(item => {
+            item.code = item?.code?.replace('line-item/', '');
+            item.linetotal = { amount: Number(item.unitPrice?.amount) * Number(item.quantity || 1), currency: item.unitPrice?.currency };
+            return item;
+          }),
+        }),
+        ...(lineItemsWithoutSale.length > 0 && {
+          lineItems: lineItemsWithoutSale?.map(item => {
+            item.code = item?.code?.replace('line-item/', '');
+            item.linetotal = { amount: Number(item.unitPrice?.amount) * Number(item.quantity || 1), currency: item.unitPrice?.currency };
+            return item;
+          }),
+        }),
+      };
+
       if (pageData?.listing?.attributes?.geolocation?.lat) {
         const { bookingQuestion1, bookingQuestion2, bookingQuestion3 } = pageData?.orderData;
-        
+
         // Extract state/province and country from listing address using geocoding API
         const address = listing?.attributes?.publicData?.location?.address;
         const locationMetadata = await geocodeAddress(address);
-        
+
         await integrationSdk.transactions
           .updateMetadata(
             {
               id: data.data.id,
               metadata: {
+                ...baseMetadata,
                 travelTime: listing?.attributes?.publicData?.travel_time,
                 selectedLocationType: selectedLocationType,
                 selectedLocation: selectedLocation,
