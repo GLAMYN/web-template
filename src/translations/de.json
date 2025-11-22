@@ -396,6 +396,7 @@
   "FieldBoolean.yes": "Ja",
   "FieldDateAndTimeInput.endTime": "Endzeit",
   "FieldDateAndTimeInput.startTime": "Startzeit",
+  "FieldDateAndTimeInput.noTimeSlotsAvailable": "Keine Zeitslots für das ausgewählte Datum verfügbar",
   "FieldDateInput.screenReaderInputMessage": "Datumseingabe",
   "FieldDateRangeInput.endDatePlaceholderText": "Enddatum hinzufügen",
   "FieldDateRangeInput.invalidEndDate": "Das Enddatum ist nicht gültig",

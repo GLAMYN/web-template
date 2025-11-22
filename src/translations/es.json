@@ -396,6 +396,7 @@
   "FieldBoolean.yes": "Sí",
   "FieldDateAndTimeInput.endTime": "Hora de fin",
   "FieldDateAndTimeInput.startTime": "Hora de inicio",
+  "FieldDateAndTimeInput.noTimeSlotsAvailable": "No hay horarios disponibles para la fecha seleccionada",
   "FieldDateInput.screenReaderInputMessage": "Fecha",
   "FieldDateRangeInput.endDatePlaceholderText": "Introduce la fecha final",
   "FieldDateRangeInput.invalidEndDate": "La fecha final no es válida",

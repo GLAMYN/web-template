@@ -303,24 +303,41 @@ module.exports = (req, res) => {
       const lineItemsWithoutSale = lineItems
         ? lineItems.filter(item => !isSaleLineItem(item)).map(serializeLineItem)
         : [];
-
+      
       // Prepare base metadata with sale line items and line items
       const baseMetadata = {
         // Add sale line items and line items without sale line items
         ...(saleLineItems.length > 0 && {
           saleLineItem: saleLineItems?.map(item => {
             item.code = item?.code?.replace('line-item/', '');
-            item.linetotal = { amount: Number(item.unitPrice?.amount) * Number(item.quantity || 1), currency: item.unitPrice?.currency };
+            item.linetotal = {
+              amount: Number(item.unitPrice?.amount / 100) * Number(item.quantity || 1),
+              currency: 'USD',
+            };
             return item;
           }),
         }),
         ...(lineItemsWithoutSale.length > 0 && {
           lineItems: lineItemsWithoutSale?.map(item => {
             item.code = item?.code?.replace('line-item/', '');
-            item.linetotal = { amount: Number(item.unitPrice?.amount) * Number(item.quantity || 1), currency: item.unitPrice?.currency };
+            item.linetotal = {
+              amount: Number(item.unitPrice?.amount / 100) * Number(item.quantity || 1),
+              currency: 'USD',
+            };
             return item;
           }),
         }),
+        ...{
+          serviceTotal: {
+            amount:
+              lineItemsWithoutSale?.filter(item => !item.code.includes("provider-commission"))?.reduce(
+                (total, item) =>
+                  total + Number(item.unitPrice?.amount || 0) * Number(item.quantity || 1),
+                0
+              ) / 100,
+            currency: 'USD',
+          },
+        },
       };
 
       if (pageData?.listing?.attributes?.geolocation?.lat) {

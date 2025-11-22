@@ -232,9 +232,19 @@ export const BookingFixedDurationForm = props => {
       ? { initialValues: { priceVariantName: priceVariants?.[0]?.name || null } }
       : {};
 
+  // Calculate travel time from listing publicData
+  const timeMap = {
+    travel_time_15mins: 15,
+    travel_time_30mins: 30,
+    travel_time_45mins: 45,
+    travel_time_60mins: 60,
+  };
+  const publicData = listing?.attributes?.publicData;
+  const travelTime = timeMap[publicData?.travel_time] || 0;
+
   const minDurationStartingInInterval = priceVariants.reduce((min, priceVariant) => {
     return Math.min(min, priceVariant.bookingLengthInMinutes);
-  }, Number.MAX_SAFE_INTEGER);
+  }, Number.MAX_SAFE_INTEGER) + travelTime;
 
   const classes = classNames(rootClassName || css.root, className);
   return (
@@ -318,7 +328,7 @@ export const BookingFixedDurationForm = props => {
           breakdownData && lineItems && !fetchLineItemsInProgress && !fetchLineItemsError;
 
         const onHandleFetchLineItems = handleFetchLineItems(props);
-        const submitDisabled = isPriceVariationsInUse && !isPublishedListing;
+        const submitDisabled = (isPriceVariationsInUse && !isPublishedListing) || !startTime;
 
         // Handle coupon application
         const handleCouponApplied = coupon => {

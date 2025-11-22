@@ -176,3 +176,14 @@
 .unitTypeHidden {
   display: none;
 }
+
+.noTimeSlotsError {
+  color: var(--colorFail);
+  font-size: 14px;
+  margin-top: 8px;
+  margin-left: 0;
+  
+  @media (--viewportMedium) {
+    margin-left: 0;
+  }
+}

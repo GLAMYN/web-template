@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Field } from 'react-final-form';
 import classNames from 'classnames';
+import { FormattedMessage } from '../../../util/reactIntl';
 
 import appSettings from '../../../config/settings';
 import {
@@ -428,6 +429,17 @@ const onBookingStartDateChange = (props, setCurrentMonth) => value => {
       ? priceVariants.find(pv => pv.name === priceVariantName)?.bookingLengthInMinutes
       : priceVariants?.[0]?.bookingLengthInMinutes;
   }
+  
+  // Add travel time to booking length for availability checks
+  const timeMap = {
+    travel_time_15mins: 15,
+    travel_time_30mins: 30,
+    travel_time_45mins: 45,
+    travel_time_60mins: 60,
+  };
+  const publicData = listing?.attributes?.publicData;
+  const travelTime = timeMap[publicData?.travel_time] || 0;
+  bookingLengthInMinutes = (bookingLengthInMinutes || 0) + travelTime;
 
   // This callback function (onBookingStartDateChange) is called from DatePicker component.
   // It gets raw value as a param - browser's local time instead of time in listing's timezone.
@@ -600,6 +612,7 @@ const FieldDateAndTimeInput = props => {
     priceVariants,
     intl,
     dayCountAvailableForBooking,
+    listing,
   } = props;
 
   const classes = classNames(rootClassName || css.root, className);
@@ -612,12 +625,23 @@ const FieldDateAndTimeInput = props => {
     : priceVariantName
     ? [priceVariantName]
     : [];
-  const bookingLengthInMinutes =
+  let bookingLengthInMinutes =
     selectedVariantNames.length > 0
       ? priceVariants
           ?.filter(pv => selectedVariantNames.includes(pv?.name))
           ?.reduce((sum, pv) => sum + (pv?.bookingLengthInMinutes || 0), 0)
       : priceVariants?.[0]?.bookingLengthInMinutes;
+  
+  // Add travel time to booking length for availability checks
+  const timeMap = {
+    travel_time_15mins: 15,
+    travel_time_30mins: 30,
+    travel_time_45mins: 45,
+    travel_time_60mins: 60,
+  };
+  const publicData = listing?.attributes?.publicData;
+  const travelTime = timeMap[publicData?.travel_time] || 0;
+  bookingLengthInMinutes = (bookingLengthInMinutes || 0) + travelTime;
 
   const [currentMonth, setCurrentMonth] = useState(getStartOf(TODAY, 'month', timeZone));
 
@@ -850,6 +874,11 @@ const FieldDateAndTimeInput = props => {
           <FieldHidden name="bookingEndTime" value={bookingEndTime} />
         </div>
       </div>
+          {bookingStartDate && availableStartTimes.length === 0 && (
+            <div className={css.noTimeSlotsError}>
+              <FormattedMessage id="FieldDateAndTimeInput.noTimeSlotsAvailable" />
+            </div>
+          )}
     </div>
   );
 };
