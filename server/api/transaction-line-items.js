@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
         author?.data?.data?.attributes?.profile?.publicData?.customCommission;
       const customerCustomCommission =
         customer?.data?.data?.attributes?.profile?.publicData?.customCommission;
-      
+
       const { providerCommission, customerCommission } =
         commissionAsset?.type === 'jsonAsset' ? commissionAsset.attributes.data : {};
 
@@ -61,10 +61,15 @@ module.exports = async (req, res) => {
       // Apply the same logic as in transaction-line-items.js
       const hasTransactions = transactions?.data?.data?.length > 0;
 
-      const getCommissionValue = (recurringValue, customValue, defaultValue, isCustomer=false) => {
+      const getCommissionValue = (
+        recurringValue,
+        customValue,
+        defaultValue,
+        isCustomer = false
+      ) => {
         if (hasTransactions && !isCustomer) return recurringValue;
         customValue ||= undefined;
-        if (customValue || (Number(customValue) === 0)) return Number(customValue);
+        if (customValue || Number(customValue) === 0) return Number(customValue);
         return defaultValue;
       };
 
@@ -97,27 +102,28 @@ module.exports = async (req, res) => {
       // If there's a coupon code but no coupon object, validate and get the coupon
       let updatedOrderData = { ...orderData };
 
+      // Get provider ID from listing
+      const providerId = listing.relationships?.author?.data?.id?.uuid;
+      if (!providerId) {
+        throw new Error('Provider ID not found in listing');
+      }
+
+      // Use Integration SDK to get provider's coupons
+      const integrationSdk = getIntegrationSdk();
+      const providerResponse = await integrationSdk.users.show({
+        id: providerId,
+        include: ['profileImage'],
+        'fields.user': ['profile.privateData.coupons', 'profile.publicData.salesTaxes'],
+      });
+
+
+      const privateData = providerResponse.data.data.attributes.profile?.privateData;
+      const providerCoupons = privateData?.coupons || [];
+      const salesTaxes = providerResponse?.data?.data?.attributes?.profile?.publicData?.salesTaxes;
+
       if (couponCode && !orderData.coupon) {
         try {
           console.log('Validating coupon code:', couponCode);
-
-          // Get provider ID from listing
-          const providerId = listing.relationships?.author?.data?.id?.uuid;
-          if (!providerId) {
-            throw new Error('Provider ID not found in listing');
-          }
-
-          // Use Integration SDK to get provider's coupons
-          const integrationSdk = getIntegrationSdk();
-          const providerResponse = await integrationSdk.users.show({
-            id: providerId,
-            include: ['profileImage'],
-            'fields.user': ['profile.privateData.coupons'],
-          });
-
-          const privateData = providerResponse.data.data.attributes.profile?.privateData;
-          const providerCoupons = privateData?.coupons || [];
-
           // Find the matching coupon
           const coupon = providerCoupons.find(
             c => c.code === couponCode.toUpperCase() && c.isActive
@@ -144,7 +150,8 @@ module.exports = async (req, res) => {
         listing,
         updatedOrderData,
         providerCommission,
-        customerCommission
+        customerCommission,
+        salesTaxes
       );
 
       // Because we are using returned lineItems directly in this template we need to use the helper function

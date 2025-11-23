@@ -48,8 +48,11 @@ const LineItemUnknownItemsMaybe = props => {
     ? filteredItems.filter(item => item.includeFor.includes('provider'))
     : filteredItems.filter(item => item.includeFor.includes('customer'));
 
-  const serviceSubtotal = new Money(items.reduce((total, item) => total + item.lineTotal?.amount, 0), items[0]?.lineTotal?.currency);
-  
+  const serviceSubtotal = new Money(
+    items.reduce((total, item) => total + item.lineTotal?.amount, 0),
+    items[0]?.lineTotal?.currency
+  );
+
   return items.length > 0 ? (
     <React.Fragment>
       {items.map((item, i) => {
@@ -74,13 +77,17 @@ const LineItemUnknownItemsMaybe = props => {
         <span className={classNames(css.itemLabel)}>Service subtotal</span>
         <span className={css.itemValue}>{formatMoney(intl, serviceSubtotal)}</span>
       </div>
-      <hr className={css.totalDivider} />
 
       {salesItems && (
-        <div className={css.lineItem}>
-          <span className={classNames(css.itemLabel, css.salesTax)}>{humanizeLineItemCode(salesItems.code)}</span>
-          <span className={css.itemValue}>{formatMoney(intl, salesItems.lineTotal)}</span>
-        </div>
+        <>
+          <hr className={css.totalDivider} />
+          <div className={css.lineItem}>
+            <span className={classNames(css.itemLabel, css.salesTax)}>
+              {humanizeLineItemCode(salesItems.code)}
+            </span>
+            <span className={css.itemValue}>{formatMoney(intl, salesItems.lineTotal)}</span>
+          </div>
+        </>
       )}
     </React.Fragment>
   ) : null;

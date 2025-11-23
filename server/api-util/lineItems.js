@@ -188,7 +188,8 @@ exports.transactionLineItems = async (
   listing,
   orderData,
   providerCommission,
-  customerCommission
+  customerCommission,
+  salesTaxes
 ) => {
   const publicData = listing.attributes.publicData;
   // Note: the unitType needs to be one of the following:
@@ -346,7 +347,7 @@ exports.transactionLineItems = async (
     }
   }
 
-  if (salesTax && stateName) {
+  if (salesTax && stateName && salesTaxes === "yes") {
     const totalAmountBeforeTax = baseLineItemsWithCoupon.reduce(
       (sum, item) => sum + item.unitPrice.amount * item.quantity,
       0

@@ -169,24 +169,23 @@ module.exports = (req, res) => {
         providerCommission.minimum_amount
       );
 
+      // Get provider ID from listing
+      const providerId = listing.relationships?.author?.data?.id?.uuid;
+      // Use Integration SDK to get provider's coupons
+      const providerResponse = await integrationSdk.users.show({
+        id: providerId,
+        include: ['profileImage'],
+        'fields.user': ['profile.privateData.coupons', 'profile.publicData.salesTaxes'],
+      });
+
+      const privateData = providerResponse?.data?.data?.attributes.profile?.privateData;
+      const providerCoupons = privateData?.coupons || [];
+      const salesTaxes = providerResponse?.data?.data?.attributes?.profile?.publicData?.salesTaxes;
+
       // We need to fetch coupon details from the provider's private data
       // Using the outer couponData variable
       if (coupanCodes) {
         try {
-          // Get provider ID from listing
-          const providerId = listing.relationships?.author?.data?.id?.uuid;
-          console.log('providerId>>>>>>>>>>>>>>>>', providerId);
-          if (providerId) {
-            // Use Integration SDK to get provider's coupons
-            const providerResponse = await integrationSdk.users.show({
-              id: providerId,
-              include: ['profileImage'],
-              'fields.user': ['profile.privateData.coupons'],
-            });
-
-            const privateData = providerResponse.data.data.attributes.profile?.privateData;
-            const providerCoupons = privateData?.coupons || [];
-            console.log('privateData>>>>>>>>>>>>>>>>', privateData);
 
             // Find the matching coupon - validate code, active status and expiration date
             const coupon = providerCoupons.find(
@@ -217,7 +216,6 @@ module.exports = (req, res) => {
                 };
               }
             }
-          }
         } catch (error) {
           console.error('Error fetching coupon details:', error);
           // If there's an error, we'll continue without the coupon
@@ -228,7 +226,8 @@ module.exports = (req, res) => {
         listing,
         { ...orderData, ...bodyParams.params, ...couponData },
         providerCommission,
-        customerCommission
+        customerCommission,
+        salesTaxes
       );
 
       return getTrustedSdk(req);
