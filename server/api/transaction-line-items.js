@@ -117,7 +117,7 @@ module.exports = async (req, res) => {
       });
 
 
-      const privateData = providerResponse.data.data.attributes.profile?.privateData;
+      const privateData = providerResponse?.data?.data?.attributes?.profile?.privateData;
       const providerCoupons = privateData?.coupons || [];
       const salesTaxes = providerResponse?.data?.data?.attributes?.profile?.publicData?.salesTaxes;
 

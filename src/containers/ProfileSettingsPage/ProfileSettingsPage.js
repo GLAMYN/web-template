@@ -156,6 +156,7 @@ export const ProfileSettingsPageComponent = props => {
         ...initialValuesForUserFields(publicData, 'public', userType, userFields),
         ...initialValuesForUserFields(protectedData, 'protected', userType, userFields),
         ...initialValuesForUserFields(privateData, 'private', userType, userFields),
+        pub_salesTaxes: user?.attributes?.profile?.publicData?.salesTaxes || "no",
       }}
       profileImage={profileImage}
       onImageUpload={e => onImageUploadHandler(e, onImageUpload)}
