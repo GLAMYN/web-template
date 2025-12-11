@@ -48,7 +48,7 @@ const PriorityLink = ({ linkConfig }) => {
     );
   }
   return (
-    <ExternalLink href={href} className={classes}>
+    <ExternalLink href={href} className={classes} target='_self'>
       <span className={css.priorityLinkLabel}>{text}</span>
     </ExternalLink>
   );
