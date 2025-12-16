@@ -149,6 +149,8 @@ const TopbarDesktop = props => {
     setMounted(true);
   }, []);
 
+  const [customLinksState, setCustomLinksState] = useState(customLinks);
+
   const marketplaceName = config.marketplaceName;
   const authenticatedOnClientSide = mounted && isAuthenticated;
   const isAuthenticatedOrJustHydrated = isAuthenticated || !mounted;
@@ -188,6 +190,16 @@ const TopbarDesktop = props => {
     />
   );
 
+  useEffect(()=>{
+    const dashboardLink = currentUser?.attributes?.profile?.protectedData?.dashboardLink;
+    if(dashboardLink?.link && dashboardLink?.text){
+      const linkExists = customLinks?.find(link => link.text === dashboardLink.text && link.href === dashboardLink.link);
+      if(!linkExists){
+        setCustomLinksState([...customLinks, {type: 'external', group: 'primary', text: dashboardLink.text,  href: dashboardLink.link }]);
+      }
+    }
+  },[currentUser?.attributes?.profile?.protectedData?.dashboardLink])
+
   return (
     <nav className={classes}>
       <LinkedLogo
@@ -200,12 +212,11 @@ const TopbarDesktop = props => {
 
       <CustomLinksMenu
         currentPage={currentPage}
-        customLinks={customLinks}
+        customLinks={customLinksState}
         intl={intl}
         hasClientSideContentReady={authenticatedOnClientSide || !isAuthenticatedOrJustHydrated}
         showCreateListingsLink={showCreateListingsLink}
       />
-
       {inboxLinkMaybe}
       {profileMenuMaybe}
       {signupLinkMaybe}

@@ -131,6 +131,13 @@ const CustomLinksMenu = ({
     setMounted(true);
   }, []);
 
+  useEffect(()=>{
+    setLinks([
+      ...createListingLinkConfigMaybe(intl, showCreateListingsLink),
+      ...customLinks,
+    ]);
+  },[customLinks, showCreateListingsLink]);
+
   useEffect(() => {
     let animationFrameId = null;
     const body = document.body;

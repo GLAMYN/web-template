@@ -2,7 +2,7 @@
  *  TopbarMobileMenu prints the menu content for authenticated user or
  * shows login actions for those who are not authenticated.
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import classNames from 'classnames';
 
 import { ACCOUNT_SETTINGS_PAGES } from '../../../../routing/routeConfiguration';
@@ -48,7 +48,7 @@ const CustomLinkComponent = ({ linkConfig, currentPage }) => {
     );
   }
   return (
-    <ExternalLink href={href} className={css.navigationLink}>
+    <ExternalLink href={href} className={css.navigationLink} target="_self">
       <span className={css.menuItemBorder} />
       {text}
     </ExternalLink>
@@ -83,13 +83,34 @@ const TopbarMobileMenu = props => {
 
   const config = useConfiguration();
   const user = ensureCurrentUser(currentUser);
-  
+  const [customLinksState, setCustomLinksState] = React.useState(customLinks || []);
+
   // Check if the current user is a provider and should see the coupons tab
   const showCoupons = showCouponsForUser(config, currentUser);
   console.log('TopbarMobileMenu - currentUser:', currentUser);
   console.log('TopbarMobileMenu - showCoupons:', showCoupons);
 
-  const extraLinks = customLinks.map((linkConfig, index) => {
+  useEffect(() => {
+    const dashboardLink = currentUser?.attributes?.profile?.protectedData?.dashboardLink;
+    if (dashboardLink?.link && dashboardLink?.text) {
+      const linkExists = customLinks?.find(
+        link => link.text === dashboardLink.text && link.href === dashboardLink.link
+      );
+      if (!linkExists) {
+        setCustomLinksState([
+          ...customLinks,
+          {
+            type: 'external',
+            group: 'primary',
+            text: dashboardLink.text,
+            href: dashboardLink.link,
+          },
+        ]);
+      }
+    }
+  }, [currentUser?.attributes?.profile?.protectedData?.dashboardLink]);
+
+  const extraLinks = customLinksState.map((linkConfig, index) => {
     return (
       <CustomLinkComponent
         key={`${linkConfig.text}_${index}`}

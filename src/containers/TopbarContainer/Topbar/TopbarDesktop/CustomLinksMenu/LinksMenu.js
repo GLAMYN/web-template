@@ -46,7 +46,7 @@ const LinkComponent = ({ linkConfig, currentPage }) => {
     );
   }
   return (
-    <ExternalLink href={href} className={css.menuLink}>
+    <ExternalLink href={href} className={css.menuLink} target='_self'>
       <span className={css.menuItemBorder} />
       {text}
     </ExternalLink>
