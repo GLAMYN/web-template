@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useLocation, useHistory } from 'react-router-dom';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
+import { withRouter } from 'react-router-dom';
 import classNames from 'classnames';
 
 import { useConfiguration } from '../../context/configurationContext';
+import { useRouteConfiguration } from '../../context/routeConfigurationContext';
 
 import { FormattedMessage, intlShape, useIntl } from '../../util/reactIntl';
+import { parse } from '../../util/urlHelpers';
+import { getCurrentUserTypeRoles } from '../../util/userHelpers';
 import {
   propTypes,
   DATE_TYPE_DATE,
@@ -18,6 +23,7 @@ import {
   LINE_ITEM_FIXED,
 } from '../../util/types';
 import { subtractTime } from '../../util/dates';
+import { createResourceLocatorString } from '../../util/routes';
 import {
   TX_TRANSITION_ACTOR_CUSTOMER,
   TX_TRANSITION_ACTOR_PROVIDER,
@@ -27,7 +33,7 @@ import {
 } from '../../transactions/transaction';
 
 import { getMarketplaceEntities } from '../../ducks/marketplaceData.duck';
-import { isScrollingDisabled } from '../../ducks/ui.duck';
+import { manageDisableScrolling, isScrollingDisabled } from '../../ducks/ui.duck';
 import {
   H2,
   Avatar,
@@ -45,11 +51,12 @@ import {
 import TopbarContainer from '../../containers/TopbarContainer/TopbarContainer';
 import FooterContainer from '../../containers/FooterContainer/FooterContainer';
 import NotFoundPage from '../../containers/NotFoundPage/NotFoundPage';
+import InboxSearchForm from './InboxSearchForm/InboxSearchForm';
 
 import { stateDataShape, getStateData } from './InboxPage.stateData';
 import css from './InboxPage.module.css';
-import { getCurrentUserTypeRoles } from '../../util/userHelpers';
 import moment from 'moment';
+import InboxFilter from './InboxFilter';
 
 // Check if the transaction line-items use booking-related units
 const getUnitLineItem = lineItems => {
@@ -115,6 +122,25 @@ const BookingTimeInfoMaybe = props => {
   );
 };
 
+// Build and push path string for routing - based on sort selection as selected in InboxSearchForm
+const handleSortSelect = (tab, routeConfiguration, history) => urlParam => {
+  const pathParams = {
+    tab: tab,
+  };
+  const searchParams = {
+    sort: urlParam,
+  };
+
+  const sortPath = createResourceLocatorString(
+    'InboxPage',
+    routeConfiguration,
+    pathParams,
+    searchParams
+  );
+
+  history.push(sortPath);
+};
+
 /**
  * The InboxItem component.
  *
@@ -138,9 +164,9 @@ export const InboxItem = props => {
   } = props;
   const { customer, provider, listing } = tx;
   const { processName, actionNeeded, isSaleNotification } = stateData;
-  let {processState, isFinal} = stateData;
-  processState ||= tx?.attributes?.lastTransition?.replace("transition/", "");
-  isFinal = processState?.trim()?.toLowerCase() == "cancel-no-refund" ? true : isFinal
+  let { processState, isFinal } = stateData;
+  processState ||= tx?.attributes?.lastTransition?.replace('transition/', '');
+  isFinal = processState?.trim()?.toLowerCase() == 'cancel-no-refund' ? true : isFinal;
   const isCustomer = transactionRole === TX_TRANSITION_ACTOR_CUSTOMER;
 
   const lineItems = tx.attributes?.lineItems;
@@ -221,7 +247,10 @@ export const InboxItem = props => {
  */
 export const InboxPageComponent = props => {
   const config = useConfiguration();
+  const routeConfiguration = useRouteConfiguration();
+  const history = useHistory();
   const intl = useIntl();
+  const location = useLocation();
   const {
     currentUser,
     fetchInProgress,
@@ -232,6 +261,10 @@ export const InboxPageComponent = props => {
     scrollingDisabled,
     transactions,
   } = props;
+
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isFiltersOpenOnMobile, setIsFiltersOpenOnMobile] = useState(false);
+
   const { tab } = params;
   const validTab = tab === 'orders' || tab === 'sales';
   if (!validTab) {
@@ -248,6 +281,7 @@ export const InboxPageComponent = props => {
   const ordersTitle = intl.formatMessage({ id: 'InboxPage.ordersTitle' });
   const salesTitle = intl.formatMessage({ id: 'InboxPage.salesTitle' });
   const title = isOrders ? ordersTitle : salesTitle;
+  const search = parse(location.search);
 
   const pickType = lt => conf => conf.listingType === lt;
   const findListingTypeConfig = publicData => {
@@ -338,6 +372,7 @@ export const InboxPageComponent = props => {
   return (
     <Page title={title} scrollingDisabled={scrollingDisabled}>
       <LayoutSideNavigation
+        containerClassName={classNames({[css.contentContainer]: isFiltersOpenOnMobile})}
         sideNavClassName={css.navigation}
         topbar={
           <TopbarContainer
@@ -351,15 +386,37 @@ export const InboxPageComponent = props => {
               <FormattedMessage id="InboxPage.title" />
             </H2>
             <TabNav rootClassName={css.tabs} tabRootClassName={css.tab} tabs={tabs} />{' '}
+            <InboxFilter
+              isOpen={isFilterOpen}
+              isFiltersOpenOnMobile={isFiltersOpenOnMobile}
+              setIsFiltersOpenOnMobile={setIsFiltersOpenOnMobile}
+              onToggle={() => setIsFilterOpen(!isFilterOpen)}
+              history={history}
+              location={location}
+              onManageDisableScrolling={(componentId, disable) =>
+                props.onManageDisableScrolling
+                  ? props.onManageDisableScrolling(componentId, disable)
+                  : undefined
+              }
+            />
           </>
         }
         footer={<FooterContainer />}
       >
+        <InboxSearchForm
+          onSubmit={() => {}}
+          onSelect={handleSortSelect(tab, routeConfiguration, history)}
+          intl={intl}
+          tab={tab}
+          routeConfiguration={routeConfiguration}
+          history={history}
+        />
         {fetchOrdersOrSalesError ? (
           <p className={css.error}>
             <FormattedMessage id="InboxPage.fetchFailed" />
           </p>
         ) : null}
+
         <ul className={css.itemList}>
           {!fetchInProgress ? (
             transactions.map(toTxItem)
@@ -381,6 +438,7 @@ export const InboxPageComponent = props => {
             className={css.pagination}
             pageName="InboxPage"
             pagePathParams={params}
+            pageSearchParams={search}
             pagination={pagination}
           />
         ) : null}
@@ -403,6 +461,23 @@ const mapStateToProps = state => {
   };
 };
 
-const InboxPage = compose(connect(mapStateToProps))(InboxPageComponent);
+const mapDispatchToProps = dispatch => ({
+  onManageDisableScrolling: (componentId, disableScrolling) =>
+    dispatch(manageDisableScrolling(componentId, disableScrolling)),
+});
+
+// Note: it is important that the withRouter HOC is **outside** the
+// connect HOC, otherwise React Router won't rerender any Route
+// components since connect implements a shouldComponentUpdate
+// lifecycle hook.
+//
+// See: https://github.com/ReactTraining/react-router/issues/4671
+const InboxPage = compose(
+  withRouter,
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )
+)(InboxPageComponent);
 
 export default InboxPage;

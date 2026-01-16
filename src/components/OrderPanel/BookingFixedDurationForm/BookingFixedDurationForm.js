@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form as FinalForm, Field } from 'react-final-form';
 import classNames from 'classnames';
 
@@ -66,10 +66,24 @@ const handleFetchLineItems = props => formValues => {
     coupon,
   } = formValues.values;
   const allVariants = listing?.attributes?.publicData?.priceVariants;
-  const selectedVariants = allVariants?.filter(v => priceVariantNames?.includes(v.name));
-  const totalTimeInMinutes = selectedVariants?.reduce((total, item) => {
-    return total + (item?.bookingLengthInMinutes || 0);
-  }, 0);
+  let selectedVariants = [];
+  let totalTimeInMinutes = 0;
+  
+  // Handle single price variant case
+  if (priceVariantNames && priceVariantNames.length > 0) {
+    // Multiple price variants selected
+    selectedVariants = allVariants?.filter(v => priceVariantNames?.includes(v.name));
+    totalTimeInMinutes = selectedVariants?.reduce((total, item) => {
+      return total + (item?.bookingLengthInMinutes || 0);
+    }, 0);
+  } else if (priceVariantName && allVariants) {
+    // Single price variant case
+    const singleVariant = allVariants.find(v => v.name === priceVariantName);
+    if (singleVariant) {
+      selectedVariants = [singleVariant];
+      totalTimeInMinutes = singleVariant?.bookingLengthInMinutes || 0;
+    }
+  }
   
   const startDate = bookingStartTime ? timestampToDate(bookingStartTime) : null;
   
@@ -209,6 +223,7 @@ export const BookingFixedDurationForm = props => {
   const minDurationStartingInInterval = priceVariants.reduce((min, priceVariant) => {
     return Math.min(min, priceVariant.bookingLengthInMinutes);
   }, Number.MAX_SAFE_INTEGER);
+  
   const classes = classNames(rootClassName || css.root, className);
   return (
     <FinalForm
@@ -242,12 +257,24 @@ export const BookingFixedDurationForm = props => {
 
         // Calculate endDate based on startDate + totalTimeInMinutes (same logic as handleFetchLineItems)
         let endDate = null;
-        if (startDate && priceVariantNames && priceVariantNames.length > 0) {
+        if (startDate) {
           const allVariants = listing?.attributes?.publicData?.priceVariants;
-          const selectedVariants = allVariants?.filter(v => priceVariantNames?.includes(v.name));
-          const totalTimeInMinutes = selectedVariants?.reduce((total, item) => {
-            return total + (item?.bookingLengthInMinutes || 0);
-          }, 0);
+          let totalTimeInMinutes = 0;
+          
+          // Handle multiple price variants case
+          if (priceVariantNames && priceVariantNames.length > 0) {
+            const selectedVariants = allVariants?.filter(v => priceVariantNames?.includes(v.name));
+            totalTimeInMinutes = selectedVariants?.reduce((total, item) => {
+              return total + (item?.bookingLengthInMinutes || 0);
+            }, 0);
+          } 
+          // Handle single price variant case
+          else if (priceVariantName && allVariants) {
+            const singleVariant = allVariants.find(v => v.name === priceVariantName);
+            if (singleVariant) {
+              totalTimeInMinutes = singleVariant?.bookingLengthInMinutes || 0;
+            }
+          }
           
           if (totalTimeInMinutes > 0) {
             endDate = new Date(startDate.getTime() + totalTimeInMinutes * 60000);
