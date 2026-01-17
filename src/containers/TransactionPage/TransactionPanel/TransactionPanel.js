@@ -284,6 +284,17 @@ export class TransactionPanelComponent extends Component {
     // Check if end date is valid and still in the future
     const isBeforeEndDate = endDate instanceof Date && !isNaN(endDate) && now < endDate;
 
+    // Reschedule button - styled exactly like Cancel button, placed above it
+    const rescheduleButton = 
+      stateData.showRescheduleButton &&
+      onOpenRescheduleModal &&
+      includedStates.includes(transactionState) &&
+      isNotStarted ? (
+        <Button type="button" rootClassName={css.rescheduleButton} onClick={onOpenRescheduleModal}>
+          <FormattedMessage id="TransactionPanel.rescheduleButton" defaultMessage="Reschedule Booking" />
+        </Button>
+      ) : null;
+
     const cancelButton =
       showCancelButton &&
       !this.alreadyCancelled &&
@@ -294,7 +305,6 @@ export class TransactionPanelComponent extends Component {
         </Button>
       ) : null;
 
-    console.log('transaction', transaction);
     return (
       <div className={classes}>
         <div className={css.container}>
@@ -505,10 +515,15 @@ export class TransactionPanelComponent extends Component {
                 <div className={css.mobileActionButtonSpacer}></div>
                 <div className={css.mobileActionButtons}>
                   {actionButtons}
-                  {cancelButton}
                 </div>
               </>
             ) : null}
+            
+            {/* Reschedule and Cancel buttons for mobile only */}
+            <div className={css.mobileButtonsContainer}>
+              {rescheduleButton}
+              {cancelButton}
+            </div>
           </div>
 
           <div className={css.asideDesktop}>
@@ -561,15 +576,16 @@ export class TransactionPanelComponent extends Component {
                   <div className={css.desktopActionButtons}>{actionButtons}</div>
                 ) : null}
               </div>
-              {cancelButton}
+              
+              {/* Reschedule and Cancel buttons for desktop only */}
+              <div className={css.desktopButtonsContainer}>
+                {rescheduleButton}
+                {cancelButton}
+              </div>
 
               <DiminishedActionButtonMaybe
                 showDispute={stateData.showDispute}
                 onOpenDisputeModal={onOpenDisputeModal}
-                showReschedule={stateData.showRescheduleButton}
-                onOpenRescheduleModal={onOpenRescheduleModal}
-                rescheduleDisabled={stateData.rescheduleDisabled}
-                rescheduleTooltip={stateData.rescheduleTooltip}
               />
               {transaction?.attributes?.metadata?.tipAmount ? (
                 <></>

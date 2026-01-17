@@ -133,10 +133,12 @@ export const getStateData = (params, process) => {
     };
   };
 
+  const { listing } = transaction || {};
+
   if (processName === PURCHASE_PROCESS_NAME) {
     return getStateDataForPurchaseProcess(params, processInfo());
   } else if (processName === BOOKING_PROCESS_NAME) {
-    return getStateDataForBookingProcess(params, processInfo());
+    return getStateDataForBookingProcess({ ...params, listing }, processInfo());
   } else if (processName === INQUIRY_PROCESS_NAME) {
     return getStateDataForInquiryProcess(params, processInfo());
   } else {

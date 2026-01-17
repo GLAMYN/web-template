@@ -5,28 +5,33 @@ import {
   ConditionalResolver,
 } from '../../transactions/transaction';
 
-// Helper function to check if reschedule is allowed (at least 12 hours before booking start)
-const canRescheduleBooking = (booking) => {
+// Helper function to check if reschedule is allowed based on cancellation policy
+// Matches the same cutoff as the cancel button to prevent policy loophole
+const canRescheduleBooking = (booking, listing) => {
   if (!booking?.attributes?.start) {
-    return { canReschedule: false, disabled: true, tooltip: 'No booking start time found' };
+    return { canReschedule: false };
   }
 
   const bookingStart = new Date(booking.attributes.start);
   const now = new Date();
-  const hoursUntilBooking = (bookingStart.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-  // Must be at least 12 hours before booking start
-  const RESCHEDULE_CUTOFF_HOURS = 12;
-
-  if (hoursUntilBooking < RESCHEDULE_CUTOFF_HOURS) {
-    return {
-      canReschedule: false,
-      disabled: true,
-      tooltip: 'Cannot reschedule within 12 hours of booking start time',
-    };
+  
+  // Check if booking has already started
+  if (now >= bookingStart) {
+    return { canReschedule: false };
   }
 
-  return { canReschedule: true, disabled: false, tooltip: null };
+  // Get cancellation policy cutoff from listing (in days, same as cancel button)
+  const cancellationPolicyDays = listing?.attributes?.publicData?.cancellation_listingfield || 0;
+  const cutoffHours = cancellationPolicyDays * 24;
+  const hoursUntilBooking = (bookingStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+  // If we're inside the cancellation policy cutoff window, hide reschedule button
+  // This prevents the loophole where customers reschedule late then cancel for a refund
+  if (hoursUntilBooking < cutoffHours) {
+    return { canReschedule: false };
+  }
+
+  return { canReschedule: true };
 };
 
 /**
@@ -37,7 +42,7 @@ const canRescheduleBooking = (booking) => {
  * @param {*} processInfo  details about process
  */
 export const getStateDataForBookingProcess = (txInfo, processInfo) => {
-  const { transaction, transactionRole, nextTransitions } = txInfo;
+  const { transaction, transactionRole, nextTransitions, listing } = txInfo;
   const isProviderBanned = transaction?.provider?.attributes?.banned;
   const isCustomerBanned = transaction?.provider?.attributes?.banned;
   const _ = CONDITIONAL_RESOLVER_WILDCARD;
@@ -82,15 +87,13 @@ export const getStateDataForBookingProcess = (txInfo, processInfo) => {
     })
     .cond([states.ACCEPTED, CUSTOMER], () => {
       const booking = transaction?.booking;
-      const { canReschedule, disabled, tooltip } = canRescheduleBooking(booking);
+      const { canReschedule } = canRescheduleBooking(booking, listing);
 
       return {
         processName,
         processState,
         showDetailCardHeadings: true,
-        showRescheduleButton: canReschedule || disabled, // Show button even if disabled (to show tooltip)
-        rescheduleDisabled: disabled,
-        rescheduleTooltip: tooltip,
+        showRescheduleButton: canReschedule,
       };
     })
     .cond([states.ACCEPTED, PROVIDER], () => {
