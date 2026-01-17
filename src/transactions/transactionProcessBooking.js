@@ -50,6 +50,9 @@ export const transitions = {
   // Admin can also cancel the transition.
   CANCEL_NO_REFUND: 'transition/cancel-no-refund',
 
+  // Customer can reschedule the booking.
+  RESCHEDULE: 'transition/reschedule',
+
   // The backend will mark the transaction completed.
   COMPLETE: 'transition/complete',
   OPERATOR_COMPLETE: 'transition/operator-complete',
@@ -145,6 +148,7 @@ export const graph = {
     [states.EXPIRED]: {},
     [states.ACCEPTED]: {
       on: {
+        [transitions.RESCHEDULE]: states.ACCEPTED,
         [transitions.CANCEL]: states.CANCELED,
         [transitions.COMPLETE]: states.DELIVERED,
         [transitions.OPERATOR_COMPLETE]: states.DELIVERED,
@@ -184,6 +188,7 @@ export const isRelevantPastTransition = transition => {
     transitions.ACCEPT,
     transitions.OPERATOR_ACCEPT,
     transitions.CANCEL,
+    transitions.RESCHEDULE,
     transitions.COMPLETE,
     transitions.OPERATOR_COMPLETE,
     transitions.CONFIRM_PAYMENT,

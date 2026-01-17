@@ -80,7 +80,7 @@ export const loadData = (params, search) => (dispatch, getState, sdk) => {
 
   dispatch(fetchOrdersOrSalesRequest());
 
-  const { page = 1, bookingStart, bookingEnd, bookingStates, meta_unread } = parse(search);
+  const { page = 1, bookingStart, bookingEnd, bookingStates, meta_unread, sort } = parse(search);
 
   const apiQueryParams = {
     only: onlyFilter,

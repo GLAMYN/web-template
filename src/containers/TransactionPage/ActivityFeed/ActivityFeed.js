@@ -107,6 +107,7 @@ const TransitionMessage = props => {
     otherUsersName,
     onOpenReviewModal,
     intl,
+    transaction: tx,
   } = props;
   const { processName, processState, showReviewAsFirstLink, showReviewAsSecondLink } = stateData;
   const stateStatus = nextState === processState ? 'current' : 'past';
@@ -131,6 +132,43 @@ const TransitionMessage = props => {
       />
     </InlineTextButton>
   ) : null;
+
+  // Check if this is a reschedule transition
+  const isReschedule = transition.transition === 'transition/reschedule';
+  
+  if (isReschedule) {
+    // Get old dates from protected data or fallback to showing generic message
+    const protectedData = transition.protectedData || {};
+    const previousStart = protectedData.previousBookingStart;
+    const previousEnd = protectedData.previousBookingEnd;
+    const newStart = tx?.booking?.attributes?.start;
+    const newEnd = tx?.booking?.attributes?.end;
+
+    if (previousStart && newStart) {
+      const formatOptions = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+      const oldStartFormatted = formatDateWithProximity(new Date(previousStart), intl, formatOptions);
+      const oldEndFormatted = formatDateWithProximity(new Date(previousEnd), intl, { hour: 'numeric', minute: '2-digit' });
+      const newStartFormatted = formatDateWithProximity(new Date(newStart), intl, formatOptions);
+      const newEndFormatted = formatDateWithProximity(new Date(newEnd), intl, { hour: 'numeric', minute: '2-digit' });
+      
+      return intl.formatMessage(
+        { id: 'TransactionPage.ActivityFeed.rescheduleWithDates' },
+        { 
+          actor,
+          oldStart: oldStartFormatted,
+          oldEnd: oldEndFormatted,
+          newStart: newStartFormatted,
+          newEnd: newEndFormatted
+        }
+      );
+    }
+    
+    // Fallback to generic reschedule message
+    return intl.formatMessage(
+      { id: 'TransactionPage.ActivityFeed.reschedule' },
+      { actor }
+    );
+  }
 
   // ActivityFeed messages are tied to transaction process and transitions.
   // However, in practice, transitions leading to same state have had the same message.
@@ -310,6 +348,7 @@ export const ActivityFeed = props => {
               otherUsersName={<UserDisplayName user={otherUser} intl={intl} />}
               onOpenReviewModal={onOpenReviewModal}
               intl={intl}
+              transaction={transaction}
             />
           }
           reviewComponent={

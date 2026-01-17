@@ -3,13 +3,14 @@ import { compose } from 'redux';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
 import classNames from 'classnames';
+import moment from 'moment';
 
 import { useConfiguration } from '../../context/configurationContext';
 import { useRouteConfiguration } from '../../context/routeConfigurationContext';
 import { FormattedMessage, useIntl } from '../../util/reactIntl';
 import { createResourceLocatorString, findRouteByRouteName } from '../../util/routes';
 import { LISTING_UNIT_TYPES, propTypes } from '../../util/types';
-import { timestampToDate } from '../../util/dates';
+import { timestampToDate, parseDateFromISO8601, getStartOf } from '../../util/dates';
 import { createSlug } from '../../util/urlHelpers';
 import { requireListingImage } from '../../util/configHelpers';
 
@@ -45,6 +46,7 @@ import { getStateData } from './TransactionPage.stateData';
 import ActivityFeed from './ActivityFeed/ActivityFeed';
 import DisputeModal from './DisputeModal/DisputeModal';
 import ReviewModal from './ReviewModal/ReviewModal';
+import RescheduleBookingModal from './RescheduleBookingModal/RescheduleBookingModal';
 import TransactionPanel from './TransactionPanel/TransactionPanel';
 
 import {
@@ -127,6 +129,7 @@ export const TransactionPageComponent = props => {
   const [isDisputeModalOpen, setDisputeModalOpen] = useState(false);
   const [disputeSubmitted, setDisputeSubmitted] = useState(false);
   const [isReviewModalOpen, setReviewModalOpen] = useState(false);
+  const [isRescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   const config = useConfiguration();
@@ -326,6 +329,73 @@ export const TransactionPageComponent = props => {
     setDisputeModalOpen(true);
   };
 
+  // Open reschedule modal
+  const onOpenRescheduleModal = () => {
+    setRescheduleModalOpen(true);
+  };
+
+  const onSubmitReschedule = values => {
+    const { bookingStartDate, bookingStartTime } = values;
+
+    const currentBooking = transaction?.booking;
+    const currentStart = currentBooking?.attributes?.start;
+    const currentEnd = currentBooking?.attributes?.end;
+    
+    const bookingLengthInMinutes = currentStart && currentEnd
+      ? moment(currentEnd).diff(moment(currentStart), 'minutes')
+      : transaction?.attributes?.protectedData?.priceVariantBookingLengthInMinutes || 60;
+    
+    const timeZone = listing?.attributes?.availabilityPlan?.timezone;
+
+    let bookingParams = {};
+
+    if (bookingStartTime) {
+      const startDate = timestampToDate(bookingStartTime);
+      const endDate = new Date(startDate.getTime() + bookingLengthInMinutes * 60000);
+
+      bookingParams = {
+        bookingStart: startDate,
+        bookingEnd: endDate,
+        bookingDisplayStart: startDate,
+        bookingDisplayEnd: endDate,
+      };
+    } else if (bookingStartDate?.date) {
+      const startDate = bookingStartDate.date;
+      const endDate = getStartOf(startDate, 'minute', timeZone, bookingLengthInMinutes, 'minutes');
+
+      bookingParams = {
+        bookingStart: startDate,
+        bookingEnd: endDate,
+        bookingDisplayStart: startDate,
+        bookingDisplayEnd: endDate,
+      };
+    }
+
+    if (!bookingParams.bookingStart || !bookingParams.bookingEnd) {
+      return Promise.reject(new Error('Booking dates are required'));
+    }
+
+    // Add metadata for activity feed tracking
+    bookingParams.protectedData = {
+      rescheduled: true,
+      rescheduledAt: new Date().toISOString(),
+      previousBookingStart: currentStart,
+      previousBookingEnd: currentEnd,
+    };
+
+    const { transitions } = process;
+
+    return onTransition(transaction?.id, transitions.RESCHEDULE, bookingParams)
+      .then(r => {
+        setRescheduleModalOpen(false);
+        window.location.reload();
+        return r;
+      })
+      .catch(e => {
+        throw e;
+      });
+  };
+
   const deletedListingTitle = intl.formatMessage({
     id: 'TransactionPage.deletedListing',
   });
@@ -495,6 +565,7 @@ export const TransactionPageComponent = props => {
       sendMessageError={sendMessageError}
       onSendMessage={onSendMessage}
       onOpenDisputeModal={onOpenDisputeModal}
+      onOpenRescheduleModal={onOpenRescheduleModal}
       stateData={stateData}
       transactionRole={transactionRole}
       showBookingLocation={showBookingLocation}
@@ -557,9 +628,12 @@ export const TransactionPageComponent = props => {
     loadingOrFailedFetching
   );
 
+  // Simple title to avoid cached translation issues
+  const pageTitle = listingTitle ? `Sale details: ${listingTitle}` : 'Sale details';
+
   return (
     <Page
-      title={intl.formatMessage({ id: 'TransactionPage.schemaTitle' }, { title: listingTitle })}
+      title={pageTitle}
       scrollingDisabled={scrollingDisabled}
     >
       <LayoutSingleColumn topbar={<TopbarContainer />} footer={<FooterContainer />}>
@@ -591,6 +665,22 @@ export const TransactionPageComponent = props => {
             disputeSubmitted={disputeSubmitted}
             disputeInProgress={transitionInProgress === process.transitions.DISPUTE}
             disputeError={transitionError}
+          />
+        ) : null}
+        {process?.transitions?.RESCHEDULE && isBookingProcess(processName) ? (
+          <RescheduleBookingModal
+            id="RescheduleBookingModal"
+            isOpen={isRescheduleModalOpen}
+            onCloseModal={() => setRescheduleModalOpen(false)}
+            onManageDisableScrolling={onManageDisableScrolling}
+            onSubmitReschedule={onSubmitReschedule}
+            rescheduleInProgress={transitionInProgress === process.transitions.RESCHEDULE}
+            rescheduleError={transitionError}
+            transaction={transaction}
+            listing={listing}
+            monthlyTimeSlots={restOfProps.monthlyTimeSlots}
+            timeSlotsForDate={restOfProps.timeSlotsForDate}
+            onFetchTimeSlots={restOfProps.onFetchTimeSlots}
           />
         ) : null}
       </LayoutSingleColumn>

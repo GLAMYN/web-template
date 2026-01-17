@@ -415,7 +415,7 @@ export const fetchTimeSlots = (listingId, start, end, timeZone, options) => (
   // This is to avoid fetching too much data (with 15 minute intervals, there can be 24*4*31 = 2928 time slots)
   if (useFetchTimeSlotsForDate) {
     const dateId = stringifyDateToISO8601(start, timeZone);
-    const dateData = getState().ListingPage.timeSlotsForDate[dateId];
+    const dateData = getState().TransactionPage.timeSlotsForDate[dateId];
     const minuteAgo = new Date().getTime() - MINUTE_IN_MS;
     const hasRecentlyFetchedData = dateData?.fetchedAt > minuteAgo;
     if (hasRecentlyFetchedData) {

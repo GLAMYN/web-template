@@ -6,12 +6,17 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html charset=UTF-8" />
   </head>
-  {{~#*inline "format-money"~}}{{format-text "{amount,number,::.00} {currency}" amount=money.amount currency=money.currency}}{{~/inline~}}
+  {{~#*inline "format-money"~}}
+    {{format-text "${amount,number,::.00}" amount=money.amount}}
+  {{~/inline~}}
   {{~#*inline "format-day"~}}{{#with transaction.listing.availability-plan}}{{format-text "{date,date,::EE}" date=date}}{{/with}}{{~/inline~}}
   {{~#*inline "format-day-before"~}}{{#with transaction.listing.availability-plan}}{{format-text "{date,date,::EE}" date=(date-transform date days=-1)}}{{/with}}{{~/inline~}}
   {{~#*inline "format-day-time"~}}{{#with transaction.listing.availability-plan}}{{format-text "{date,date,::EEjmm}" date=date}}{{/with}}{{~/inline~}}
   {{~#*inline "format-month-date"~}}{{#with transaction.listing.availability-plan}}{{format-text "{date,date,::MMMd}" date=date}}{{/with}}{{~/inline~}}
   {{~#*inline "format-month-date-day-before"~}}{{#with transaction.listing.availability-plan}}{{format-text "{date,date,::MMMd}" date=(date-transform date days=-1)}}{{/with}}{{~/inline~}}
+  {{~#*inline "format-code"~}}
+  {{code}}
+  {{~/inline~}}
   {{#with transaction}}
   <table style="background-color:#FFF;margin:0 auto;padding:24px 12px 0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif" align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
     <tbody>
@@ -26,7 +31,108 @@
                   <tbody>
                     <tr>
                       <td>
-                      {{#if protected-data.priceVariantName}}
+                      {{#if protected-data.priceVariantNames}}
+                        <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <td>
+                                  <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;margin-bottom:1px">{{t "BookingNewRequest.StartLabel" "Start"}}</p>
+                                </td>
+                                <td style="text-align:right">
+                                  <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;margin-bottom:1px">{{t "BookingNewRequest.EndLabel" "End"}}</p>
+                                </td>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <td>
+                                  <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;font-weight:700;margin-top:1px;margin-bottom:1px">{{> format-day-time date=booking.start}}</p>
+                                </td>
+                                <td style="text-align:right">
+                                  <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;font-weight:700;margin-top:1px;margin-bottom:1px">{{> format-day-time date=booking.end}}</p>
+                                </td>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <td>
+                                  <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;font-weight:700;margin-top:1px;margin-bottom:1px">{{> format-month-date date=booking.start}}</p>
+                                </td>
+                                <td style="text-align:right">
+                                  <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;font-weight:700;margin-top:1px;margin-bottom:1px">{{> format-month-date date=booking.end}}</p>
+                                </td>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        {{#if metadata.lineItems}}
+                        {{#each metadata.lineItems}}                            
+                        {{#eq "provider-commission" code}}
+                        {{else}}
+                        <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <td>
+                                  <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;margin-bottom:1px">{{> format-code code=code}}</p>
+                                </td>
+                                <td style="text-align:right">
+                                  <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;margin-bottom:1px">{{> format-money money=linetotal}}</p>
+                                </td>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        {{/eq}}
+                        {{/each}}                          
+                        {{else}}                        
+                          {{#each line-items}}
+                          {{#eq "provider-commission" code}}
+                          {{else}}
+                          <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
+                            <tbody>
+                              <tr>
+                                <td>
+                                  <td>
+                                    <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;margin-bottom:1px">{{> format-code code=code}}</p>
+                                  </td>
+                                  <td style="text-align:right">
+                                    <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;margin-bottom:1px">{{> format-money money=line-total}}</p>
+                                  </td>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          {{/eq}}
+                          {{/each}}
+
+                        {{/if}}
+                        {{#if metadata.serviceTotal}}  
+                        <hr style="width:100%;border:none;border-top:1px solid #eaeaea;border-color:#E1E1E1;margin:20px 0" />                          
+                        <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
+                            <tbody>
+                              <tr>
+                                <td>
+                                  <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;margin-top:1px;font-weight:700">{{t "BookingAcceptedRequest.ServiceTotal" "Service Total"}}</p>
+                                </td>
+                                <td style="text-align:right">
+                                  <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;margin-top:1px;font-weight:700">{{> format-money money=metadata.serviceTotal}}</p>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        {{/if}}
+                      {{else}}
+                        {{#if protected-data.priceVariantName}}
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>
                             <tr>
@@ -69,7 +175,8 @@
                           </tbody>
                         </table>
                         {{/if}}
-                        {{#each tx-line-items}}{{#eq "line-item/hour" code}}
+                      {{/if}}
+                        {{#each line-items}}{{#eq "hour" code}}
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>
                             <tr>
@@ -98,7 +205,7 @@
                             </tr>
                           </tbody>
                         </table>
-                        {{/eq}}{{#eq "line-item/day" code}}
+                        {{/eq}}{{#eq "day" code}}
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>
                             <tr>
@@ -127,7 +234,7 @@
                             </tr>
                           </tbody>
                         </table>
-                        {{/eq}}{{#eq "line-item/night" code}}
+                        {{/eq}}{{#eq "night" code}}
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>
                             <tr>
@@ -157,7 +264,7 @@
                           </tbody>
                         </table>
                         {{/eq}}
-                        {{#eq "line-item/fixed" code}}
+                        {{#eq "fixed" code}}
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>
                             <tr>
@@ -187,7 +294,7 @@
                           </tbody>
                         </table>
                         {{/eq}} {{/each}}
-                        {{#each tx-line-items}} {{#contains include-for "provider"}} {{#eq "line-item/hour" code}} {{#if seats}}
+                        {{#each line-items}} {{#contains include-for "provider"}} {{#eq "hour" code}} {{#if seats}}
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>
                             <tr>
@@ -217,7 +324,7 @@
                             </tr>
                           </tbody>
                         </table>
-                        {{/if}}{{/eq}}{{#eq "line-item/day" code}}{{#if seats}}
+                        {{/if}}{{/eq}}{{#eq "day" code}}{{#if seats}}
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>
                             <tr>
@@ -247,7 +354,7 @@
                             </tr>
                           </tbody>
                         </table>
-                        {{/if}}{{/eq}}{{#eq "line-item/night" code}}{{#if seats}}
+                        {{/if}}{{/eq}}{{#eq "night" code}}{{#if seats}}
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>
                             <tr>
@@ -277,7 +384,7 @@
                             </tr>
                           </tbody>
                         </table>
-                        {{/if}}{{/eq}}{{#eq "line-item/fixed" code}}{{#if seats}}
+                        {{/if}}{{/eq}}{{#eq "fixed" code}}{{#if seats}}
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>
                             <tr>
@@ -307,7 +414,7 @@
                             </tr>
                           </tbody>
                         </table>
-                        {{/if}}{{/eq}}{{#eq "line-item/provider-commission" code}}
+                        {{/if}}{{/eq}}{{#eq "provider-commission" code}}
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>
                             <tr>
@@ -323,6 +430,24 @@
                           </tbody>
                         </table>
                         {{/eq}}{{/contains}}{{/each}}
+                        
+                        {{#if metadata.saleLineItem}}  
+                        <hr style="width:100%;border:none;border-top:1px solid #eaeaea;border-color:#E1E1E1;margin:20px 0" />                          
+                        {{#each metadata.saleLineItem}}
+                        <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;margin-top:1px;font-weight:700">{{> format-code code=code}}</p>
+                              </td>
+                              <td style="text-align:right">
+                                <p style="font-size:16px;line-height:1.4;margin:16px 0;color:#484848;margin-top:1px;font-weight:700">{{> format-money money=linetotal}}</p>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        {{/each}}
+                        {{/if}}
                         <hr style="width:100%;border:none;border-top:1px solid #eaeaea;border-color:#E1E1E1;margin:20px 0" />
                         <table align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
                           <tbody>

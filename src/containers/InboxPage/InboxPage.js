@@ -203,7 +203,7 @@ export const InboxItem = props => {
         <div className={css.itemUsername}>{otherUserDisplayName}</div>
         <div className={css.itemTitle}>{listing?.attributes?.title}</div>
         <div className={css.itemDetails}>
-          {isBooking ? (
+          {isBooking && tx.booking?.attributes?.displayStart ? (
             // <BookingTimeInfoMaybe transaction={tx} />
             moment(tx.booking.attributes.displayStart).format('MMM DD, YYYY')
           ) : hasPricingData && showStock ? (
