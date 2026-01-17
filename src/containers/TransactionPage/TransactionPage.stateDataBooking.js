@@ -5,6 +5,30 @@ import {
   ConditionalResolver,
 } from '../../transactions/transaction';
 
+// Helper function to check if reschedule is allowed (at least 12 hours before booking start)
+const canRescheduleBooking = (booking) => {
+  if (!booking?.attributes?.start) {
+    return { canReschedule: false, disabled: true, tooltip: 'No booking start time found' };
+  }
+
+  const bookingStart = new Date(booking.attributes.start);
+  const now = new Date();
+  const hoursUntilBooking = (bookingStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+  // Must be at least 12 hours before booking start
+  const RESCHEDULE_CUTOFF_HOURS = 12;
+
+  if (hoursUntilBooking < RESCHEDULE_CUTOFF_HOURS) {
+    return {
+      canReschedule: false,
+      disabled: true,
+      tooltip: 'Cannot reschedule within 12 hours of booking start time',
+    };
+  }
+
+  return { canReschedule: true, disabled: false, tooltip: null };
+};
+
 /**
  * Get state data against booking process for TransactionPage's UI.
  * I.e. info about showing action buttons, current state etc.
@@ -55,6 +79,22 @@ export const getStateDataForBookingProcess = (txInfo, processInfo) => {
         primaryButtonProps: primary,
         secondaryButtonProps: secondary,
       };
+    })
+    .cond([states.ACCEPTED, CUSTOMER], () => {
+      const booking = transaction?.booking;
+      const { canReschedule, disabled, tooltip } = canRescheduleBooking(booking);
+
+      return {
+        processName,
+        processState,
+        showDetailCardHeadings: true,
+        showRescheduleButton: canReschedule || disabled, // Show button even if disabled (to show tooltip)
+        rescheduleDisabled: disabled,
+        rescheduleTooltip: tooltip,
+      };
+    })
+    .cond([states.ACCEPTED, PROVIDER], () => {
+      return { processName, processState, showDetailCardHeadings: true };
     })
     .cond([states.DELIVERED, _], () => {
       return {
