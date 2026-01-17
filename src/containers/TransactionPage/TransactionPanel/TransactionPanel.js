@@ -201,6 +201,7 @@ export class TransactionPanelComponent extends Component {
       sendMessageInProgress,
       sendMessageError,
       onOpenDisputeModal,
+      onOpenRescheduleModal,
       showListingImage,
       intl,
       stateData = {},
@@ -293,7 +294,7 @@ export class TransactionPanelComponent extends Component {
         </Button>
       ) : null;
 
-    console.log('activityFeed', activityFeed);
+    console.log('transaction', transaction);
     return (
       <div className={classes}>
         <div className={css.container}>
@@ -355,6 +356,10 @@ export class TransactionPanelComponent extends Component {
                   <DiminishedActionButtonMaybe
                     showDispute={stateData.showDispute}
                     onOpenDisputeModal={onOpenDisputeModal}
+                    showReschedule={stateData.showRescheduleButton}
+                    onOpenRescheduleModal={onOpenRescheduleModal}
+                    rescheduleDisabled={stateData.rescheduleDisabled}
+                    rescheduleTooltip={stateData.rescheduleTooltip}
                   />
                 </div>
 
@@ -561,6 +566,10 @@ export class TransactionPanelComponent extends Component {
               <DiminishedActionButtonMaybe
                 showDispute={stateData.showDispute}
                 onOpenDisputeModal={onOpenDisputeModal}
+                showReschedule={stateData.showRescheduleButton}
+                onOpenRescheduleModal={onOpenRescheduleModal}
+                rescheduleDisabled={stateData.rescheduleDisabled}
+                rescheduleTooltip={stateData.rescheduleTooltip}
               />
               {transaction?.attributes?.metadata?.tipAmount ? (
                 <></>

@@ -118,6 +118,7 @@ const getAvailableStartTimes = params => {
     const uniqueStartTimes = startTimes.filter(t => !pickedTimestamps.includes(t.timestamp));
     return availableStartTimes.concat(uniqueStartTimes);
   }, []);
+  
   return allStartTimes;
 };
 
@@ -453,6 +454,7 @@ const onBookingStartDateChange = (props, setCurrentMonth) => value => {
     : findNextBoundary(startDate, 1, timeUnit, timeZone);
   const startLimit = isDateSameOrAfter(startDate, nextBoundaryToday) ? startDate : nextBoundary;
   const endLimit = getStartOf(nextDay, 'minute', timeZone, bookingLengthInMinutes, 'minutes');
+  
   const cachedTimeSlotsForDate =
     timeSlotsForDate[stringifyDateToISO8601(startDate, timeZone)]?.timeSlots || [];
 
@@ -655,9 +657,9 @@ const FieldDateAndTimeInput = props => {
   const bookingStartTime = values.bookingStartTime || null;
   const bookingEndTime = values.bookingEndTime || null;
 
-  // Currently available monthly data (reduced set of time slots data using intervalDuration: P1D)
   const [startMonth, endMonth] = getMonthlyFetchRange(monthlyTimeSlots, timeZone);
   const options = { minDurationStartingInDay: bookingLengthInMinutes };
+  
   const monthlyTimeSlotsData = timeSlotsPerDate(
     startMonth,
     endMonth,

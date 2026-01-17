@@ -31,8 +31,6 @@
    :actions
    [{:name :action/calculate-full-refund}
     {:name :action/stripe-refund-payment}
-    ;; Keep this action last in the list of actions for
-    ;; the transition
     {:name :action/decline-booking}],
    :from :state/pending-payment,
    :to :state/payment-expired}
@@ -60,8 +58,6 @@
    :actions
    [{:name :action/calculate-full-refund}
     {:name :action/stripe-refund-payment}
-    ;; Keep this action last in the list of actions for
-    ;; the transition
     {:name :action/decline-booking}],
    :from :state/preauthorized,
    :to :state/declined}
@@ -70,8 +66,6 @@
    :actions
    [{:name :action/calculate-full-refund}
     {:name :action/stripe-refund-payment}
-    ;; Keep this action last in the list of actions for
-    ;; the transition
     {:name :action/decline-booking}],
    :from :state/preauthorized,
    :to :state/declined}
@@ -87,8 +81,6 @@
    :actions
    [{:name :action/calculate-full-refund}
     {:name :action/stripe-refund-payment}
-    ;; Keep this action last in the list of actions for
-    ;; the transition
     {:name :action/decline-booking}],
    :from :state/preauthorized,
    :to :state/expired}
@@ -104,14 +96,24 @@
    :actions [{:name :action/stripe-create-payout}],
    :from :state/accepted,
    :to :state/delivered}
+  {:name :transition/reschedule,
+   :actor :actor.role/customer,
+   :actions [{:name :action/update-booking, :config {:type :time}}],
+   :from :state/accepted,
+   :to :state/accepted}
   {:name :transition/cancel,
    :actor :actor.role/operator,
    :actions
    [{:name :action/calculate-full-refund}
     {:name :action/stripe-refund-payment}
-    ;; Keep this action last in the list of actions for
-    ;; the transition
     {:name :action/cancel-booking}],
+   :from :state/accepted,
+   :to :state/cancelled}
+  {:name :transition/cancel-no-refund,
+   :actor :actor.role/operator,
+   :actions
+   [{:name :action/cancel-booking}
+    {:name :action/stripe-create-payout}],
    :from :state/accepted,
    :to :state/cancelled}
   {:name :transition/review-1-by-provider,
@@ -176,6 +178,10 @@
    :on :transition/operator-accept,
    :to :actor.role/provider,
    :template :booking-operator-accepted-request}
+  {:name :notification/booking-rescheduled,
+   :on :transition/reschedule,
+   :to :actor.role/provider,
+   :template :booking-rescheduled}
   {:name :notification/booking-declined-request,
    :on :transition/decline,
    :to :actor.role/customer,
@@ -231,4 +237,20 @@
   {:name :notification/review-by-customer-second,
    :on :transition/review-2-by-customer,
    :to :actor.role/provider,
-   :template :booking-review-by-other-party-published}]}
+   :template :booking-review-by-other-party-published}
+  {:name :notification/booking-cancelled-provider,
+   :on :transition/cancel,
+   :to :actor.role/provider,
+   :template :booking-cancelled}
+  {:name :notification/booking-cancelled-customer,
+   :on :transition/cancel,
+   :to :actor.role/customer,
+   :template :booking-cancelled}
+  {:name :notification/booking-cancelled-no-refund-provider,
+   :on :transition/cancel-no-refund,
+   :to :actor.role/provider,
+   :template :booking-cancelled}
+  {:name :notification/booking-cancelled-no-refund-customer,
+   :on :transition/cancel-no-refund,
+   :to :actor.role/customer,
+   :template :booking-cancelled}]}
