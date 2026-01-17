@@ -151,14 +151,17 @@ const SimpleReschedulePicker = props => {
       'minutes'
     );
 
+    // Enforce 24-hour advance booking constraint for reschedules
+    // Customer cannot reschedule to any time within the next 24 hours
+    const now = new Date();
+    const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     const timeUnit = timeUnitConfig.timeUnit;
-    const nextBoundaryToday = findNextBoundary(new Date(), 1, timeUnit, timeZone);
-    const nextBoundary = isToday(bookingStartDate, timeZone)
-      ? nextBoundaryToday
-      : findNextBoundary(bookingStartDate, 1, timeUnit, timeZone);
-    const minStartLimit = isDateSameOrAfter(bookingStartDate, nextBoundaryToday) 
+    const minStartLimit24h = findNextBoundary(twentyFourHoursFromNow, 1, timeUnit, timeZone);
+    
+    // Use the later of: booking start date OR 24 hours from now
+    const minStartLimit = isDateSameOrAfter(bookingStartDate, minStartLimit24h) 
       ? bookingStartDate 
-      : nextBoundary;
+      : minStartLimit24h;
 
     const allStartTimes = slots.reduce((availableStartTimes, t) => {
       const startDate = t.attributes.start;
@@ -204,12 +207,24 @@ const SimpleReschedulePicker = props => {
     return options;
   }, [selectedDate, monthlyTimeSlotsData, timeSlotsForDate, timeZone, bookingLengthInMinutes, startTimeInterval, intl]);
 
-  // EXACT COPY from listing page (lines 761-766)
+  // Block days based on availability AND 24-hour advance booking rule
   const isDayBlocked = (day) => {
     const dayInListingTZ = timeOfDayFromLocalToTimeZone(day, timeZone);
     const dateIdString = stringifyDateToISO8601(dayInListingTZ, timeZone);
     const timeSlotData = monthlyTimeSlotsData[dateIdString];
-    return !timeSlotData?.hasAvailability;
+    
+    // Block if no availability
+    if (!timeSlotData?.hasAvailability) {
+      return true;
+    }
+    
+    // Block if the entire day is within the next 24 hours
+    const now = new Date();
+    const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const endOfDay = getStartOf(dayInListingTZ, 'day', timeZone, 1, 'days');
+    
+    // If the end of this day is before 24h from now, block it entirely
+    return endOfDay <= twentyFourHoursFromNow;
   };
 
   const isOutsideRange = (day) => {

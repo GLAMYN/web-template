@@ -1276,6 +1276,7 @@
 "OrderBreakdown.tipReceived": "Tip received",
 
 "LayoutWrapperAccountSettingsSideNav.couponsTabTitle": "Coupons",
+"TransactionPanel.rescheduleButton": "Reschedule Booking",
 "TransactionPanel.cancelButton": "Cancel Booking",
 "TransactionPanel.cancelModal.cancelDirect": "Cancel Booking",
 "TransactionPanel.cancelModal.message": "Are you sure you want to cancel this transaction?",

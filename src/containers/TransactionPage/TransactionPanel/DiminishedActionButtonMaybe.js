@@ -7,7 +7,7 @@ import { InlineTextButton } from '../../../components';
 import css from './TransactionPanel.module.css';
 
 // Functional component as a helper to build ActionButtons
-// Currently this is used to show "dispute order" and "reschedule booking" buttons,
+// Currently this is used to show "dispute order" button,
 // but like ActionButtonsMaybe, this could be customized to handle different actions too.
 // Essentially, this is just a placeholder for diminished actions.
 const DiminishedActionButtonMaybe = props => {
@@ -16,10 +16,6 @@ const DiminishedActionButtonMaybe = props => {
     rootClassName,
     showDispute,
     onOpenDisputeModal,
-    showReschedule,
-    onOpenRescheduleModal,
-    rescheduleDisabled,
-    rescheduleTooltip,
   } = props;
 
   const disputeButton = onOpenDisputeModal ? (
@@ -28,25 +24,11 @@ const DiminishedActionButtonMaybe = props => {
     </InlineTextButton>
   ) : null;
 
-  const rescheduleButton = onOpenRescheduleModal ? (
-    <InlineTextButton
-      className={css.diminishedActionButton}
-      onClick={onOpenRescheduleModal}
-      disabled={rescheduleDisabled}
-      title={rescheduleTooltip}
-    >
-      <FormattedMessage id="TransactionPanel.rescheduleBooking" />
-    </InlineTextButton>
-  ) : null;
-
   const classes = classNames(rootClassName || css.diminishedActionButtonRoot, className);
 
-  const showButtons = showDispute || showReschedule;
-
-  return showButtons ? (
+  return showDispute ? (
     <div className={classes}>
-      {showReschedule ? rescheduleButton : null}
-      {showDispute ? disputeButton : null}
+      {disputeButton}
     </div>
   ) : null;
 };
