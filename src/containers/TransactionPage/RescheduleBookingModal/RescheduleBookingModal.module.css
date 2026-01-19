@@ -156,15 +156,25 @@ form button[type="submit"] {
   border-radius: 8px;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--marketplaceColor);
+  color: var(--colorWhite);
+  border: none;
 }
 
 form button[type="submit"]:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background-color: var(--marketplaceColorDark);
 }
 
 form button[type="submit"]:active:not(:disabled) {
   transform: translateY(0);
+}
+
+form button[type="submit"]:disabled {
+  background-color: var(--matterColorNegative);
+  color: var(--matterColorLight);
+  cursor: not-allowed;
 }
 
 /* Date and time input styling */
