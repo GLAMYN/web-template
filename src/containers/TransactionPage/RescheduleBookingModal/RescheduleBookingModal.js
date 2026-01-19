@@ -76,6 +76,17 @@ const RescheduleBookingModal = props => {
     bookingLengthInMinutes = moment(currentEnd).diff(moment(currentStart), 'minutes');
   }
 
+  // Add travel time to booking length for availability checks
+  // This prevents customers from selecting time slots that would overlap with provider's travel time
+  const timeMap = {
+    travel_time_15mins: 15,
+    travel_time_30mins: 30,
+    travel_time_45mins: 45,
+    travel_time_60mins: 60,
+  };
+  const travelTime = timeMap[publicData?.travel_time] || 0;
+  bookingLengthInMinutes = (bookingLengthInMinutes || 0) + travelTime;
+
   return (
     <Modal
       id={id}
