@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
   // Use floating point precision (true) to avoid rounding issues at cutoff boundary
   const hoursUntilBooking = moment(bookingStartDate).diff(moment(), 'hours', true);
   const isBetweenTimeFrame = hoursUntilBooking < timeFrame;
-console.log('hoursUntilBooking', hoursUntilBooking);
+
   let currentUser;
 
   const {

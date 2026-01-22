@@ -1280,5 +1280,9 @@
 "TransactionPanel.cancelButton": "Cancel Booking",
 "TransactionPanel.cancelModal.cancelDirect": "Cancel Booking",
 "TransactionPanel.cancelModal.message": "Are you sure you want to cancel this transaction?",
-"TransactionPanel.cancelModal.title": "Cancel Transaction"
+"TransactionPanel.cancelModal.title": "Cancel Transaction",
+
+"StripePaymentForm.cancellationPolicyLabel": "I agree to the Cancellation & Rescheduling policy. I understand I can cancel for a refund or reschedule until {cutoffDate} — {cutoffTime} ({timeZone}).",
+"StripePaymentForm.cancellationPolicyHelper": "Cut-off is calculated from your appointment time and the provider's policy.",
+"StripePaymentForm.customerNotesLabel": "I confirm I included all important information in the message box (allergies, health notes, limitations, access details)."
 }

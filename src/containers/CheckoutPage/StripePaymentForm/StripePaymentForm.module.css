@@ -120,6 +120,42 @@
   border-bottom-color: var(--colorGrey300);
 }
 
+.bookingCheckboxesContainer {
+  margin-top: 32px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background-color: var(--matterColorBright);
+  border: 1px solid var(--matterColorNegative);
+  border-radius: 4px;
+}
+
+.policyCheckbox {
+  margin-bottom: 32px !important;
+  padding-bottom: 8px;
+}
+
+.notesCheckbox {
+  margin-bottom: 0;
+  margin-top: 16px;
+}
+
+.policyCheckbox label,
+.notesCheckbox label {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--matterColor);
+}
+
+.checkboxHelper {
+  composes: h5 from global;
+  color: var(--matterColorAnti);
+  font-size: 13px;
+  margin-top: -8px;
+  margin-bottom: 16px;
+  margin-left: 28px;
+  font-style: italic;
+}
+
 .submitContainer {
   margin-top: auto;
 
