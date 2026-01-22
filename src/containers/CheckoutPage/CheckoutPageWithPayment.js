@@ -622,6 +622,8 @@ export const CheckoutPageWithPayment = props => {
                 marketplaceName={config.marketplaceName}
                 isBooking={isBookingProcessAlias(transactionProcessAlias)}
                 isFuzzyLocation={config.maps.fuzzy.enabled}
+                bookingDates={orderData?.bookingDates}
+                listing={listing}
               />
             ) : null}
           </section>

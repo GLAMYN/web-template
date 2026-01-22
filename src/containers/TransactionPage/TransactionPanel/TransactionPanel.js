@@ -279,7 +279,6 @@ export class TransactionPanelComponent extends Component {
     const timeFrame = (listing?.attributes?.publicData?.cancellation_listingfield || 0) * 24;
     // Use floating point precision (true) to match server-side logic
     const hoursUntilBooking = moment(bookingStartDate).diff(moment(), 'hours', true);
-    console.log('hoursUntilBooking', hoursUntilBooking);
     const isBetweenTimeFrame = hoursUntilBooking < timeFrame;
     const isNotStarted = moment(bookingStartDate).diff(moment(), 'minutes') > 0;
     const endDate = new Date(transaction?.booking?.attributes?.start);

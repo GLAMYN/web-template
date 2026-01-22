@@ -6,6 +6,7 @@
 import React, { Component } from 'react';
 import { Form as FinalForm } from 'react-final-form';
 import classNames from 'classnames';
+import moment from 'moment-timezone';
 
 import { FormattedMessage, injectIntl } from '../../../util/reactIntl';
 import { propTypes } from '../../../util/types';
@@ -478,6 +479,8 @@ class StripePaymentForm extends Component {
       isBooking,
       isFuzzyLocation,
       values,
+      bookingDates,
+      listing,
     } = formRenderProps;
 
     this.finalFormAPI = formApi;
@@ -495,7 +498,22 @@ class StripePaymentForm extends Component {
       hasHandledCardPayment
     );
 
-    const submitDisabled = invalid || onetimePaymentNeedsAttention || submitInProgress;
+    // Calculate cancellation/reschedule cutoff date for checkboxes
+    let cutoffDateTime = null;
+    if (isBooking && bookingDates?.bookingStart && listing) {
+      const bookingStart = moment(bookingDates.bookingStart);
+      const cancellationPolicyDays = listing?.attributes?.publicData?.cancellation_listingfield || 0;
+      const timeZone = listing?.attributes?.availabilityPlan?.timezone || moment.tz.guess();
+      cutoffDateTime = bookingStart.subtract(cancellationPolicyDays, 'days').tz(timeZone);
+    }
+
+    // Check if both required checkboxes are checked (only required when displayed for bookings)
+    const shouldShowCheckboxes = isBooking && cutoffDateTime;
+    const policyCheckboxChecked = values?.cancellationPolicyAgreement === true;
+    const notesCheckboxChecked = values?.customerNotesConfirmation === true;
+    const checkboxesValid = shouldShowCheckboxes ? (policyCheckboxChecked && notesCheckboxChecked) : true;
+
+    const submitDisabled = invalid || onetimePaymentNeedsAttention || submitInProgress || !checkboxesValid;
     const hasCardError = this.state.error && !submitInProgress;
     const hasPaymentErrors = confirmCardPaymentError || confirmPaymentError;
     const classes = classNames(rootClassName || css.root, className);
@@ -668,6 +686,37 @@ class StripePaymentForm extends Component {
             />
           </div>
         ) : null}
+
+        {isBooking && cutoffDateTime ? (
+          <div className={css.bookingCheckboxesContainer}>
+            <div className={css.policyCheckbox}>
+              <FieldCheckbox
+                id={`${formId}-cancellation-policy`}
+                name="cancellationPolicyAgreement"
+                label={intl.formatMessage(
+                  { id: 'StripePaymentForm.cancellationPolicyLabel' },
+                  {
+                    cutoffDate: cutoffDateTime.format('ddd, MMM D, YYYY'),
+                    cutoffTime: cutoffDateTime.format('h:mm A'),
+                    timeZone: cutoffDateTime.format('z'),
+                  }
+                )}
+              />
+              {/* <p className={css.checkboxHelper}>
+                <FormattedMessage id="StripePaymentForm.cancellationPolicyHelper" />
+              </p> */}
+            </div>
+
+            <div className={css.notesCheckbox}>
+              <FieldCheckbox
+                id={`${formId}-customer-notes`}
+                name="customerNotesConfirmation"
+                label={intl.formatMessage({ id: 'StripePaymentForm.customerNotesLabel' })}
+              />
+            </div>
+          </div>
+        ) : null}
+
         <div className={css.submitContainer}>
           {hasPaymentErrors ? (
             <span className={css.errorMessage}>{paymentErrorMessage}</span>
