@@ -33,8 +33,7 @@ module.exports = async (req, res) => {
 
   const bookingStartDate = booking?.attributes?.start;
   const timeFrame = (listing?.attributes?.publicData?.cancellation_listingfield || 0) * 24;
-  const hoursUntilBooking = moment(bookingStartDate).diff(moment(), 'hours');
-  const isBetweenTimeFrame = hoursUntilBooking < timeFrame;
+  const isBetweenTimeFrame = timeFrame >= moment(bookingStartDate).diff(moment(), 'hours');
 
   let currentUser;
 

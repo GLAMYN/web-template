@@ -78,13 +78,16 @@ const RescheduleBookingModal = props => {
 
   // Add travel time to booking length for availability checks
   // This prevents customers from selecting time slots that would overlap with provider's travel time
+  // Get travel time from transaction metadata (saved at booking time) or fallback to listing publicData
+  const transactionMetadata = transaction?.attributes?.metadata || {};
+  const travelTimeField = transactionMetadata.travelTime || publicData.travel_time;
   const timeMap = {
     travel_time_15mins: 15,
     travel_time_30mins: 30,
     travel_time_45mins: 45,
     travel_time_60mins: 60,
   };
-  const travelTime = timeMap[publicData?.travel_time] || 0;
+  const travelTime = timeMap[travelTimeField] || 0;
   bookingLengthInMinutes = (bookingLengthInMinutes || 0) + travelTime;
 
   return (
@@ -131,6 +134,7 @@ const RescheduleBookingModal = props => {
 };
 
 export default RescheduleBookingModal;
+
 
 
 
