@@ -500,11 +500,16 @@ class StripePaymentForm extends Component {
 
     // Calculate cancellation/reschedule cutoff date for checkboxes
     let cutoffDateTime = null;
+    let isPastCutoff = false;
     if (isBooking && bookingDates?.bookingStart && listing) {
       const bookingStart = moment(bookingDates.bookingStart);
       const cancellationPolicyDays = listing?.attributes?.publicData?.cancellation_listingfield || 0;
       const timeZone = listing?.attributes?.availabilityPlan?.timezone || moment.tz.guess();
-      cutoffDateTime = bookingStart.subtract(cancellationPolicyDays, 'days').tz(timeZone);
+      cutoffDateTime = bookingStart.clone().subtract(cancellationPolicyDays, 'days').tz(timeZone);
+      
+      // Check if we're currently past the cutoff (inside the no-refund/no-reschedule window)
+      const now = moment().tz(timeZone);
+      isPastCutoff = now.isAfter(cutoffDateTime);
     }
 
     // Check if both required checkboxes are checked (only required when displayed for bookings)
@@ -693,18 +698,31 @@ class StripePaymentForm extends Component {
               <FieldCheckbox
                 id={`${formId}-cancellation-policy`}
                 name="cancellationPolicyAgreement"
-                label={intl.formatMessage(
-                  { id: 'StripePaymentForm.cancellationPolicyLabel' },
-                  {
-                    cutoffDate: cutoffDateTime.format('ddd, MMM D, YYYY'),
-                    cutoffTime: cutoffDateTime.format('h:mm A'),
-                    timeZone: cutoffDateTime.format('z'),
-                  }
-                )}
+                label={
+                  isPastCutoff
+                    ? intl.formatMessage(
+                        { id: 'StripePaymentForm.cancellationPolicyPastCutoffLabel' },
+                        {
+                          cutoffDate: cutoffDateTime.format('ddd, MMM D, YYYY'),
+                          cutoffTime: cutoffDateTime.format('h:mm A'),
+                          timeZone: cutoffDateTime.format('z'),
+                        }
+                      )
+                    : intl.formatMessage(
+                        { id: 'StripePaymentForm.cancellationPolicyLabel' },
+                        {
+                          cutoffDate: cutoffDateTime.format('ddd, MMM D, YYYY'),
+                          cutoffTime: cutoffDateTime.format('h:mm A'),
+                          timeZone: cutoffDateTime.format('z'),
+                        }
+                      )
+                }
               />
-              {/* <p className={css.checkboxHelper}>
-                <FormattedMessage id="StripePaymentForm.cancellationPolicyHelper" />
-              </p> */}
+              {/* {!isPastCutoff ? (
+                <p className={css.checkboxHelper}>
+                  <FormattedMessage id="StripePaymentForm.cancellationPolicyHelper" />
+                </p>
+              ) : null} */}
             </div>
 
             <div className={css.notesCheckbox}>
