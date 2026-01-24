@@ -401,126 +401,59 @@ export const BookingFixedDurationForm = props => {
               />
             ) : null}
 
-
-            {/* Service Location Type - Handles 3 cases: both, provider-only, customer-only */}
-            {(() => {
-              const serviceLocationType = listing?.attributes?.publicData?.providerStudio_listingfield;
-              
-              // Check if it's an array (multi-enum field) or string
-              const isArray = Array.isArray(serviceLocationType);
-              const hasProviderLocation = isArray 
-                ? serviceLocationType.includes('provider_location')
-                : serviceLocationType === 'yes_option' || serviceLocationType === 'provider_location';
-              const hasCustomerLocation = isArray
-                ? serviceLocationType.includes('customer_location')
-                : serviceLocationType === 'customer_location' || !serviceLocationType;
-              
-              // Case 1: Both locations allowed - show choice dropdown
-              if (hasProviderLocation && hasCustomerLocation) {
-                return (
-                  <>
-                    <FieldSelect
-                      id={`locationChoice`}
-                      name="locationChoice"
-                      className={css.field}
-                      label={'Location Choice'}
-                      validate={validators.required('Please select a location')}
-                    >
-                      <option disabled value="">
-                        Select Location
-                      </option>
-                      <option value="mylocation">At my location</option>
-                      <option value="providerLocation">At provider's location</option>
-                    </FieldSelect>
-                    
-                    {/* Show customer address input if "At my location" selected */}
-                    {values?.locationChoice === 'mylocation' && (
-                      <div className={css.field}>
-                        <FieldLocationAutocompleteInput
-                          rootClassName={css.locationAddress}
-                          inputClassName={css.locationAutocompleteInput}
-                          iconClassName={css.locationAutocompleteInputIcon}
-                          predictionsClassName={css.predictionsRoot}
-                          validClassName={css.validLocation}
-                          autoFocus={false}
-                          name="location"
-                          label={intl.formatMessage({ id: 'EditListingLocationForm.address' })}
-                          placeholder={intl.formatMessage({
-                            id: 'EditListingLocationForm.addressPlaceholder',
-                          })}
-                          useDefaultPredictions={false}
-                          format={identity}
-                          valueFromForm={values.location}
-                          validate={composeValidators(
-                            autocompleteSearchRequired(addressRequiredMessage),
-                            autocompletePlaceSelected(addressNotRecognizedMessage)
-                          )}
-                          hideLocationIcon={true}
-                        />
-                      </div>
-                    )}
-                    
-                    {/* Show provider location if "At provider's location" selected */}
-                    {values?.locationChoice === 'providerLocation' && (
-                      <div className={classNames(css.field, css.providerLocation)}>
-                        Provider Location :{' '}
-                        <a
-                          href={`https://www.google.com/maps?q=${listing.attributes.geolocation.lat},${listing.attributes.geolocation.lng}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {listing.attributes.publicData.location.address}
-                        </a>
-                      </div>
-                    )}
-                  </>
-                );
-              }
-              
-              // Case 2: Provider location only - show provider location (no dropdown)
-              if (hasProviderLocation && !hasCustomerLocation) {
-                return (
-                  <div className={classNames(css.field, css.providerLocation)}>
-                    <strong>Service Location:</strong>{' '}
-                    <a
-                      href={`https://www.google.com/maps?q=${listing.attributes.geolocation.lat},${listing.attributes.geolocation.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {listing.attributes.publicData.location.address}
-                    </a>
-                  </div>
-                );
-              }
-              
-              // Case 3: Customer location only (or neither selected - default to customer)
-              // This includes: only customer location checked, or nothing checked
-              return (
-                <div className={css.field}>
-                  <FieldLocationAutocompleteInput
-                    rootClassName={css.locationAddress}
-                    inputClassName={css.locationAutocompleteInput}
-                    iconClassName={css.locationAutocompleteInputIcon}
-                    predictionsClassName={css.predictionsRoot}
-                    validClassName={css.validLocation}
-                    autoFocus={false}
-                    name="location"
-                    label={intl.formatMessage({ id: 'EditListingLocationForm.address' })}
-                    placeholder={intl.formatMessage({
-                      id: 'EditListingLocationForm.addressPlaceholder',
-                    })}
-                    useDefaultPredictions={false}
-                    format={identity}
-                    valueFromForm={values.location}
-                    validate={composeValidators(
-                      autocompleteSearchRequired(addressRequiredMessage),
-                      autocompletePlaceSelected(addressNotRecognizedMessage)
-                    )}
-                    hideLocationIcon={true}
-                  />
-                </div>
-              );
-            })()}
+            {listing?.attributes?.publicData?.providerStudio_listingfield === 'yes_option' && (
+              <FieldSelect
+                id={`locationChoice`}
+                name="locationChoice"
+                className={css.field}
+                label={'Location Choice'}
+                validate={validators.required('Please select a location')}
+              >
+                <option disabled value="">
+                  Select Location
+                </option>
+                <option value="mylocation">At my location</option>
+                <option value="providerLocation">At provider’s location</option>
+              </FieldSelect>
+            )}
+            {(values?.locationChoice === 'mylocation' ||
+              listing?.attributes?.publicData?.providerStudio_listingfield !== 'yes_option') && (
+              <div className={css.field}>
+                <FieldLocationAutocompleteInput
+                  rootClassName={css.locationAddress}
+                  inputClassName={css.locationAutocompleteInput}
+                  iconClassName={css.locationAutocompleteInputIcon}
+                  predictionsClassName={css.predictionsRoot}
+                  validClassName={css.validLocation}
+                  autoFocus={false}
+                  name="location"
+                  label={intl.formatMessage({ id: 'EditListingLocationForm.address' })}
+                  placeholder={intl.formatMessage({
+                    id: 'EditListingLocationForm.addressPlaceholder',
+                  })}
+                  useDefaultPredictions={false}
+                  format={identity}
+                  valueFromForm={values.location}
+                  validate={composeValidators(
+                    autocompleteSearchRequired(addressRequiredMessage),
+                    autocompletePlaceSelected(addressNotRecognizedMessage)
+                  )}
+                  hideLocationIcon={true}
+                  // CustomIcon={()=> <></>}
+                />
+              </div>
+            )}
+            {values?.locationChoice === 'providerLocation' && (
+              <div className={classNames(css.field, css.providerLocation)}>
+                Provider Location :{' '}
+                <a
+                  href={`https://www.google.com/maps?q=${listing.attributes.geolocation.lat},${listing.attributes.geolocation.lng}`}
+                  target="_blank"
+                >
+                  {listing.attributes.publicData.location.address}
+                </a>
+              </div>
+            )}
 
             {bookingQuestion1 && (
               <FieldTextInput
