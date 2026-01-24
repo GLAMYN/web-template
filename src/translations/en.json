@@ -1010,6 +1010,7 @@
   "StripePaymentForm.confirmPaymentError": "A payment has been made but we are unable to confirm the order. Please try to confirm the request again. If the order isn't confirmed in time, the payment will be fully refunded.",
   "StripePaymentForm.genericError": "Couldn't handle payment data. Please try again.",
   "StripePaymentForm.locationDetailsTitle": "Location of the listing",
+  "StripePaymentForm.customerLocationTitle": "Service location (your address)",
   "StripePaymentForm.locationUnknown": "Unknown location",
   "StripePaymentForm.messageHeading": "Additional information",
   "StripePaymentForm.messageLabel": "Is there something the listing owner should know? {messageOptionalText}",

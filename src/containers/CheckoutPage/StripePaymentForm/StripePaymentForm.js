@@ -214,6 +214,8 @@ const LocationOrShippingDetails = props => {
     showPickUpLocation,
     showLocation,
     listingLocation,
+    isCustomerLocation,
+    locationChoice,
     formApi,
     locale,
     isFuzzyLocation,
@@ -225,6 +227,11 @@ const LocationOrShippingDetails = props => {
     : listingLocation?.address
     ? listingLocation.address
     : intl.formatMessage({ id: 'StripePaymentForm.locationUnknown' });
+
+  // Determine the location title based on whether it's customer or provider location
+  const locationTitle = isCustomerLocation
+    ? 'StripePaymentForm.customerLocationTitle'
+    : 'StripePaymentForm.locationDetailsTitle';
 
   return askShippingDetails ? (
     <ShippingDetails intl={intl} formApi={formApi} locale={locale} />
@@ -238,7 +245,7 @@ const LocationOrShippingDetails = props => {
   ) : showLocation && !isFuzzyLocation ? (
     <div className={css.locationWrapper}>
       <Heading as="h3" rootClassName={css.heading}>
-        <FormattedMessage id="StripePaymentForm.locationDetailsTitle" />
+        <FormattedMessage id={locationTitle} />
       </Heading>
       <p className={css.locationDetails}>{locationDetails}</p>
     </div>
@@ -285,9 +292,11 @@ const initialState = {
  * @param {boolean} props.showLocation - Whether to show the location address
  * @param {string} props.totalPrice - The total price
  * @param {string} props.locale - The locale
- * @param {Object} props.listingLocation - The listing location
+ * @param {Object} props.listingLocation - The listing location (or customer location if provided)
  * @param {Object} props.listingLocation.building - The building
  * @param {Object} props.listingLocation.address - The address
+ * @param {boolean} props.isCustomerLocation - Whether the location is the customer's entered location
+ * @param {string} props.locationChoice - The location choice (mylocation or providerLocation)
  * @param {boolean} props.isBooking - Whether the booking is in progress
  * @param {boolean} props.isFuzzyLocation - Whether the location is fuzzy
  * @param {Object} props.intl - The intl object
@@ -469,6 +478,8 @@ class StripePaymentForm extends Component {
       hasHandledCardPayment,
       defaultPaymentMethod,
       listingLocation,
+      isCustomerLocation,
+      locationChoice,
       askShippingDetails,
       showLocation,
       showPickUpLocation,
@@ -593,6 +604,8 @@ class StripePaymentForm extends Component {
           showPickUpLocation={showPickUpLocation}
           showLocation={showLocation}
           listingLocation={listingLocation}
+          isCustomerLocation={isCustomerLocation}
+          locationChoice={locationChoice}
           isFuzzyLocation={isFuzzyLocation}
           formApi={formApi}
           locale={locale}
