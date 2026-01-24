@@ -8,7 +8,7 @@ import { propTypes } from '../../../util/types';
 import * as validators from '../../../util/validators';
 import { getPropsForCustomUserFieldInputs } from '../../../util/userHelpers';
 
-import { Form, PrimaryButton, FieldTextInput, CustomExtendedDataField } from '../../../components';
+import { Form, PrimaryButton, FieldTextInput, CustomExtendedDataField, FieldCheckbox } from '../../../components';
 
 import FieldSelectUserType from '../FieldSelectUserType';
 import UserFieldDisplayName from '../UserFieldDisplayName';
@@ -98,9 +98,12 @@ const SignupFormComponent = props => (
       const showDefaultUserFields = userType || noUserTypes;
       const showCustomUserFields = (userType || noUserTypes) && userFieldProps?.length > 0;
 
+      // Age verification checkbox validation
+      const ageVerificationChecked = values?.ageVerification === true;
+
       const classes = classNames(rootClassName || css.root, className);
       const submitInProgress = inProgress;
-      const submitDisabled = invalid || submitInProgress;
+      const submitDisabled = invalid || submitInProgress || !ageVerificationChecked;
 
       return (
         <Form className={classes} onSubmit={handleSubmit}>
@@ -205,6 +208,14 @@ const SignupFormComponent = props => (
           ) : null}
 
           <div className={css.bottomWrapper}>
+            <div className={css.ageVerificationCheckbox}>
+              <FieldCheckbox
+                id={`${formId}-age-verification`}
+                name="ageVerification"
+                label={intl.formatMessage({ id: 'SignupForm.ageVerificationLabel' })}
+                textClassName={css.ageCheckboxLabel}
+              />
+            </div>
             {termsAndConditions}
             <PrimaryButton type="submit" inProgress={submitInProgress} disabled={submitDisabled}>
               <FormattedMessage id="SignupForm.signUp" />

@@ -47,3 +47,23 @@
 .bottomWrapper {
   composes: marketplaceModalBottomWrapper from global;
 }
+
+.ageVerificationCheckbox {
+  composes: marketplaceModalBottomWrapperText from global;
+  margin-bottom: 16px;
+  
+  @media (--viewportMedium) {
+    margin-bottom: 20px;
+  }
+}
+
+.ageCheckboxLabel {
+  composes: marketplaceModalHelperLink from global;
+  padding: 3px 0 5px 0;
+  text-align: left;
+  font-size: 15px;
+  
+  @media (--viewportMedium) {
+    font-size: 16px;
+  }
+}
