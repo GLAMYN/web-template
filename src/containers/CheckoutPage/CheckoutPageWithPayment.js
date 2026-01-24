@@ -521,10 +521,16 @@ export const CheckoutPageWithPayment = props => {
     !hasTransactionPassedPendingPayment(existingTransaction, process);
 
   const listingLocation = listing?.attributes?.publicData?.location;
+  const customerLocation = orderData?.location?.selectedPlace;
+  const locationChoice = orderData?.locationChoice;
   const isBooking = processName === BOOKING_PROCESS_NAME;
   const isPurchase = processName === PURCHASE_PROCESS_NAME;
   const showPickUpLocation = isPurchase && orderData?.deliveryMethod === 'pickup';
-  const showLocation = isBooking && listingLocation?.address;
+  
+  // Show customer location if they entered one, otherwise show listing location
+  const displayLocation = customerLocation || listingLocation;
+  const isCustomerLocation = !!customerLocation;
+  const showLocation = isBooking && (displayLocation?.address || customerLocation?.address);
 
   // Check if the listing currency is compatible with Stripe for the specified transaction process.
   // This function validates the currency against the transaction process requirements and
@@ -615,7 +621,9 @@ export const CheckoutPageWithPayment = props => {
                 askShippingDetails={askShippingDetails}
                 showPickUpLocation={showPickUpLocation}
                 showLocation={showLocation}
-                listingLocation={listingLocation}
+                listingLocation={displayLocation}
+                isCustomerLocation={isCustomerLocation}
+                locationChoice={locationChoice}
                 totalPrice={totalPrice}
                 locale={config.localization.locale}
                 stripePublishableKey={config.stripe.publishableKey}

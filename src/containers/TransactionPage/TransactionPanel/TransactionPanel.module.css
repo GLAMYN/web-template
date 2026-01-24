@@ -740,6 +740,9 @@
 /* Reschedule and Cancel buttons containers for mobile/desktop */
 .mobileButtonsContainer {
   display: block;
+  /* Add left/right spacing to match checkout page */
+  padding-left: 24px;
+  padding-right: 24px;
   
   @media (--viewportLarge) {
     display: none;
@@ -756,62 +759,117 @@
 
 /* Reschedule and Cancel buttons */
 .rescheduleButton {
-  composes: button buttonBorders buttonColors buttonText buttonFont from global;
-  composes: primaryButton from global;
-  
+  /* Remove global composes to prevent conflicts */
+  display: block;
   width: 100%;
-  margin-top: 24px;
-  margin-bottom: 12px;
-  background-color: var(--marketplaceColor);
-  color: var(--colorWhite);
-  border: none;
-  
-  /* Font */
-  font-weight: var(--fontWeightSemiBold);
-  font-size: 16px;
+  min-height: 50px;
+  margin-top: 12px;
+  margin-top: 32px;
+    padding: 16px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: var(--marketplaceColor);
+    color: var(--colorWhite);
+    border: none;
+ 
   line-height: 24px;
   letter-spacing: 0;
+  text-align: center;
+  text-decoration: none;
   
-  /* Padding is used to move the baseline and center content vertically */
-  padding: 10px 0 12px 0;
+  /* Padding */
+  
+  /* Transitions */
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  
+  /* Reset */
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   
   &:hover,
   &:focus {
     background-color: var(--marketplaceColorDark);
+    border-color: var(--marketplaceColorDark);
     color: var(--colorWhite);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+    text-decoration: none;
+  }
+  
+  &:disabled {
+    background-color: var(--colorGrey100);
+    color: var(--colorGrey300);
+    cursor: not-allowed;
+    border: 1px solid var(--colorGrey200);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    opacity: 0.7;
+    transform: none;
   }
   
   @media (--viewportMedium) {
-    padding: 13px 0 15px 0;
+    min-height: 56px;
+    padding: 13px 24px 15px 24px;
   }
 }
 
 .cancelButton {
-  composes: button buttonBorders buttonColors buttonText buttonFont from global;
-  composes: primaryButton from global;
-  
+  /* Remove global composes to prevent conflicts */
+  display: block;
   width: 100%;
+  min-height: 50px;
   margin-top: 12px;
-  background-color: var(--marketplaceColor);
-  color: var(--colorWhite);
-  border: none;
-  
-  /* Font */
-  font-weight: var(--fontWeightSemiBold);
-  font-size: 16px;
+  margin-top: 32px;
+    padding: 16px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: var(--marketplaceColor);
+    color: var(--colorWhite);
+    border: none;
+ 
   line-height: 24px;
   letter-spacing: 0;
+  text-align: center;
+  text-decoration: none;
   
-  /* Padding is used to move the baseline and center content vertically */
-  padding: 10px 0 12px 0;
+  /* Transitions */
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  
+  /* Reset */
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   
   &:hover,
   &:focus {
     background-color: var(--marketplaceColorDark);
+    border-color: var(--marketplaceColorDark);
     color: var(--colorWhite);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+    text-decoration: none;
+  }
+  
+  &:disabled {
+    background-color: var(--colorGrey100);
+    color: var(--colorGrey300);
+    cursor: not-allowed;
+    border: 1px solid var(--colorGrey200);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    opacity: 0.7;
+    transform: none;
   }
   
   @media (--viewportMedium) {
-    padding: 13px 0 15px 0;
+    min-height: 56px;
+    padding: 13px 24px 15px 24px;
   }
 }
