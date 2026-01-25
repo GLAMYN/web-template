@@ -137,10 +137,13 @@ module.exports = (req, res) => {
         defaultValue,
         isCustomer = false
       ) => {
-        if (hasTransactions && !isCustomer) return recurringValue;
+        // Always use recurringValue as the base for provider commission
+        // Only use customValue if explicitly set for this provider
+        if (!isCustomer && hasTransactions) return recurringValue;
         customValue ||= undefined;
         if (customValue || Number(customValue) === 0) return Number(customValue);
-        return defaultValue;
+        // Use recurringValue instead of defaultValue from Console asset
+        return recurringValue !== undefined ? recurringValue : defaultValue;
       };
 
       customerCommission.percentage = getCommissionValue(

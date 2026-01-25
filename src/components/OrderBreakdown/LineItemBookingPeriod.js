@@ -151,8 +151,8 @@ const LineItemBookingPeriod = props => {
         {props?.fromTransactionPanel && transaction.attributes.metadata?.travelTime ? (
           <div className={css.feeInfo}>
             Please note: A travel time of{' '}
-            {transaction.attributes.metadata?.travelTime?.match(/\d+/)?.[0]} minutes has been
-            included.
+            {transaction.attributes.metadata?.travelTime?.match(/\d+/)?.[0]} minutes is included at
+            the end of your appointment.
           </div>
         ) : (
           listing.attributes.publicData?.travel_time && (

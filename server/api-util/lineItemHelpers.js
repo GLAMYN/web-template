@@ -365,7 +365,7 @@ exports.getProviderCommissionMaybe = (providerCommission, baseLineItems, priceAt
     totalMoneyIn.amount
   );
 
-  // Minimum commission is preferred if it is greated than the estimated transaction amount
+  // Minimum commission is preferred if it is greater than the estimated transaction amount
   const useMinimumCommission =
     providerCommission?.minimum_amount > estimatedCommissionFromPercentage;
 

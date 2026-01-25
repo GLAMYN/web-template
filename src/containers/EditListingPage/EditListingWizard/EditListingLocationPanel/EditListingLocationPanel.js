@@ -22,6 +22,9 @@ const getInitialValues = props => {
   const location = publicData?.location || {};
   const { address, building } = location;
 
+  // Include service location type field
+  const providerStudio_listingfield = publicData?.providerStudio_listingfield || [];
+
   return {
     building,
     location: locationFieldsPresent
@@ -30,6 +33,7 @@ const getInitialValues = props => {
           selectedPlace: { address, origin: geolocation },
         }
       : null,
+    pub_providerStudio_listingfield: providerStudio_listingfield,
   };
 };
 
@@ -48,6 +52,7 @@ const getInitialValues = props => {
  * @param {boolean} props.panelUpdated - Whether the panel is updated
  * @param {boolean} props.updateInProgress - Whether the update is in progress
  * @param {Object} props.errors - The errors object
+ * @param {Object} props.config - The config object
  * @returns {JSX.Element}
  */
 const EditListingLocationPanel = props => {
@@ -65,7 +70,14 @@ const EditListingLocationPanel = props => {
     panelUpdated,
     updateInProgress,
     errors,
+    config,
   } = props;
+
+  // Find the service location field configuration
+  const listingFields = config?.listing?.listingFields || [];
+  const serviceLocationFieldConfig = listingFields.find(
+    field => field.key === 'providerStudio_listingfield'
+  );
 
   const classes = classNames(rootClassName || css.root, className);
   const isPublished = listing?.id && listing?.attributes.state !== LISTING_STATE_DRAFT;
@@ -88,8 +100,9 @@ const EditListingLocationPanel = props => {
       <EditListingLocationForm
         className={css.form}
         initialValues={state.initialValues}
+        serviceLocationFieldConfig={serviceLocationFieldConfig}
         onSubmit={values => {
-          const { building = '', location } = values;
+          const { building = '', location, pub_providerStudio_listingfield } = values;
           const {
             selectedPlace: { address, origin },
           } = location;
@@ -99,6 +112,10 @@ const EditListingLocationPanel = props => {
             geolocation: origin,
             publicData: {
               location: { address, building },
+              // Include service location field if present
+              ...(pub_providerStudio_listingfield !== undefined && {
+                providerStudio_listingfield: pub_providerStudio_listingfield,
+              }),
             },
           };
           // Save the initialValues to state
@@ -108,6 +125,7 @@ const EditListingLocationPanel = props => {
             initialValues: {
               building,
               location: { search: address, selectedPlace: { address, origin } },
+              pub_providerStudio_listingfield,
             },
           });
           onSubmit(updateValues);

@@ -250,12 +250,15 @@ const AddListingFields = props => {
     const { key, schemaType, scope } = fieldConfig || {};
     const namespacedKey = scope === 'public' ? `pub_${key}` : `priv_${key}`;
 
+    // Exclude providerStudio_listingfield from Details panel (moved to Location tab)
+    const isServiceLocationField = key === 'providerStudio_listingfield';
+
     const isKnownSchemaType = EXTENDED_DATA_SCHEMA_TYPES.includes(schemaType);
     const isProviderScope = ['public', 'private'].includes(scope);
     const isTargetListingType = isFieldForListingType(listingType, fieldConfig);
     const isTargetCategory = isFieldForCategory(targetCategoryIds, fieldConfig);
 
-    return isKnownSchemaType && isProviderScope && isTargetListingType && isTargetCategory
+    return isKnownSchemaType && isProviderScope && isTargetListingType && isTargetCategory && !isServiceLocationField
       ? [
           ...pickedFields,
           <CustomExtendedDataField
