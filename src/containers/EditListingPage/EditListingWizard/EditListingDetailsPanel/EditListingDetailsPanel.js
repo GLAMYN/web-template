@@ -105,16 +105,19 @@ const pickListingFieldsData = (
     const { key, scope = 'public', schemaType } = fieldConfig || {};
     const namespacePrefix = scope === 'public' ? `pub_` : `priv_`;
     const namespacedKey = `${namespacePrefix}${key}`;
+    
+    // Skip providerStudio_listingfield from Details form (moved to Location tab)
+    const isServiceLocationField = key === 'providerStudio_listingfield';
 
     const isKnownSchemaType = EXTENDED_DATA_SCHEMA_TYPES.includes(schemaType);
     const isTargetScope = scope === targetScope;
     const isTargetListingType = isFieldForListingType(targetListingType, fieldConfig);
     const isTargetCategory = isFieldForCategory(targetCategoryIds, fieldConfig);
 
-    if (isKnownSchemaType && isTargetScope && isTargetListingType && isTargetCategory) {
+    if (isKnownSchemaType && isTargetScope && isTargetListingType && isTargetCategory && !isServiceLocationField) {
       const fieldValue = data[namespacedKey] != null ? data[namespacedKey] : null;
       return { ...fields, [key]: fieldValue };
-    } else if (isKnownSchemaType && isTargetScope) {
+    } else if (isKnownSchemaType && isTargetScope && !isServiceLocationField) {
       // Note: this clears extra custom fields
       // These might exists if provider swaps between listing types before saving the draft listing.
       return { ...fields, [key]: null };
@@ -148,6 +151,9 @@ const initialValuesForListingFields = (
     const { key, scope = 'public', schemaType, enumOptions } = fieldConfig || {};
     const namespacePrefix = scope === 'public' ? `pub_` : `priv_`;
     const namespacedKey = `${namespacePrefix}${key}`;
+    
+    // Skip providerStudio_listingfield from Details form (moved to Location tab)
+    const isServiceLocationField = key === 'providerStudio_listingfield';
 
     const isKnownSchemaType = EXTENDED_DATA_SCHEMA_TYPES.includes(schemaType);
     const isEnumSchemaType = schemaType === SCHEMA_TYPE_ENUM;
@@ -163,7 +169,8 @@ const initialValuesForListingFields = (
       isTargetScope &&
       isTargetListingType &&
       isTargetCategory &&
-      shouldHaveValidEnumOptions
+      shouldHaveValidEnumOptions &&
+      !isServiceLocationField
     ) {
       const fieldValue = data?.[key] != null ? data[key] : null;
       return { ...fields, [namespacedKey]: fieldValue };
@@ -365,6 +372,11 @@ const EditListingDetailsPanel = props => {
               nestedCategories,
               listingFields
             );
+            
+            // Service Location Type field (providerStudio_listingfield) moved to Location tab
+            // Must still be included as empty array for validation to pass
+            const existingProviderStudio = listing?.attributes?.publicData?.providerStudio_listingfield;
+            
             // New values for listing attributes
             const updateValues = {
               title: title.trim(),
@@ -375,6 +387,9 @@ const EditListingDetailsPanel = props => {
                 unitType,
                 ...cleanedNestedCategories,
                 ...publicListingFields,
+                // Service Location Type: preserve existing or set empty array (moved to Location tab)
+                // Empty array passes validation for multi-enum required fields
+                providerStudio_listingfield: existingProviderStudio || [],
               },
               privateData: privateListingFields,
               ...setNoAvailabilityForUnbookableListings(transactionProcessAlias),

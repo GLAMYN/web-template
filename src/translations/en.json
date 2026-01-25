@@ -271,6 +271,7 @@
   "EditListingLocationForm.addressRequired": "You need to provide a location.",
   "EditListingLocationForm.building": "Apt, suite, building # {optionalText}",
   "EditListingLocationForm.buildingPlaceholder": "A 42",
+  "EditListingLocationForm.defaultRequiredMessage": "This field is required.",
   "EditListingLocationForm.optionalText": "• optional",
   "EditListingLocationForm.showListingFailed": "Fetching listing data failed.",
   "EditListingLocationForm.updateFailed": "Failed to update listing. Please try again.",

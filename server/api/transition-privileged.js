@@ -7,6 +7,7 @@ const {
   fetchCommission,
   getIntegrationSdk,
 } = require('../api-util/sdk');
+const { recurringCommission } = require('../constants/commissions');
 
 async function getTransactions(integrationSdk, customerId, listingId) {
   return integrationSdk.transactions.query({
@@ -98,10 +99,32 @@ module.exports = (req, res) => {
       
       // Get previous transactions between this customer and listing
       const transactions = await getTransactions(integrationSdk, customerId, listing_Id);
+      const hasTransactions = transactions?.data?.data?.length > 0;
       
-      // Apply the same logic as in transaction-line-items.js
-      customerCommission.percentage = transactions?.data?.data?.length > 0 ? 0 : customerCommission.percentage;
-      customerCommission.minimum_amount = transactions?.data?.data?.length > 0 ? 0 : customerCommission.minimum_amount;
+      // Helper function to get commission values, prioritizing recurringCommission
+      const getCommissionValue = (recurringValue, defaultValue) => {
+        return recurringValue !== undefined ? recurringValue : defaultValue;
+      };
+      
+      // Apply recurring commission values for provider
+      providerCommission.percentage = getCommissionValue(
+        recurringCommission.providerCommission.percentage,
+        providerCommission.percentage
+      );
+      providerCommission.minimum_amount = getCommissionValue(
+        recurringCommission.providerCommission.minimum_amount,
+        providerCommission.minimum_amount
+      );
+      
+      // Apply the same logic as in transaction-line-items.js for customer
+      customerCommission.percentage = hasTransactions ? 0 : getCommissionValue(
+        recurringCommission.customerCommission.percentage,
+        customerCommission.percentage
+      );
+      customerCommission.minimum_amount = hasTransactions ? 0 : getCommissionValue(
+        recurringCommission.customerCommission.minimum_amount,
+        customerCommission.minimum_amount
+      );
       
       // We need to fetch coupon details from the provider's private data
       // Using the outer couponData variable

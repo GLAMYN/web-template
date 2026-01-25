@@ -1,5 +1,6 @@
 import React from 'react';
 import { Form as FinalForm } from 'react-final-form';
+import arrayMutators from 'final-form-arrays';
 import classNames from 'classnames';
 
 // Import configs and util modules
@@ -17,6 +18,7 @@ import {
   FieldLocationAutocompleteInput,
   Button,
   FieldTextInput,
+  CustomExtendedDataField,
 } from '../../../../components';
 
 // Import modules from this directory
@@ -41,6 +43,7 @@ const identity = v => v;
  * @param {string} props.saveActionMsg - The save action message
  * @param {Function} props.onSubmit - The submit function
  * @param {Object} props.errors - The errors object
+ * @param {Object} props.serviceLocationFieldConfig - The service location field configuration
  * @param {propTypes.error} props.errors.showListingsError - The show listings error
  * @param {propTypes.error} props.errors.updateListingError - The update listing error
  * @returns {JSX.Element}
@@ -48,6 +51,7 @@ const identity = v => v;
 export const EditListingLocationForm = props => (
   <FinalForm
     {...props}
+    mutators={{ ...arrayMutators }}
     render={formRenderProps => {
       const {
         formId = 'EditListingLocationForm',
@@ -64,6 +68,7 @@ export const EditListingLocationForm = props => (
         updateInProgress = false,
         fetchErrors,
         values,
+        serviceLocationFieldConfig,
       } = formRenderProps;
 
       const intl = useIntl();
@@ -99,6 +104,19 @@ export const EditListingLocationForm = props => (
             </p>
           ) : null}
 
+{serviceLocationFieldConfig && (
+            <div className={css.serviceLocationField}>
+              <CustomExtendedDataField
+                name="pub_providerStudio_listingfield"
+                fieldConfig={serviceLocationFieldConfig}
+                defaultRequiredMessage={intl.formatMessage({
+                  id: 'EditListingLocationForm.defaultRequiredMessage',
+                })}
+                formId={formId}
+              />
+            </div>
+          )}
+          
           <FieldLocationAutocompleteInput
             rootClassName={css.locationAddress}
             inputClassName={css.locationAutocompleteInput}
@@ -130,6 +148,8 @@ export const EditListingLocationForm = props => (
               id: 'EditListingLocationForm.buildingPlaceholder',
             })}
           />
+
+         
 
           <Button
             className={css.submitButton}
