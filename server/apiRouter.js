@@ -26,6 +26,7 @@ const getCustomerProviderTx = require('./api/get-customer-provider-transaction')
 const { createCoupon, getCoupons, updateCoupon, deleteCoupon } = require('./api/coupons');
 const { validateAndApplyCoupon, applyCoupon } = require('./api/validate-coupon');
 const transactionTransition = require('./api/transaction-transition');
+const pipMarkPaid = require('./api/pip-mark-paid');
 
 const router = express.Router();
 
@@ -101,5 +102,6 @@ router.delete('/coupons/:couponId', deleteCoupon)
 // Coupon validation and application
 router.post('/validate-coupon', validateAndApplyCoupon)
 router.post('/apply-coupon', applyCoupon)
+router.post('/pip-mark-paid', pipMarkPaid)
 
 module.exports = router;

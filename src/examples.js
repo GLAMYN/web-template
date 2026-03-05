@@ -103,7 +103,7 @@ import * as EditListingPhotosForm from './containers/EditListingPage/EditListing
 import * as EditListingPricingForm from './containers/EditListingPage/EditListingWizard/EditListingPricingPanel/EditListingPricingForm.example';
 import * as EditListingPricingAndStockForm from './containers/EditListingPage/EditListingWizard/EditListingPricingAndStockPanel/EditListingPricingAndStockForm.example';
 import * as ActivityFeed from './containers/TransactionPage/ActivityFeed/ActivityFeed.example';
-import * as ReviewForm from './containers/TransactionPage/ReviewForm/ReviewForm.example';
+import * as ReviewForm from './components/ReviewForm/ReviewForm.example';
 import * as SendMessageForm from './containers/TransactionPage/SendMessageForm/SendMessageForm.example';
 import * as PanelHeading from './containers/TransactionPage/TransactionPanel/PanelHeading.example';
 import * as SelectMultipleFilter from './containers/SearchPage/SelectMultipleFilter/SelectMultipleFilter.example';

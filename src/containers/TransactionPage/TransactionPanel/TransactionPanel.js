@@ -24,6 +24,7 @@ import FeedSection from './FeedSection';
 import ActionButtonsMaybe from './ActionButtonsMaybe';
 import DiminishedActionButtonMaybe from './DiminishedActionButtonMaybe';
 import PanelHeading from './PanelHeading';
+import PipNotificationMaybe from './PipNotificationMaybe';
 
 import css from './TransactionPanel.module.css';
 import TipPayment from './TipPayment';
@@ -287,11 +288,11 @@ export class TransactionPanelComponent extends Component {
     const isBeforeEndDate = endDate instanceof Date && !isNaN(endDate) && now < endDate;
 
     // Reschedule button - styled exactly like Cancel button, placed above it
-    const rescheduleButton = 
+    const rescheduleButton =
       stateData.showRescheduleButton &&
-      onOpenRescheduleModal &&
-      includedStates.includes(transactionState) &&
-      isNotStarted ? (
+        onOpenRescheduleModal &&
+        includedStates.includes(transactionState) &&
+        isNotStarted ? (
         <Button type="button" rootClassName={css.rescheduleButton} onClick={onOpenRescheduleModal}>
           <FormattedMessage id="TransactionPanel.rescheduleButton" defaultMessage="Reschedule Booking" />
         </Button>
@@ -299,9 +300,9 @@ export class TransactionPanelComponent extends Component {
 
     const cancelButton =
       showCancelButton &&
-      !this.alreadyCancelled &&
-      includedStates.includes(transactionState) &&
-      isNotStarted ? (
+        !this.alreadyCancelled &&
+        includedStates.includes(transactionState) &&
+        isNotStarted ? (
         <Button type="button" rootClassName={css.cancelButton} onClick={this.openCancelModal}>
           <FormattedMessage id="TransactionPanel.cancelButton" defaultMessage="Cancel Booking" />
         </Button>
@@ -350,6 +351,13 @@ export class TransactionPanelComponent extends Component {
               protectedData={protectedData}
               showInquiryMessage={isInquiryProcess}
               isCustomer={isCustomer}
+            />
+
+            <PipNotificationMaybe
+              transaction={transaction}
+              transactionRole={transactionRole}
+              intl={intl}
+              otherUserDisplayNameString={otherUserDisplayNameString}
             />
 
             {!isInquiryProcess ? (
@@ -520,7 +528,7 @@ export class TransactionPanelComponent extends Component {
                 </div>
               </>
             ) : null}
-            
+
             {/* Reschedule and Cancel buttons for mobile only */}
             <div className={css.mobileButtonsContainer}>
               {rescheduleButton}
@@ -578,7 +586,7 @@ export class TransactionPanelComponent extends Component {
                   <div className={css.desktopActionButtons}>{actionButtons}</div>
                 ) : null}
               </div>
-              
+
               {/* Reschedule and Cancel buttons for desktop only */}
               <div className={css.desktopButtonsContainer}>
                 {rescheduleButton}
@@ -592,55 +600,55 @@ export class TransactionPanelComponent extends Component {
               {transaction?.attributes?.metadata?.tipAmount ? (
                 <></>
               ) : // <div className={css.tipContainer}>
-              //   <div className={css.tipIconWrapper}>
-              //     <svg
-              //       style={{ fill: 'none', color: '#fff' }}
-              //       width="20"
-              //       height="20"
-              //       viewBox="0 0 24 24"
-              //       fill="none"
-              //       stroke="currentColor"
-              //       strokeWidth="2"
-              //       strokeLinecap="round"
-              //       strokeLinejoin="round"
-              //     >
-              //       <path d="M20 6 9 17l-5-5" />
-              //     </svg>
-              //   </div>
-              //   <div className={css.tipContent}>
-              //     {isProvider ?
-              //     <>
-              //     <span className={css.tipLabel}>You've recieved a tip of </span>
-              //     <span className={css.tipAmount}>
-              //       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
-              //         style: 'currency',
-              //         currency,
-              //       })}
-              //     </span></>
-              //     :
-              //     <>
-              //     <span className={css.tipLabel}>You tipped</span>
-              //     <span className={css.tipAmount}>
-              //       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
-              //         style: 'currency',
-              //         currency,
-              //       })}
-              //     </span>
-              //     </>
-              //     }
-              //   </div>
-              // </div>
-              isCustomer &&
-                transaction?.attributes?.lastTransition === 'transition/accept' &&
-                isBookingEnded ? (
-                <TipPayment
-                  orderBreakdown={transaction}
-                  provider={provider}
-                  transactionId={transaction?.id?.uuid}
-                />
-              ) : (
-                ''
-              )}
+                //   <div className={css.tipIconWrapper}>
+                //     <svg
+                //       style={{ fill: 'none', color: '#fff' }}
+                //       width="20"
+                //       height="20"
+                //       viewBox="0 0 24 24"
+                //       fill="none"
+                //       stroke="currentColor"
+                //       strokeWidth="2"
+                //       strokeLinecap="round"
+                //       strokeLinejoin="round"
+                //     >
+                //       <path d="M20 6 9 17l-5-5" />
+                //     </svg>
+                //   </div>
+                //   <div className={css.tipContent}>
+                //     {isProvider ?
+                //     <>
+                //     <span className={css.tipLabel}>You've recieved a tip of </span>
+                //     <span className={css.tipAmount}>
+                //       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
+                //         style: 'currency',
+                //         currency,
+                //       })}
+                //     </span></>
+                //     :
+                //     <>
+                //     <span className={css.tipLabel}>You tipped</span>
+                //     <span className={css.tipAmount}>
+                //       {intl.formatNumber(+transaction?.attributes?.metadata?.tipAmount, {
+                //         style: 'currency',
+                //         currency,
+                //       })}
+                //     </span>
+                //     </>
+                //     }
+                //   </div>
+                // </div>
+                isCustomer &&
+                  transaction?.attributes?.lastTransition === 'transition/accept' &&
+                  isBookingEnded ? (
+                  <TipPayment
+                    orderBreakdown={transaction}
+                    provider={provider}
+                    transactionId={transaction?.id?.uuid}
+                  />
+                ) : (
+                  ''
+                )}
             </div>
           </div>
         </div>
@@ -649,7 +657,7 @@ export class TransactionPanelComponent extends Component {
           id="CancelTransactionModal"
           isOpen={isCancelModalOpen}
           onClose={this.closeCancelModal}
-          onManageDisableScrolling={() => {}}
+          onManageDisableScrolling={() => { }}
           containerClassName={css.cancelModalRoot}
           contentClassName={css.cancelModalContent}
         >

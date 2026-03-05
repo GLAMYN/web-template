@@ -39,7 +39,7 @@ export { default as IconSpinner } from './IconSpinner/IconSpinner';
 export { default as IconSuccess } from './IconSuccess/IconSuccess';
 
 // Typography
-export { Heading, H1, H2, H3, H4, H5, H6  } from './Heading/Heading';
+export { Heading, H1, H2, H3, H4, H5, H6 } from './Heading/Heading';
 
 // Other independent components
 export { default as AspectRatioWrapper } from './AspectRatioWrapper/AspectRatioWrapper';
@@ -133,6 +133,9 @@ export { default as Reviews } from './Reviews/Reviews';
 export { default as SavedCardDetails } from './SavedCardDetails/SavedCardDetails';
 export { default as StripeConnectAccountStatusBox } from './StripeConnectAccountStatusBox/StripeConnectAccountStatusBox';
 export { default as StripePaymentAddress } from './StripePaymentAddress/StripePaymentAddress';
+export { default as PayInPersonSelector } from './PayInPersonSelector/PayInPersonSelector';
+export { default as ReviewForm } from './ReviewForm/ReviewForm';
+export { default as ReviewModal } from './ReviewModal/ReviewModal';
 
 // Forms
 export { default as StripeConnectAccountForm } from './StripeConnectAccountForm/StripeConnectAccountForm';

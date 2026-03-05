@@ -14,7 +14,7 @@ const canRescheduleBooking = (booking, listing) => {
 
   const bookingStart = new Date(booking.attributes.start);
   const now = new Date();
-  
+
   // Check if booking has already started
   if (now >= bookingStart) {
     return { canReschedule: false };
@@ -85,6 +85,19 @@ export const getStateDataForBookingProcess = (txInfo, processInfo) => {
         secondaryButtonProps: secondary,
       };
     })
+    .cond([states.PENDING_PAYMENT_SET_CARD, CUSTOMER], () => {
+      const primary = actionButtonProps(transitions.CONFIRM_PAYMENT_SET_CARD, CUSTOMER);
+      return {
+        processName,
+        processState,
+        showDetailCardHeadings: true,
+        showActionButtons: true,
+        primaryButtonProps: primary,
+      };
+    })
+    .cond([states.PENDING_PAYMENT_SET_CARD, PROVIDER], () => {
+      return { processName, processState, showDetailCardHeadings: true };
+    })
     .cond([states.ACCEPTED, CUSTOMER], () => {
       const booking = transaction?.booking;
       const { canReschedule } = canRescheduleBooking(booking, listing);
@@ -97,8 +110,74 @@ export const getStateDataForBookingProcess = (txInfo, processInfo) => {
       };
     })
     .cond([states.ACCEPTED, PROVIDER], () => {
+      // PIP: if this is a pay-in-person booking, show 'Payment received' button
+      const paymentMethod = transaction?.attributes?.protectedData?.paymentMethodSelected;
+      const booking = transaction?.booking;
+      const now = new Date();
+      const bookingStart = booking?.attributes?.start ? new Date(booking.attributes.start) : null;
+      // Button is only relevant after booking has started
+      const bookingHasStarted = bookingStart && now >= bookingStart;
+      const isPip = paymentMethod === 'in_person_deposit';
+      if (isPip) {
+        const primary = bookingHasStarted
+          ? actionButtonProps(transitions.PAID_IN_PERSON_CONFIRMED, PROVIDER)
+          : null;
+        return {
+          processName,
+          processState,
+          showDetailCardHeadings: true,
+          showActionButtons: !!primary,
+          primaryButtonProps: primary,
+        };
+      }
       return { processName, processState, showDetailCardHeadings: true };
     })
+    // ─── Pay-In-Person & Scheduled States ──────────────────────────────────────
+    .cond([states.PAYMENT_SCHEDULED_FULL, _], () => {
+      return { processName, processState, showDetailCardHeadings: true, showExtraInfo: true };
+    })
+    .cond([states.DEPOSIT_SCHEDULED, _], () => {
+      return { processName, processState, showDetailCardHeadings: true, showExtraInfo: true };
+    })
+    .cond([states.PAYMENT_FAILED_ACTION_REQUIRED, _], () => {
+      return { processName, processState, showDetailCardHeadings: true, showExtraInfo: true };
+    })
+    // deposit_paid: deposit collected from customer; remaining balance to be received in person
+    .cond([states.DEPOSIT_PAID, CUSTOMER], () => {
+      return {
+        processName,
+        processState,
+        showDetailCardHeadings: true,
+      };
+    })
+    .cond([states.DEPOSIT_PAID, PROVIDER], () => {
+      const booking = transaction?.booking;
+      const now = new Date();
+      const bookingStart = booking?.attributes?.start ? new Date(booking.attributes.start) : null;
+      const bookingHasStarted = bookingStart && now >= bookingStart;
+      const primary = bookingHasStarted
+        ? actionButtonProps(transitions.PAID_IN_PERSON_CONFIRMED, PROVIDER)
+        : null;
+      return {
+        processName,
+        processState,
+        showDetailCardHeadings: true,
+        showActionButtons: !!primary,
+        primaryButtonProps: primary,
+      };
+    })
+    // paid_in_person_confirmed: provider confirmed cash received; awaiting review
+    .cond([states.PAID_IN_PERSON_CONFIRMED, _], () => {
+      return {
+        processName,
+        processState,
+        showDetailCardHeadings: true,
+        showReviewAsFirstLink: true,
+        showActionButtons: true,
+        primaryButtonProps: leaveReviewProps,
+      };
+    })
+    // ─── Standard end states ────────────────────────────────────────────────────
     .cond([states.DELIVERED, _], () => {
       return {
         processName,

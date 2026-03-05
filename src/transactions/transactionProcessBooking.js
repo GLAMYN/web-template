@@ -67,6 +67,29 @@ export const transitions = {
   EXPIRE_CUSTOMER_REVIEW_PERIOD: 'transition/expire-customer-review-period',
   EXPIRE_PROVIDER_REVIEW_PERIOD: 'transition/expire-provider-review-period',
   EXPIRE_REVIEW_PERIOD: 'transition/expire-review-period',
+
+  // ─── Far-future booking (> 90 days away) ──────────────────────────────────
+  // Uses a manual SetupIntent — card is saved, no charge until scheduledChargeAt.
+  REQUEST_PAYMENT_SET_CARD: 'transition/request-payment-set-card',
+  REQUEST_PAYMENT_SET_CARD_AFTER_INQUIRY: 'transition/request-payment-set-card-after-inquiry',
+  // Customer confirms the SetupIntent on the client so the card is saved.
+  CONFIRM_PAYMENT_SET_CARD: 'transition/confirm-payment-set-card',
+
+  // System (operator via Integration SDK) charges the saved card at scheduledChargeAt
+  SYSTEM_CHARGE_FULL: 'transition/system-charge-full',
+  SYSTEM_CHARGE_FAILED: 'transition/system-charge-failed',
+  CANCEL_FROM_CARD_SAVED: 'transition/cancel-from-card-saved',
+
+  // Payment failed — operator cancels
+  CANCEL_FROM_FAILED: 'transition/cancel-from-failed',
+
+  // PIP: provider confirms customer paid the balance in cash
+  PAID_IN_PERSON_CONFIRMED: 'transition/paid-in-person-confirmed',
+  // System auto-completes a PIP booking 24h after booking end
+  AUTO_COMPLETE_PIP: 'transition/auto-complete-pip',
+
+  // Operator-only cancellations
+  CANCEL_NO_REFUND: 'transition/cancel-no-refund',
 };
 
 /**
@@ -92,6 +115,11 @@ export const states = {
   REVIEWED: 'reviewed',
   REVIEWED_BY_CUSTOMER: 'reviewed-by-customer',
   REVIEWED_BY_PROVIDER: 'reviewed-by-provider',
+  PENDING_PAYMENT_SET_CARD: 'pending-payment-set-card',
+
+  // Reached after confirm-payment-set-card; awaiting scheduled charge.
+  CARD_SAVED: 'card-saved',
+  PAYMENT_FAILED_ACTION_REQUIRED: 'payment-failed-action-required',
 };
 
 /**
@@ -118,11 +146,13 @@ export const graph = {
       on: {
         [transitions.INQUIRE]: states.INQUIRY,
         [transitions.REQUEST_PAYMENT]: states.PENDING_PAYMENT,
+        [transitions.REQUEST_PAYMENT_SET_CARD]: states.PENDING_PAYMENT_SET_CARD,
       },
     },
     [states.INQUIRY]: {
       on: {
         [transitions.REQUEST_PAYMENT_AFTER_INQUIRY]: states.PENDING_PAYMENT,
+        [transitions.REQUEST_PAYMENT_SET_CARD_AFTER_INQUIRY]: states.PENDING_PAYMENT_SET_CARD,
       },
     },
 
@@ -133,14 +163,34 @@ export const graph = {
       },
     },
 
-    [states.PAYMENT_EXPIRED]: {},
+    [states.PENDING_PAYMENT_SET_CARD]: {
+      on: {
+        [transitions.EXPIRE_PAYMENT_SET_CARD]: states.PAYMENT_EXPIRED,
+        [transitions.CONFIRM_PAYMENT_SET_CARD]: states.CARD_SAVED,
+      },
+    },
+
     [states.PREAUTHORIZED]: {
       on: {
+        [transitions.ACCEPT]: states.ACCEPTED,
+        [transitions.OPERATOR_ACCEPT]: states.ACCEPTED,
         [transitions.DECLINE]: states.DECLINED,
         [transitions.OPERATOR_DECLINE]: states.DECLINED,
         [transitions.EXPIRE]: states.EXPIRED,
-        [transitions.ACCEPT]: states.ACCEPTED,
-        [transitions.OPERATOR_ACCEPT]: states.ACCEPTED,
+      },
+    },
+
+    // ── Far-future card-saved state (awaiting scheduler charge) ─────────────
+    [states.CARD_SAVED]: {
+      on: {
+        [transitions.CANCEL_FROM_CARD_SAVED]: states.CANCELED,
+        [transitions.SYSTEM_CHARGE_FULL]: states.ACCEPTED,
+        [transitions.SYSTEM_CHARGE_FAILED]: states.PAYMENT_FAILED_ACTION_REQUIRED,
+      },
+    },
+    [states.PAYMENT_FAILED_ACTION_REQUIRED]: {
+      on: {
+        [transitions.CANCEL_FROM_FAILED]: states.CANCELED,
       },
     },
 
@@ -150,8 +200,12 @@ export const graph = {
       on: {
         [transitions.RESCHEDULE]: states.ACCEPTED,
         [transitions.CANCEL]: states.CANCELED,
+        [transitions.CANCEL_NO_REFUND]: states.CANCELED,
         [transitions.COMPLETE]: states.DELIVERED,
         [transitions.OPERATOR_COMPLETE]: states.DELIVERED,
+        // PIP: provider confirms customer paid the balance in cash
+        [transitions.PAID_IN_PERSON_CONFIRMED]: states.DELIVERED,
+        [transitions.AUTO_COMPLETE_PIP]: states.DELIVERED,
       },
     },
 
@@ -188,10 +242,12 @@ export const isRelevantPastTransition = transition => {
     transitions.ACCEPT,
     transitions.OPERATOR_ACCEPT,
     transitions.CANCEL,
+    transitions.CANCEL_NO_REFUND,
     transitions.RESCHEDULE,
     transitions.COMPLETE,
     transitions.OPERATOR_COMPLETE,
     transitions.CONFIRM_PAYMENT,
+    transitions.CONFIRM_PAYMENT_SET_CARD,
     transitions.DECLINE,
     transitions.OPERATOR_DECLINE,
     transitions.EXPIRE,
@@ -199,6 +255,11 @@ export const isRelevantPastTransition = transition => {
     transitions.REVIEW_1_BY_PROVIDER,
     transitions.REVIEW_2_BY_CUSTOMER,
     transitions.REVIEW_2_BY_PROVIDER,
+    // Far-future & PIP transitions
+    transitions.PAID_IN_PERSON_CONFIRMED,
+    transitions.AUTO_COMPLETE_PIP,
+    transitions.SYSTEM_CHARGE_FULL,
+    transitions.SYSTEM_CHARGE_FAILED,
   ].includes(transition);
 };
 
@@ -221,9 +282,12 @@ export const isProviderReview = transition => {
 // should go through the local API endpoints, or if using JS SDK is
 // enough.
 export const isPrivileged = transition => {
-  return [transitions.REQUEST_PAYMENT, transitions.REQUEST_PAYMENT_AFTER_INQUIRY].includes(
-    transition
-  );
+  return [
+    transitions.REQUEST_PAYMENT,
+    transitions.REQUEST_PAYMENT_AFTER_INQUIRY,
+    transitions.REQUEST_PAYMENT_SET_CARD,
+    transitions.REQUEST_PAYMENT_SET_CARD_AFTER_INQUIRY,
+  ].includes(transition);
 };
 
 // Check when transaction is completed (booking over)
@@ -238,6 +302,8 @@ export const isCompleted = transition => {
     transitions.EXPIRE_REVIEW_PERIOD,
     transitions.EXPIRE_CUSTOMER_REVIEW_PERIOD,
     transitions.EXPIRE_PROVIDER_REVIEW_PERIOD,
+    transitions.AUTO_COMPLETE_PIP,
+    transitions.PAID_IN_PERSON_CONFIRMED,
   ];
   return txCompletedTransitions.includes(transition);
 };

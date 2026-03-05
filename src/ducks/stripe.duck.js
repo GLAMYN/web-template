@@ -32,6 +32,10 @@ export const RETRIEVE_PAYMENT_INTENT_REQUEST = 'app/stripe/RETRIEVE_PAYMENT_INTE
 export const RETRIEVE_PAYMENT_INTENT_SUCCESS = 'app/stripe/RETRIEVE_PAYMENT_INTENT_SUCCESS';
 export const RETRIEVE_PAYMENT_INTENT_ERROR = 'app/stripe/RETRIEVE_PAYMENT_INTENT_ERROR';
 
+export const RETRIEVE_SETUP_INTENT_REQUEST = 'app/stripe/RETRIEVE_SETUP_INTENT_REQUEST';
+export const RETRIEVE_SETUP_INTENT_SUCCESS = 'app/stripe/RETRIEVE_SETUP_INTENT_SUCCESS';
+export const RETRIEVE_SETUP_INTENT_ERROR = 'app/stripe/RETRIEVE_SETUP_INTENT_ERROR';
+
 // ================ Reducer ================ //
 
 const initialState = {
@@ -43,6 +47,8 @@ const initialState = {
   setupIntent: null,
   retrievePaymentIntentInProgress: false,
   retrievePaymentIntentError: null,
+  retrieveSetupIntentInProgress: false,
+  retrieveSetupIntentError: null,
 };
 
 export default function reducer(state = initialState, action = {}) {
@@ -114,7 +120,7 @@ export default function reducer(state = initialState, action = {}) {
         handleCardSetupInProgress: true,
       };
     case HANDLE_CARD_SETUP_SUCCESS:
-      return { ...state, setupIntent: payload, handleCardSetupInProgress: false };
+      return { ...state, setupIntent: payload?.setupIntent ?? payload, handleCardSetupInProgress: false };
     case HANDLE_CARD_SETUP_ERROR:
       console.error(payload);
       return { ...state, handleCardSetupError: payload, handleCardSetupInProgress: false };
@@ -141,6 +147,22 @@ export default function reducer(state = initialState, action = {}) {
         ...state,
         retrievePaymentIntentError: payload,
         retrievePaymentIntentInProgress: false,
+      };
+
+    case RETRIEVE_SETUP_INTENT_REQUEST:
+      return {
+        ...state,
+        retrieveSetupIntentError: null,
+        retrieveSetupIntentInProgress: true,
+      };
+    case RETRIEVE_SETUP_INTENT_SUCCESS:
+      return { ...state, setupIntent: payload, retrieveSetupIntentInProgress: false };
+    case RETRIEVE_SETUP_INTENT_ERROR:
+      console.error(payload);
+      return {
+        ...state,
+        retrieveSetupIntentError: payload,
+        retrieveSetupIntentInProgress: false,
       };
 
     default:
@@ -228,17 +250,38 @@ export const retrievePaymentIntent = params => dispatch => {
       const { code, doc_url, message, payment_intent } = err.error || {};
       const loggableError = err.error
         ? {
-            code,
-            message,
-            doc_url,
-            paymentIntentStatus: payment_intent
-              ? payment_intent.status
-              : 'no payment_intent included',
-          }
+          code,
+          message,
+          doc_url,
+          paymentIntentStatus: payment_intent
+            ? payment_intent.status
+            : 'no payment_intent included',
+        }
         : e;
       log.error(loggableError, 'stripe-retrieve-payment-intent-failed', {
         stripeMessage: loggableError.message,
       });
+      throw err;
+    });
+};
+
+export const retrieveSetupIntent = params => dispatch => {
+  const { stripe, setupIntentClientSecret } = params;
+  dispatch({ type: RETRIEVE_SETUP_INTENT_REQUEST });
+
+  return stripe
+    .retrieveSetupIntent(setupIntentClientSecret)
+    .then(response => {
+      if (response.error) {
+        return Promise.reject(response);
+      } else {
+        dispatch({ type: RETRIEVE_SETUP_INTENT_SUCCESS, payload: response.setupIntent });
+        return response;
+      }
+    })
+    .catch(err => {
+      const e = err.error || storableError(err);
+      dispatch({ type: RETRIEVE_SETUP_INTENT_ERROR, payload: e });
       throw err;
     });
 };
@@ -294,11 +337,11 @@ export const confirmCardPayment = params => dispatch => {
       const { code, doc_url, message, payment_intent } = containsPaymentIntent ? err.error : {};
       const loggableError = containsPaymentIntent
         ? {
-            code,
-            message,
-            doc_url,
-            paymentIntentStatus: payment_intent.status,
-          }
+          code,
+          message,
+          doc_url,
+          paymentIntentStatus: payment_intent.status,
+        }
         : e;
       log.error(loggableError, 'stripe-handle-card-payment-failed', {
         stripeMessage: loggableError.message,
@@ -314,14 +357,20 @@ export const handleCardSetup = params => dispatch => {
 
   dispatch(handleCardSetupRequest());
 
+  // Use confirmCardSetup (modern API, replaced deprecated handleCardSetup)
+  const confirmParams = paymentParams?.payment_method
+    ? { payment_method: paymentParams.payment_method }
+    : { payment_method: { card } };
+
   return stripe
-    .handleCardSetup(setupIntentClientSecret, card, paymentParams)
+    .confirmCardSetup(setupIntentClientSecret, confirmParams)
     .then(response => {
       if (response.error) {
         return Promise.reject(response);
       } else {
         dispatch(handleCardSetupSuccess(response));
-        return response;
+        // Return normalized shape: { setupIntent: ... }
+        return { setupIntent: response.setupIntent };
       }
     })
     .catch(err => {
@@ -334,11 +383,11 @@ export const handleCardSetup = params => dispatch => {
       const { code, doc_url, message, setup_intent } = containsSetupIntent ? err.error : {};
       const loggableError = containsSetupIntent
         ? {
-            code,
-            message,
-            doc_url,
-            paymentIntentStatus: setup_intent.status,
-          }
+          code,
+          message,
+          doc_url,
+          paymentIntentStatus: setup_intent.status,
+        }
         : e;
       log.error(loggableError, 'stripe-handle-card-setup-failed', {
         stripeMessage: loggableError.message,

@@ -180,8 +180,8 @@ const getPaymentMethod = (selectedPaymentMethod, hasDefaultPaymentMethod) => {
   return selectedPaymentMethod == null && hasDefaultPaymentMethod
     ? 'defaultCard'
     : selectedPaymentMethod == null
-    ? 'onetimeCardPayment'
-    : selectedPaymentMethod;
+      ? 'onetimeCardPayment'
+      : selectedPaymentMethod;
 };
 
 // Should we show onetime payment fields and does StripeElements card need attention
@@ -225,8 +225,8 @@ const LocationOrShippingDetails = props => {
   const locationDetails = listingLocation?.building
     ? `${listingLocation.building}, ${listingLocation.address}`
     : listingLocation?.address
-    ? listingLocation.address
-    : intl.formatMessage({ id: 'StripePaymentForm.locationUnknown' });
+      ? listingLocation.address
+      : intl.formatMessage({ id: 'StripePaymentForm.locationUnknown' });
 
   // Determine the location title based on whether it's customer or provider location
   const locationTitle = isCustomerLocation
@@ -300,6 +300,8 @@ const initialState = {
  * @param {boolean} props.isBooking - Whether the booking is in progress
  * @param {boolean} props.isFuzzyLocation - Whether the location is fuzzy
  * @param {Object} props.intl - The intl object
+ * @param {boolean} props.isFarFuture - Whether the booking is more than 90 days away
+ * @param {string} props.scheduledChargeAt - The scheduled charge date
  */
 class StripePaymentForm extends Component {
   constructor(props) {
@@ -492,6 +494,8 @@ class StripePaymentForm extends Component {
       values,
       bookingDates,
       listing,
+      isFarFuture,
+      scheduledChargeAt,
     } = formRenderProps;
 
     this.finalFormAPI = formApi;
@@ -512,12 +516,15 @@ class StripePaymentForm extends Component {
     // Calculate cancellation/reschedule cutoff date for checkboxes
     let cutoffDateTime = null;
     let isPastCutoff = false;
-    if (isBooking && bookingDates?.bookingStart && listing) {
-      const bookingStart = moment(bookingDates.bookingStart);
+    const bookingDatesData = bookingDates?.bookingDates || bookingDates || {};
+    const bookingStart = bookingDatesData.bookingStart || bookingDatesData.start;
+
+    if (isBooking && bookingStart && listing) {
+      const bStart = moment(bookingStart);
       const cancellationPolicyDays = listing?.attributes?.publicData?.cancellation_listingfield || 0;
       const timeZone = listing?.attributes?.availabilityPlan?.timezone || moment.tz.guess();
-      cutoffDateTime = bookingStart.clone().subtract(cancellationPolicyDays, 'days').tz(timeZone);
-      
+      cutoffDateTime = bStart.clone().subtract(cancellationPolicyDays, 'days').tz(timeZone);
+
       // Check if we're currently past the cutoff (inside the no-refund/no-reschedule window)
       const now = moment().tz(timeZone);
       isPastCutoff = now.isAfter(cutoffDateTime);
@@ -529,7 +536,16 @@ class StripePaymentForm extends Component {
     const notesCheckboxChecked = values?.customerNotesConfirmation === true;
     const checkboxesValid = shouldShowCheckboxes ? (policyCheckboxChecked && notesCheckboxChecked) : true;
 
-    const submitDisabled = invalid || onetimePaymentNeedsAttention || submitInProgress || !checkboxesValid;
+    // Check for card save consent if far future
+    const cardSaveConsentChecked = values?.cardSaveConsent === true;
+    const cardSaveConsentValid = isFarFuture && !hasHandledCardPayment ? cardSaveConsentChecked : true;
+
+    const submitDisabled =
+      invalid ||
+      onetimePaymentNeedsAttention ||
+      submitInProgress ||
+      !checkboxesValid ||
+      !cardSaveConsentValid;
     const hasCardError = this.state.error && !submitInProgress;
     const hasPaymentErrors = confirmCardPaymentError || confirmPaymentError;
     const classes = classNames(rootClassName || css.root, className);
@@ -550,10 +566,10 @@ class StripePaymentForm extends Component {
       confirmCardPaymentError && confirmCardPaymentError.code === piAuthenticationFailure
         ? intl.formatMessage({ id: 'StripePaymentForm.confirmCardPaymentError' })
         : confirmCardPaymentError
-        ? confirmCardPaymentError.message
-        : confirmPaymentError
-        ? intl.formatMessage({ id: 'StripePaymentForm.confirmPaymentError' })
-        : intl.formatMessage({ id: 'StripePaymentForm.genericError' });
+          ? confirmCardPaymentError.message
+          : confirmPaymentError
+            ? intl.formatMessage({ id: 'StripePaymentForm.confirmPaymentError' })
+            : intl.formatMessage({ id: 'StripePaymentForm.genericError' });
 
     const billingDetailsNameLabel = intl.formatMessage({
       id: 'StripePaymentForm.billingDetailsNameLabel',
@@ -714,21 +730,21 @@ class StripePaymentForm extends Component {
                 label={
                   isPastCutoff
                     ? intl.formatMessage(
-                        { id: 'StripePaymentForm.cancellationPolicyPastCutoffLabel' },
-                        {
-                          cutoffDate: cutoffDateTime.format('ddd, MMM D, YYYY'),
-                          cutoffTime: cutoffDateTime.format('h:mm A'),
-                          timeZone: cutoffDateTime.format('z'),
-                        }
-                      )
+                      { id: 'StripePaymentForm.cancellationPolicyPastCutoffLabel' },
+                      {
+                        cutoffDate: cutoffDateTime.format('ddd, MMM D, YYYY'),
+                        cutoffTime: cutoffDateTime.format('h:mm A'),
+                        timeZone: cutoffDateTime.format('z'),
+                      }
+                    )
                     : intl.formatMessage(
-                        { id: 'StripePaymentForm.cancellationPolicyLabel' },
-                        {
-                          cutoffDate: cutoffDateTime.format('ddd, MMM D, YYYY'),
-                          cutoffTime: cutoffDateTime.format('h:mm A'),
-                          timeZone: cutoffDateTime.format('z'),
-                        }
-                      )
+                      { id: 'StripePaymentForm.cancellationPolicyLabel' },
+                      {
+                        cutoffDate: cutoffDateTime.format('ddd, MMM D, YYYY'),
+                        cutoffTime: cutoffDateTime.format('h:mm A'),
+                        timeZone: cutoffDateTime.format('z'),
+                      }
+                    )
                 }
               />
               {/* {!isPastCutoff ? (
@@ -748,6 +764,25 @@ class StripePaymentForm extends Component {
           </div>
         ) : null}
 
+        {isFarFuture && !hasHandledCardPayment ? (
+          <div className={css.farFutureConsentContainer}>
+            <Heading as="h3" rootClassName={css.heading}>
+              <FormattedMessage id="CheckoutPage.pip.farFutureNoticeTitle" defaultMessage="Card Save Consent" />
+            </Heading>
+            <FieldCheckbox
+              id={`${formId}-card-save-consent`}
+              name="cardSaveConsent"
+              label={intl.formatMessage(
+                { id: 'StripePaymentForm.cardSaveConsent' },
+                {
+                  date: moment(scheduledChargeAt).format('LL'),
+                  amount: totalPriceMaybe,
+                }
+              )}
+            />
+          </div>
+        ) : null}
+
         <div className={css.submitContainer}>
           {hasPaymentErrors ? (
             <span className={css.errorMessage}>{paymentErrorMessage}</span>
@@ -758,7 +793,9 @@ class StripePaymentForm extends Component {
             inProgress={submitInProgress}
             disabled={submitDisabled}
           >
-            {billingDetailsNeeded ? (
+            {isFarFuture && !hasHandledCardPayment ? (
+              <FormattedMessage id="StripePaymentForm.submitSaveCard" defaultMessage="Save card" />
+            ) : billingDetailsNeeded && !hasHandledCardPayment ? (
               <FormattedMessage
                 id="StripePaymentForm.submitPaymentInfo"
                 values={{ totalPrice: totalPriceMaybe, isBooking: isBookingYesNo }}
@@ -771,10 +808,18 @@ class StripePaymentForm extends Component {
             )}
           </PrimaryButton>
           <p className={css.paymentInfo}>
-            <FormattedMessage
-              id="StripePaymentForm.submitConfirmPaymentFinePrint"
-              values={{ isBooking: isBookingYesNo, name: authorDisplayName }}
-            />
+            {isFarFuture && !hasHandledCardPayment ? (
+              <FormattedMessage
+                id="StripePaymentForm.submitSaveCardFinePrint"
+                defaultMessage="Your card will be saved securely by Stripe. The payment will be charged automatically on {date}."
+                values={{ date: moment(scheduledChargeAt).format('LL') }}
+              />
+            ) : (
+              <FormattedMessage
+                id="StripePaymentForm.submitConfirmPaymentFinePrint"
+                values={{ isBooking: isBookingYesNo, name: authorDisplayName }}
+              />
+            )}
           </p>
         </div>
       </Form>

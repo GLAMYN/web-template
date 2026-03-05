@@ -68,12 +68,12 @@ const getActionButtonPropsMaybe = (params, onlyForRole = 'both') => {
 
   return onlyForRole === 'both' || onlyForRole === transactionRole
     ? {
-        inProgress,
-        error: transitionError,
-        onAction,
-        buttonText: intl.formatMessage({ id: actionButtonTrId }),
-        errorText: intl.formatMessage({ id: actionButtonTrErrorId }),
-      }
+      inProgress,
+      error: transitionError,
+      onAction,
+      buttonText: intl.formatMessage({ id: actionButtonTrId }),
+      errorText: intl.formatMessage({ id: actionButtonTrErrorId }),
+    }
     : {};
 };
 
@@ -88,6 +88,9 @@ export const getStateData = (params, process) => {
     sendReviewInProgress,
     sendReviewError,
     onOpenReviewModal,
+    onPipMarkPaid,
+    pipMarkPaidInProgress,
+    pipMarkPaidError,
   } = params;
   const isCustomer = transactionRole === 'customer';
   const processName = resolveLatestProcessName(transaction?.attributes?.processName);
@@ -119,6 +122,20 @@ export const getStateData = (params, process) => {
     actionButtonTranslationErrorId: 'TransactionPage.leaveReview.actionError',
   });
 
+  const getPipMarkPaidProps = () => {
+    return {
+      inProgress: pipMarkPaidInProgress,
+      error: pipMarkPaidError,
+      onAction: () => onPipMarkPaid(transaction?.id),
+      buttonText: intl.formatMessage({
+        id: 'TransactionPage.booking.provider.transition-paid-in-person-confirmed.actionButton',
+      }),
+      errorText: intl.formatMessage({
+        id: 'TransactionPage.booking.provider.transition-paid-in-person-confirmed.actionError',
+      }),
+    };
+  };
+
   const processInfo = () => {
     const { getState, states, transitions } = process;
     const processState = getState(transaction);
@@ -128,7 +145,12 @@ export const getStateData = (params, process) => {
       states,
       transitions,
       isCustomer,
-      actionButtonProps: getActionButtonProps,
+      actionButtonProps: (transitionName, forRole, extra) => {
+        if (transitionName === transitions.PAID_IN_PERSON_CONFIRMED) {
+          return getPipMarkPaidProps();
+        }
+        return getActionButtonProps(transitionName, forRole, extra);
+      },
       leaveReviewProps: getLeaveReviewProps,
     };
   };

@@ -19,7 +19,7 @@ import { requireListingImage } from '../../util/configHelpers';
 
 // Import global thunk functions
 import { isScrollingDisabled } from '../../ducks/ui.duck';
-import { confirmCardPayment, retrievePaymentIntent } from '../../ducks/stripe.duck';
+import { confirmCardPayment, retrievePaymentIntent, handleCardSetup, retrieveSetupIntent } from '../../ducks/stripe.duck';
 import { savePaymentMethod } from '../../ducks/paymentMethods.duck';
 
 // Import shared components
@@ -56,14 +56,15 @@ const getProcessName = pageData => {
   const processName = transaction?.id
     ? transaction?.attributes?.processName
     : listing?.id
-    ? listing?.attributes?.publicData?.transactionProcessAlias?.split('/')[0]
-    : null;
+      ? listing?.attributes?.publicData?.transactionProcessAlias?.split('/')[0]
+      : null;
   return resolveLatestProcessName(processName);
 };
 
 const EnhancedCheckoutPage = props => {
   const [pageData, setPageData] = useState({});
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [paymentMethodSelected, setPaymentMethodSelected] = useState('online_full');
   const config = useConfiguration();
   const routeConfiguration = useRouteConfiguration();
   const intl = useIntl();
@@ -80,7 +81,7 @@ const EnhancedCheckoutPage = props => {
     } = props;
     const initialData = { orderData, listing, transaction };
     const data = handlePageData(initialData, STORAGE_KEY, history);
-    console.log('data>>>>>>>>>>>>>',data)
+    console.log('data>>>>>>>>>>>>>', data);
     setPageData(data || {});
     setIsDataLoaded(true);
     // Do not fetch extra data if user is not active (E.g. they are in pending-approval state.)
@@ -105,6 +106,7 @@ const EnhancedCheckoutPage = props => {
     speculateTransactionInProgress,
     onInquiryWithoutPayment,
     initiateOrderError,
+    onHandleCardSetup,
   } = props;
   const processName = getProcessName(pageData);
   const isInquiryProcess = processName === INQUIRY_PROCESS_NAME;
@@ -159,9 +161,9 @@ const EnhancedCheckoutPage = props => {
   const authorDisplayName = userDisplayNameAsString(listing?.author, '');
   const title = processName
     ? intl.formatMessage(
-        { id: `CheckoutPage.${processName}.title` },
-        { listingTitle, authorDisplayName }
-      )
+      { id: `CheckoutPage.${processName}.title` },
+      { listingTitle, authorDisplayName }
+    )
     : 'Checkout page is loading data';
 
   return processName && isInquiryProcess ? (
@@ -179,7 +181,7 @@ const EnhancedCheckoutPage = props => {
       showListingImage={showListingImage}
       {...props}
     />
-  ) : processName && !isInquiryProcess && !speculateTransactionInProgress ? (
+  ) : processName && !isInquiryProcess ? (
     <CheckoutPageWithPayment
       config={config}
       routeConfiguration={routeConfiguration}
@@ -193,6 +195,9 @@ const EnhancedCheckoutPage = props => {
       title={title}
       onSubmitCallback={onSubmitCallback}
       showListingImage={showListingImage}
+      paymentMethodSelected={paymentMethodSelected}
+      onSelectPaymentMethod={setPaymentMethodSelected}
+      onHandleCardSetup={onHandleCardSetup}
       {...props}
     />
   ) : (
@@ -217,7 +222,7 @@ const mapStateToProps = state => {
     confirmPaymentError,
   } = state.CheckoutPage;
   const { currentUser } = state.user;
-  const { confirmCardPaymentError, paymentIntent, retrievePaymentIntentError } = state.stripe;
+  const { confirmCardPaymentError, paymentIntent, setupIntent, retrievePaymentIntentError } = state.stripe;
   return {
     scrollingDisabled: isScrollingDisabled(state),
     currentUser,
@@ -234,26 +239,29 @@ const mapStateToProps = state => {
     confirmCardPaymentError,
     confirmPaymentError,
     paymentIntent,
+    setupIntent,
     retrievePaymentIntentError,
   };
 };
 
 const mapDispatchToProps = dispatch => ({
   dispatch,
-  fetchSpeculatedTransaction: (params, processAlias, txId, transitionName, isPrivileged,coupanCode) =>
-    dispatch(speculateTransaction(params, processAlias, txId, transitionName, isPrivileged,coupanCode)),
+  fetchSpeculatedTransaction: (params, processAlias, txId, transitionName, isPrivileged, coupanCode) =>
+    dispatch(speculateTransaction(params, processAlias, txId, transitionName, isPrivileged, coupanCode)),
   fetchStripeCustomer: () => dispatch(stripeCustomer()),
   onInquiryWithoutPayment: (params, processAlias, transitionName) =>
     dispatch(initiateInquiryWithoutPayment(params, processAlias, transitionName)),
-  onInitiateOrder: (params, processAlias, transactionId, transitionName, isPrivileged,pageData) =>
-    dispatch(initiateOrder(params, processAlias, transactionId, transitionName, isPrivileged,pageData)),
+  onInitiateOrder: (params, processAlias, transactionId, transitionName, isPrivileged, pageData, paymentMethodSelected) =>
+    dispatch(initiateOrder(params, processAlias, transactionId, transitionName, isPrivileged, pageData, paymentMethodSelected)),
   onRetrievePaymentIntent: params => dispatch(retrievePaymentIntent(params)),
+  onRetrieveSetupIntent: params => dispatch(retrieveSetupIntent(params)),
   onConfirmCardPayment: params => dispatch(confirmCardPayment(params)),
   onConfirmPayment: (transactionId, transitionName, transitionParams) =>
     dispatch(confirmPayment(transactionId, transitionName, transitionParams)),
   onSendMessage: params => dispatch(sendMessage(params)),
   onSavePaymentMethod: (stripeCustomer, stripePaymentMethodId) =>
     dispatch(savePaymentMethod(stripeCustomer, stripePaymentMethodId)),
+  onHandleCardSetup: params => dispatch(handleCardSetup(params)),
 });
 
 const CheckoutPage = compose(

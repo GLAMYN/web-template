@@ -151,7 +151,7 @@ module.exports = async (req, res) => {
 
       const lineItems = await transactionLineItems(
         listing,
-        updatedOrderData,
+        { ...updatedOrderData, paymentMethodSelected: req.body.paymentMethodSelected || updatedOrderData.paymentMethodSelected },
         providerCommission,
         customerCommission,
         salesTaxes

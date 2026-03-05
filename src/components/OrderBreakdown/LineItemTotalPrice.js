@@ -1,7 +1,7 @@
 import React from 'react';
 import { FormattedMessage, intlShape } from '../../util/reactIntl';
 import { formatMoney } from '../../util/currency';
-import { propTypes } from '../../util/types';
+import { LINE_ITEM_PIP_BALANCE_ADJUSTMENT, propTypes } from '../../util/types';
 import { resolveLatestProcessName, getProcess } from '../../transactions/transaction';
 
 import css from './OrderBreakdown.module.css';
@@ -33,7 +33,17 @@ const LineItemTotalPrice = props => {
     providerTotalMessageId = 'OrderBreakdown.providerTotalRefunded';
   }
 
-  const totalLabel = isProvider ? (
+  const isPip = !!transaction.attributes.lineItems?.find(
+    item => item.code === LINE_ITEM_PIP_BALANCE_ADJUSTMENT && !item.reversal
+  );
+
+  const totalLabel = isPip ? (
+    isProvider ? (
+      <FormattedMessage id="OrderBreakdown.totalPipProvider" />
+    ) : (
+      <FormattedMessage id="OrderBreakdown.totalPipCustomer" />
+    )
+  ) : isProvider ? (
     <FormattedMessage id={providerTotalMessageId} />
   ) : (
     <FormattedMessage id="OrderBreakdown.total" />

@@ -29,24 +29,24 @@ const getItemQuantityAndLineItems = (orderData, publicData, currency) => {
   // Calculate shipping fee if applicable
   const shippingFee = isShipping
     ? calculateShippingFee(
-        shippingPriceInSubunitsOneItem,
-        shippingPriceInSubunitsAdditionalItems,
-        currency,
-        quantity
-      )
+      shippingPriceInSubunitsOneItem,
+      shippingPriceInSubunitsAdditionalItems,
+      currency,
+      quantity
+    )
     : null;
 
   // Add line-item for given delivery method.
   // Note: by default, pickup considered as free and, therefore, we don't add pickup fee line-item
   const deliveryLineItem = !!shippingFee
     ? [
-        {
-          code: 'line-item/shipping-fee',
-          unitPrice: shippingFee,
-          quantity: 1,
-          includeFor: ['customer', 'provider'],
-        },
-      ]
+      {
+        code: 'line-item/shipping-fee',
+        unitPrice: shippingFee,
+        quantity: 1,
+        includeFor: ['customer', 'provider'],
+      },
+    ]
     : [];
 
   return { quantity, extraLineItems: deliveryLineItem };
@@ -191,6 +191,7 @@ exports.transactionLineItems = async (
   customerCommission,
   salesTaxes
 ) => {
+  const { paymentMethodSelected } = orderData || {};
   const publicData = listing.attributes.publicData;
   // Note: the unitType needs to be one of the following:
   // day, night, hour, fixed, or item (these are related to payment processes)
@@ -231,12 +232,12 @@ exports.transactionLineItems = async (
     unitType === 'item'
       ? getItemQuantityAndLineItems(orderData, publicData, currency)
       : unitType === 'fixed'
-      ? getFixedQuantityAndLineItems(orderData)
-      : unitType === 'hour'
-      ? getHourQuantityAndLineItems(orderData)
-      : ['day', 'night'].includes(unitType)
-      ? getDateRangeQuantityAndLineItems(orderData, code)
-      : {};
+        ? getFixedQuantityAndLineItems(orderData)
+        : unitType === 'hour'
+          ? getHourQuantityAndLineItems(orderData)
+          : ['day', 'night'].includes(unitType)
+            ? getDateRangeQuantityAndLineItems(orderData, code)
+            : {};
 
   const { quantity, units, seats, extraLineItems } = quantityAndExtraLineItems;
 
@@ -361,6 +362,62 @@ exports.transactionLineItems = async (
     });
   }
 
+  // ─── PIP: Apply balance adjustment for deposit ──────────────────────────────
+  const pipBalanceAdjustmentLineItem = [];
+  const isPipValueTrue = val => val === true || val?.toLowerCase() === 'yes';
+  const pipAllowed =
+    isPipValueTrue(publicData?.pay_in_person_allowed) ||
+    isPipValueTrue(publicData?.payinPersonAllowed);
+
+  // Use deposit_percentage as primary, fallback to depositAmount/depositPercentage
+  const depositPct = Number(
+    publicData?.deposit_percentage ||
+    publicData?.depositAmount ||
+    publicData?.depositPercentage ||
+    0
+  );
+
+  const isPipSelected = paymentMethodSelected === 'in_person_deposit';
+
+  if (pipAllowed && isPipSelected && depositPct > 0) {
+    // Calculate subtotal for PIP: include order/variants, sales tax, and coupons
+    const pipSubtotalLineItems = [
+      ...extraLineItems,
+      ...salesTaxLineItem,
+      ...couponLineItems,
+    ];
+
+    const customerSubtotalCents = pipSubtotalLineItems
+      .filter(item => item.includeFor.includes('customer'))
+      .reduce((sum, item) => {
+        // Handle both simple quantity and seats/units
+        const quantity = item.quantity || (item.units && item.seats ? item.units * item.seats : 1);
+        return sum + item.unitPrice.amount * quantity;
+      }, 0);
+
+    const raw = Math.round(customerSubtotalCents * (depositPct / 100));
+    const MIN_DEPOSIT_CENTS = 500; // $5.00
+    const depositCents = Math.max(raw, MIN_DEPOSIT_CENTS);
+    const balanceCents = customerSubtotalCents - depositCents;
+
+    if (balanceCents > 0) {
+      pipBalanceAdjustmentLineItem.push({
+        code: 'line-item/pip-balance-adjustment',
+        unitPrice: new Money(-balanceCents, currency),
+        quantity: 1,
+        includeFor: ['customer', 'provider'],
+      });
+    }
+  }
+
+  // Create line items including all adjustments for commission calculation
+  const baseLineItemsForCommissions = [
+    ...extraLineItems,
+    ...salesTaxLineItem,
+    ...couponLineItems,
+    ...pipBalanceAdjustmentLineItem,
+  ];
+
   // Let's keep the base price (order) as first line item, then coupon discount, and provider and customer commissions as last.
   // Note: the order matters only if OrderBreakdown component doesn't recognize line-item.
   const lineItems = [
@@ -368,8 +425,9 @@ exports.transactionLineItems = async (
     ...extraLineItems,
     ...salesTaxLineItem,
     ...couponLineItems,
-    ...getProviderCommissionMaybe(providerCommission, baseLineItemsWithCoupon, priceAttribute),
-    ...getCustomerCommissionMaybe(customerCommission, baseLineItemsWithCoupon, priceAttribute),
+    ...pipBalanceAdjustmentLineItem,
+    ...getProviderCommissionMaybe(providerCommission, baseLineItemsForCommissions, priceAttribute),
+    ...getCustomerCommissionMaybe(customerCommission, baseLineItemsForCommissions, priceAttribute),
   ];
 
   return lineItems;

@@ -51,15 +51,15 @@ export const getBillingDetails = (formValues, currentUser) => {
   const addressMaybe =
     addressLine1 && postal
       ? {
-          address: {
-            city: city,
-            country: country,
-            line1: addressLine1,
-            line2: addressLine2,
-            postal_code: postal,
-            state: state,
-          },
-        }
+        address: {
+          city: city,
+          country: country,
+          line1: addressLine1,
+          line2: addressLine2,
+          postal_code: postal,
+          state: state,
+        },
+      }
       : {};
   return {
     name,
@@ -103,19 +103,19 @@ export const getShippingDetailsMaybe = formValues => {
 
   return recipientName && recipientAddressLine1 && recipientPostal
     ? {
-        shippingDetails: {
-          name: recipientName,
-          phoneNumber: recipientPhoneNumber,
-          address: {
-            city: recipientCity,
-            country: recipientCountry,
-            line1: recipientAddressLine1,
-            line2: recipientAddressLine2,
-            postalCode: recipientPostal,
-            state: recipientState,
-          },
+      shippingDetails: {
+        name: recipientName,
+        phoneNumber: recipientPhoneNumber,
+        address: {
+          city: recipientCity,
+          country: recipientCountry,
+          line1: recipientAddressLine1,
+          line2: recipientAddressLine2,
+          postalCode: recipientPostal,
+          state: recipientState,
         },
-      }
+      },
+    }
     : {};
 };
 
@@ -144,8 +144,8 @@ export const hasPaymentExpired = (existingTransaction, process, isClockInSync) =
   return state === process.states.PAYMENT_EXPIRED
     ? true
     : state === process.states.PENDING_PAYMENT && isClockInSync
-    ? minutesBetween(existingTransaction.attributes.lastTransitionedAt, new Date()) >= 15
-    : false;
+      ? minutesBetween(existingTransaction.attributes.lastTransitionedAt, new Date()) >= 15
+      : false;
 };
 
 /**
@@ -177,7 +177,6 @@ const persistTransaction = (order, pageData, storeData, setPageData, sessionStor
  */
 export const processCheckoutWithPayment = (orderParams, extraPaymentParams) => {
   const {
-    hasPaymentIntentUserActionsDone,
     isPaymentFlowUseSavedCard,
     isPaymentFlowPayAndSaveCard,
     message,
@@ -186,13 +185,19 @@ export const processCheckoutWithPayment = (orderParams, extraPaymentParams) => {
     onInitiateOrder,
     onSavePaymentMethod,
     onSendMessage,
+    onHandleCardSetup,
     pageData,
     paymentIntent,
+    setupIntent,
+    hasPaymentIntentUserActionsDone,
+    hasSetupIntentUserActionsDone,
     process,
     setPageData,
     sessionStorageKey,
     stripeCustomer,
     stripePaymentMethodId,
+    paymentMethodSelected,
+    isFarFuture,
   } = extraPaymentParams;
   const storedTx = ensureTransaction(pageData.transaction);
 
@@ -200,29 +205,36 @@ export const processCheckoutWithPayment = (orderParams, extraPaymentParams) => {
   const processAlias = pageData?.listing?.attributes?.publicData?.transactionProcessAlias;
 
   let createdPaymentIntent = null;
+  let createdSetupIntent = null;
 
   ////////////////////////////////////////////////
   // Step 1: initiate order                     //
   // by requesting payment from Marketplace API //
   ////////////////////////////////////////////////
   const fnRequestPayment = fnParams => {
-    // fnParams should be { listingId, deliveryMethod?, quantity?, bookingDates?, paymentMethod?.setupPaymentMethodForSaving?, protectedData }
     const hasPaymentIntents = storedTx.attributes.protectedData?.stripePaymentIntents;
 
-    const requestTransition =
-      storedTx?.attributes?.lastTransition === process.transitions.INQUIRE
+    const isFarFuture = fnParams?.isFarFuture;
+    const isInquiry = storedTx?.attributes?.lastTransition === process.transitions.INQUIRE;
+
+    let requestTransition;
+    if (isFarFuture) {
+      requestTransition = isInquiry
+        ? process.transitions.REQUEST_PAYMENT_SET_CARD_AFTER_INQUIRY
+        : process.transitions.REQUEST_PAYMENT_SET_CARD;
+    } else {
+      requestTransition = isInquiry
         ? process.transitions.REQUEST_PAYMENT_AFTER_INQUIRY
         : process.transitions.REQUEST_PAYMENT;
+    }
+
     const isPrivileged = process.isPrivileged(requestTransition);
 
-    // If paymentIntent exists, order has been initiated previously.
-    // bablu
     const orderPromise = hasPaymentIntents
       ? Promise.resolve(storedTx)
-      : onInitiateOrder(fnParams, processAlias, storedTx.id, requestTransition, isPrivileged,pageData);
+      : onInitiateOrder(orderParams, processAlias, storedTx.id, requestTransition, isPrivileged, pageData, paymentMethodSelected);
 
     orderPromise.then(order => {
-      // Store the returned transaction (order)
       persistTransaction(order, pageData, storeData, setPageData, sessionStorageKey);
     });
 
@@ -233,32 +245,36 @@ export const processCheckoutWithPayment = (orderParams, extraPaymentParams) => {
   // Step 2: pay using Stripe SDK //
   //////////////////////////////////
   const fnConfirmCardPayment = fnParams => {
-    // fnParams should be returned transaction entity
     const order = fnParams;
+    const protectedData = order?.attributes?.protectedData || {};
+    const setupIntentClientSecretFromProtectedData = protectedData.setupIntentClientSecret;
 
-    const hasPaymentIntents = order?.attributes?.protectedData?.stripePaymentIntents;
+    const hasPaymentIntents = !!(protectedData.stripePaymentIntents || setupIntentClientSecretFromProtectedData);
     if (!hasPaymentIntents) {
       throw new Error(
-        `Missing StripePaymentIntents key in transaction's protectedData. Check that your transaction process is configured to use payment intents.`
+        `Missing StripePaymentIntents key in transaction's protectedData. This usually means the server-side initiation failed to create a PaymentIntent or SetupIntent.`
       );
     }
 
-    const { stripePaymentIntentClientSecret } = hasPaymentIntents
-      ? order.attributes.protectedData.stripePaymentIntents.default
-      : null;
+    const stripePaymentIntentClientSecret = setupIntentClientSecretFromProtectedData || (protectedData.stripePaymentIntents
+      ? protectedData.stripePaymentIntents.default.stripePaymentIntentClientSecret
+      : null);
 
-    const { stripe, card, billingDetails, paymentIntent } = extraPaymentParams;
+    const isSetupIntent =
+      !!setupIntentClientSecretFromProtectedData || (protectedData.stripePaymentIntents?.default?.isSetupIntent);
+
+    const { stripe, card, billingDetails, paymentIntent, setupIntent } = extraPaymentParams;
     const stripeElementMaybe = !isPaymentFlowUseSavedCard ? { card } : {};
 
     // Note: For basic USE_SAVED_CARD scenario, we have set it already on API side, when PaymentIntent was created.
     // However, the payment_method is save here for USE_SAVED_CARD flow if customer first attempted onetime payment
     const paymentParams = !isPaymentFlowUseSavedCard
       ? {
-          payment_method: {
-            billing_details: billingDetails,
-            card: card,
-          },
-        }
+        payment_method: {
+          billing_details: billingDetails,
+          card: card,
+        },
+      }
       : { payment_method: stripePaymentMethodId };
 
     const params = {
@@ -269,9 +285,28 @@ export const processCheckoutWithPayment = (orderParams, extraPaymentParams) => {
       paymentParams,
     };
 
-    return hasPaymentIntentUserActionsDone
-      ? Promise.resolve({ transactionId: order?.id, paymentIntent })
-      : onConfirmCardPayment(params);
+    if (hasPaymentIntentUserActionsDone) {
+      return Promise.resolve({ transactionId: order?.id, paymentIntent });
+    }
+    if (hasSetupIntentUserActionsDone) {
+      return Promise.resolve({ transactionId: order?.id, setupIntent });
+    }
+
+    if (isSetupIntent) {
+      const setupParams = {
+        stripe,
+        card,
+        setupIntentClientSecret: stripePaymentIntentClientSecret,
+        paymentParams,
+      };
+      return onHandleCardSetup(setupParams).then(result => ({
+        ...result,
+        setupIntent: result.setupIntent,
+        transactionId: order?.id,
+      }));
+    }
+
+    return onConfirmCardPayment(params);
   };
 
   ///////////////////////////////////////////////////
@@ -279,18 +314,23 @@ export const processCheckoutWithPayment = (orderParams, extraPaymentParams) => {
   // by confirming payment against Marketplace API //
   ///////////////////////////////////////////////////
   const fnConfirmPayment = fnParams => {
-    // fnParams should contain { paymentIntent, transactionId } returned in step 2
-    // Remember the created PaymentIntent for step 5
     createdPaymentIntent = fnParams.paymentIntent;
+    createdSetupIntent = fnParams.setupIntent;
     const transactionId = fnParams.transactionId;
-    const transitionName = process.transitions.CONFIRM_PAYMENT;
+
+    // For far-future bookings the SetupIntent is confirmed → use the set-card transition.
+    // For standard bookings the PaymentIntent is confirmed → use the regular transition.
+    const isSetupIntentFlow = !!(fnParams.setupIntent);
+    const transitionName = isSetupIntentFlow
+      ? process.transitions.CONFIRM_PAYMENT_SET_CARD
+      : process.transitions.CONFIRM_PAYMENT;
+
     const isTransitionedAlready = storedTx?.attributes?.lastTransition === transitionName;
     const orderPromise = isTransitionedAlready
       ? Promise.resolve(storedTx)
       : onConfirmPayment(transactionId, transitionName, {});
 
     orderPromise.then(order => {
-      // Store the returned transaction (order)
       persistTransaction(order, pageData, storeData, setPageData, sessionStorageKey);
     });
 
@@ -309,10 +349,10 @@ export const processCheckoutWithPayment = (orderParams, extraPaymentParams) => {
   // Step 5: optionally save card as defaultPaymentMethod //
   //////////////////////////////////////////////////////////
   const fnSavePaymentMethod = fnParams => {
-    const pi = createdPaymentIntent || paymentIntent;
+    const intent = createdPaymentIntent || paymentIntent || createdSetupIntent || setupIntent;
 
-    if (isPaymentFlowPayAndSaveCard) {
-      return onSavePaymentMethod(ensuredStripeCustomer, pi.payment_method)
+    if (isPaymentFlowPayAndSaveCard && intent?.payment_method) {
+      return onSavePaymentMethod(ensuredStripeCustomer, intent.payment_method)
         .then(response => {
           if (response.errors) {
             return { ...fnParams, paymentMethodSaved: false };

@@ -117,8 +117,8 @@ const TransitionMessage = props => {
     transition.by === ownRole
       ? 'you'
       : [TX_TRANSITION_ACTOR_SYSTEM, TX_TRANSITION_ACTOR_OPERATOR].includes(transition.by)
-      ? transition.by
-      : otherUsersName;
+        ? transition.by
+        : otherUsersName;
 
   const reviewLink = showReviewAsFirstLink ? (
     <InlineTextButton onClick={onOpenReviewModal}>
@@ -135,7 +135,7 @@ const TransitionMessage = props => {
 
   // Check if this is a reschedule transition
   const isReschedule = transition.transition === 'transition/reschedule';
-  
+
   if (isReschedule) {
     // Get old dates from protected data or fallback to showing generic message
     const protectedData = transition.protectedData || {};
@@ -150,10 +150,10 @@ const TransitionMessage = props => {
       const oldEndFormatted = formatDateWithProximity(new Date(previousEnd), intl, { hour: 'numeric', minute: '2-digit' });
       const newStartFormatted = formatDateWithProximity(new Date(newStart), intl, formatOptions);
       const newEndFormatted = formatDateWithProximity(new Date(newEnd), intl, { hour: 'numeric', minute: '2-digit' });
-      
+
       return intl.formatMessage(
         { id: 'TransactionPage.ActivityFeed.rescheduleWithDates' },
-        { 
+        {
           actor,
           oldStart: oldStartFormatted,
           oldEnd: oldEndFormatted,
@@ -162,7 +162,7 @@ const TransitionMessage = props => {
         }
       );
     }
-    
+
     // Fallback to generic reschedule message
     return intl.formatMessage(
       { id: 'TransactionPage.ActivityFeed.reschedule' },
@@ -170,11 +170,14 @@ const TransitionMessage = props => {
     );
   }
 
+  // Determine if this is a Pay-In-Person transaction
+  const isPip = tx?.attributes?.protectedData?.paymentMethodSelected === 'in_person_deposit';
+
   // ActivityFeed messages are tied to transaction process and transitions.
   // However, in practice, transitions leading to same state have had the same message.
   const message = intl.formatMessage(
     { id: `TransactionPage.ActivityFeed.${processName}.${nextState}` },
-    { actor, otherUsersName, listingTitle, reviewLink, deliveryMethod, stateStatus }
+    { actor, otherUsersName, listingTitle, reviewLink, deliveryMethod, stateStatus, isPip }
   );
 
   return message;
@@ -324,8 +327,8 @@ export const ActivityFeed = props => {
       const reviewEntity = isCustomerReview
         ? reviewByAuthorId(transaction, customer.id)
         : isProviderRieview
-        ? reviewByAuthorId(transaction, provider.id)
-        : null;
+          ? reviewByAuthorId(transaction, provider.id)
+          : null;
 
       const listingTitle = listing.attributes.deleted
         ? intl.formatMessage({ id: 'TransactionPage.ActivityFeed.deletedListing' })

@@ -143,9 +143,9 @@ export const createCoupon = body => {
 };
 
 export const updateCoupon = (couponId, body) => {
-  return request(`/api/coupons/${couponId}`, { 
-    method: methods.PUT, 
-    body 
+  return request(`/api/coupons/${couponId}`, {
+    method: methods.PUT,
+    body
   });
 };
 
@@ -192,6 +192,10 @@ export const getCustomerProviderTxApi = body => {
 export const transactionTransitionApi = body => {
   return post('/api/transaction-transition', body)
 }
+
+export const pipMarkPaid = body => {
+  return post('/api/pip-mark-paid', body);
+};
 
 // ================ COUPON API ================
 // Note: All coupon-related functions already declared above (fetchCoupons, createCoupon, updateCoupon, deleteCoupon, validateCoupon, applyCoupon)

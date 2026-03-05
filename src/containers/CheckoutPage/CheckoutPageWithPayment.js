@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Import contexts and util modules
 import { FormattedMessage, intlShape } from '../../util/reactIntl';
 import { pathByRouteName } from '../../util/routes';
 import { isValidCurrencyForTransactionProcess } from '../../util/fieldHelpers.js';
 import { propTypes } from '../../util/types';
-import { ensureTransaction } from '../../util/data';
+import { ensureTransaction, userDisplayNameAsString } from '../../util/data';
 import { createSlug } from '../../util/urlHelpers';
 import { isTransactionInitiateListingNotFoundError } from '../../util/errors';
 import {
@@ -16,7 +16,14 @@ import {
 } from '../../transactions/transaction';
 
 // Import shared components
-import { H3, H4, NamedLink, OrderBreakdown, Page } from '../../components';
+import {
+  H3,
+  H4,
+  NamedLink,
+  OrderBreakdown,
+  Page,
+  PayInPersonSelector,
+} from '../../components';
 
 import {
   bookingDatesMaybe,
@@ -55,8 +62,8 @@ const paymentFlow = (selectedPaymentMethod, saveAfterOnetimePayment) => {
   return selectedPaymentMethod === 'defaultCard'
     ? USE_SAVED_CARD
     : saveAfterOnetimePayment
-    ? PAY_AND_SAVE_FOR_LATER_USE
-    : ONETIME_PAYMENT;
+      ? PAY_AND_SAVE_FOR_LATER_USE
+      : ONETIME_PAYMENT;
 };
 
 const capitalizeString = s => `${s.charAt(0).toUpperCase()}${s.substr(1)}`;
@@ -100,7 +107,7 @@ const prefixPriceVariantProperties = priceVariant => {
  * @param {Object} config app-wide configs. This contains hosted configs too.
  * @returns orderParams.
  */
-const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config) => {
+const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config, paymentMethodSelected, isFarFuture) => {
   const quantity = pageData.orderData?.quantity;
   const quantityMaybe = quantity ? { quantity } : {};
   const seats = pageData.orderData?.seats;
@@ -128,15 +135,6 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
     },
   };
 
-  // Note: Avoid misinterpreting the following logic as allowing arbitrary mixing of `quantity` and `seats`.
-  // You can only pass either quantity OR seats and units to the orderParams object
-  // Quantity represents the total booked units for the line item (e.g. days, hours).
-  // When quantity is not passed, we pass seats and units.
-  // If `bookingDatesMaybe` is provided, it determines `units`, and `seats` defaults to 1
-  // (implying quantity = units)
-
-  // These are the order parameters for the first payment-related transition
-  // which is either initiate-transition or initiate-transition-after-enquiry
   const orderParams = {
     listingId: pageData?.listing?.id,
     ...deliveryMethodMaybe,
@@ -149,6 +147,10 @@ const getOrderParams = (pageData, shippingDetails, optionalPaymentParams, config
     priceVariantNames: priceVariantNames,
     location: pageData.orderData?.location,
     locationChoice: pageData.orderData?.locationChoice,
+    // PIP: pass selected payment method so backend can compute snapshots
+    paymentMethodSelected: paymentMethodSelected || 'online_full',
+    // Far-future: tells fnRequestPayment to pick request-payment-set-card transition
+    isFarFuture: !!isFarFuture,
   };
   return orderParams;
 };
@@ -227,7 +229,7 @@ export const loadInitialDataForStripePayments = ({
   fetchSpeculatedTransactionIfNeeded(orderParams, pageData, fetchSpeculatedTransaction);
 };
 
-const handleSubmit = (values, process, props, stripe, submitting, setSubmitting) => {
+const handleSubmit = (values, process, props, stripe, submitting, setSubmitting, paymentMethodSelected) => {
   if (submitting) {
     return;
   }
@@ -241,12 +243,14 @@ const handleSubmit = (values, process, props, stripe, submitting, setSubmitting)
     currentUser,
     stripeCustomerFetched,
     paymentIntent,
+    setupIntent,
     dispatch,
     onInitiateOrder,
     onConfirmCardPayment,
     onConfirmPayment,
     onSendMessage,
     onSavePaymentMethod,
+    onHandleCardSetup,
     onSubmitCallback,
     pageData,
     setPageData,
@@ -254,6 +258,15 @@ const handleSubmit = (values, process, props, stripe, submitting, setSubmitting)
   } = props;
   const { card, message, paymentMethod: selectedPaymentMethod, formValues } = values;
   const { saveAfterOnetimePayment: saveAfterOnetimePaymentRaw } = formValues;
+
+  // Determine if this is a far-future booking based on bookingEnd dates in pageData
+  const bookingDates = pageData?.orderData?.bookingDates || pageData?.orderData || {};
+  const bookingEnd = bookingDates.bookingEnd || bookingDates.end;
+  let isFarFuture = false;
+  if (bookingEnd) {
+    const daysUntilEnd = (new Date(bookingEnd) - new Date()) / (1000 * 60 * 60 * 24);
+    if (daysUntilEnd > 90) isFarFuture = true;
+  }
 
   const saveAfterOnetimePayment =
     Array.isArray(saveAfterOnetimePaymentRaw) && saveAfterOnetimePaymentRaw.length > 0;
@@ -267,6 +280,7 @@ const handleSubmit = (values, process, props, stripe, submitting, setSubmitting)
   // confirmCardPayment has been called previously.
   const hasPaymentIntentUserActionsDone =
     paymentIntent && STRIPE_PI_USER_ACTIONS_DONE_STATUSES.includes(paymentIntent.status);
+  const hasSetupIntentUserActionsDone = setupIntent && setupIntent.status === 'succeeded';
 
   const requestPaymentParams = {
     pageData,
@@ -276,7 +290,9 @@ const handleSubmit = (values, process, props, stripe, submitting, setSubmitting)
     billingDetails: getBillingDetails(formValues, currentUser),
     message,
     paymentIntent,
+    setupIntent,
     hasPaymentIntentUserActionsDone,
+    hasSetupIntentUserActionsDone,
     stripePaymentMethodId,
     process,
     onInitiateOrder,
@@ -284,27 +300,29 @@ const handleSubmit = (values, process, props, stripe, submitting, setSubmitting)
     onConfirmPayment,
     onSendMessage,
     onSavePaymentMethod,
+    onHandleCardSetup,
     sessionStorageKey,
     stripeCustomer: currentUser?.stripeCustomer,
     isPaymentFlowUseSavedCard: selectedPaymentFlow === USE_SAVED_CARD,
     isPaymentFlowPayAndSaveCard: selectedPaymentFlow === PAY_AND_SAVE_FOR_LATER_USE,
     setPageData,
+    isFarFuture,
+    // PIP: forward selected method so initiateOrder can pass it to the backend
+    paymentMethodSelected: paymentMethodSelected || 'online_full',
   };
 
   const shippingDetails = getShippingDetailsMaybe(formValues);
-  // Note: optionalPaymentParams contains Stripe paymentMethod,
-  // but that can also be passed on Step 2
-  // stripe.confirmCardPayment(stripe, { payment_method: stripePaymentMethodId })
+
   const optionalPaymentParams =
     selectedPaymentFlow === USE_SAVED_CARD && hasDefaultPaymentMethodSaved
       ? { paymentMethod: stripePaymentMethodId }
       : selectedPaymentFlow === PAY_AND_SAVE_FOR_LATER_USE
-      ? { setupPaymentMethodForSaving: true }
-      : {};
+        ? { setupPaymentMethodForSaving: true }
+        : {};
 
   // These are the order parameters for the first payment-related transition
   // which is either initiate-transition or initiate-transition-after-enquiry
-  const orderParams = getOrderParams(pageData, shippingDetails, optionalPaymentParams, config);
+  const orderParams = getOrderParams(pageData, shippingDetails, optionalPaymentParams, config, paymentMethodSelected, isFarFuture);
 
   // There are multiple XHR calls that needs to be made against Stripe API and Sharetribe Marketplace API on checkout with payments
   processCheckoutWithPayment(orderParams, requestPaymentParams)
@@ -326,29 +344,43 @@ const handleSubmit = (values, process, props, stripe, submitting, setSubmitting)
       history.push(orderDetailsPath);
     })
     .catch(err => {
-      console.error(err);
+      console.error('Checkout Flow Error', err);
       setSubmitting(false);
     });
 };
 
-const onStripeInitialized = (stripe, process, props) => {
-  const { paymentIntent, onRetrievePaymentIntent, pageData } = props;
+const onStripeInitialized = (stripe, process, props, setStripe) => {
+  // CRITICAL: save the stripe instance so it's available when the form submits
+  setStripe(stripe);
+
+  const { paymentIntent, setupIntent, onRetrievePaymentIntent, onRetrieveSetupIntent, pageData } = props;
   const tx = pageData?.transaction || null;
 
-  // We need to get up to date PI, if payment is pending but it's not expired.
-  const shouldFetchPaymentIntent =
+  // We need to get up to date PI or SI, if payment is pending but it's not expired.
+  const isPending =
+    process?.getState(tx) === process?.states.PENDING_PAYMENT ||
+    process?.getState(tx) === process?.states.PENDING_PAYMENT_SET_CARD;
+
+  const isSetupIntent =
+    tx?.attributes?.protectedData?.stripePaymentIntents?.default?.isSetupIntent;
+
+  const shouldFetchIntent =
     stripe &&
-    !paymentIntent &&
     tx?.id &&
-    process?.getState(tx) === process?.states.PENDING_PAYMENT &&
+    isPending &&
     !hasPaymentExpired(tx, process);
 
-  if (shouldFetchPaymentIntent) {
+  if (shouldFetchIntent) {
     const { stripePaymentIntentClientSecret } =
       tx.attributes.protectedData?.stripePaymentIntents?.default || {};
 
-    // Fetch up to date PaymentIntent from Stripe
-    onRetrievePaymentIntent({ stripe, stripePaymentIntentClientSecret });
+    if (isSetupIntent && !setupIntent) {
+      // Fetch up to date SetupIntent from Stripe
+      onRetrieveSetupIntent({ stripe, setupIntentClientSecret: stripePaymentIntentClientSecret });
+    } else if (!isSetupIntent && !paymentIntent) {
+      // Fetch up to date PaymentIntent from Stripe
+      onRetrievePaymentIntent({ stripe, stripePaymentIntentClientSecret });
+    }
   }
 };
 
@@ -410,6 +442,7 @@ export const CheckoutPageWithPayment = props => {
     confirmCardPaymentError,
     showListingImage,
     paymentIntent,
+    setupIntent,
     retrievePaymentIntentError,
     stripeCustomerFetched,
     pageData,
@@ -417,7 +450,26 @@ export const CheckoutPageWithPayment = props => {
     listingTitle,
     title,
     config,
+    paymentMethodSelected,
+    onSelectPaymentMethod,
+    onHandleCardSetup,
   } = props;
+
+  // PIP: re-speculate when payment method changes
+  useEffect(() => {
+    if (pageData?.listing?.id) {
+      const shippingDetails = {};
+      const optionalPaymentParams = {};
+      const orderParams = getOrderParams(
+        pageData,
+        shippingDetails,
+        optionalPaymentParams,
+        config,
+        paymentMethodSelected
+      );
+      fetchSpeculatedTransactionIfNeeded(orderParams, pageData, props.fetchSpeculatedTransaction);
+    }
+  }, [paymentMethodSelected]);
 
   // Since the listing data is already given from the ListingPage
   // and stored to handle refreshes, it might not have the possible
@@ -511,6 +563,8 @@ export const CheckoutPageWithPayment = props => {
   // confirmCardPayment has been called previously.
   const hasPaymentIntentUserActionsDone =
     paymentIntent && STRIPE_PI_USER_ACTIONS_DONE_STATUSES.includes(paymentIntent.status);
+  const hasSetupIntentUserActionsDone = setupIntent && setupIntent.status === 'succeeded';
+  const hasHandledCardPayment = hasPaymentIntentUserActionsDone || hasSetupIntentUserActionsDone;
 
   // If your marketplace works mostly in one country you can use initial values to select country automatically
   // e.g. {country: 'FI'}
@@ -526,11 +580,18 @@ export const CheckoutPageWithPayment = props => {
   const isBooking = processName === BOOKING_PROCESS_NAME;
   const isPurchase = processName === PURCHASE_PROCESS_NAME;
   const showPickUpLocation = isPurchase && orderData?.deliveryMethod === 'pickup';
-  
+
   // Show customer location if they entered one, otherwise show listing location
   const displayLocation = customerLocation || listingLocation;
   const isCustomerLocation = !!customerLocation;
   const showLocation = isBooking && (displayLocation?.address || customerLocation?.address);
+  const isFuzzyLocation = config.maps.fuzzy.enabled;
+
+  // PIP: check if listing allows pay-in-person
+  const publicData = listing?.attributes?.publicData || {};
+  const isPipValueTrue = val => val === true || val?.toLowerCase() === 'yes';
+  const pipAllowed = isPipValueTrue(publicData.pay_in_person_allowed) || isPipValueTrue(publicData.payinPersonAllowed);
+  const depositPct = Number(publicData.depositAmount || publicData.depositPercentage || 0);
 
   // Check if the listing currency is compatible with Stripe for the specified transaction process.
   // This function validates the currency against the transaction process requirements and
@@ -541,6 +602,8 @@ export const CheckoutPageWithPayment = props => {
     listing.attributes.price.currency,
     'stripe'
   );
+
+  const authorDisplayName = userDisplayNameAsString(listing?.author, '');
 
   // Render an error message if the listing is using a non Stripe supported currency
   // and is using a transaction process with Stripe actions (default-booking or default-purchase)
@@ -592,48 +655,85 @@ export const CheckoutPageWithPayment = props => {
             {errorMessages.retrievePaymentIntentErrorMessage}
             {errorMessages.paymentExpiredMessage}
 
-            {showPaymentForm ? (
-              <StripePaymentForm
-                className={css.paymentForm}
-                onSubmit={values =>
-                  handleSubmit(values, process, props, stripe, submitting, setSubmitting)
-                }
-                inProgress={submitting}
-                formId="CheckoutPagePaymentForm"
-                authorDisplayName={listing?.author?.attributes?.profile?.displayName}
-                showInitialMessageInput={showInitialMessageInput}
-                initialValues={initialValuesForStripePayment}
-                initiateOrderError={initiateOrderError}
-                confirmCardPaymentError={confirmCardPaymentError}
-                confirmPaymentError={confirmPaymentError}
-                hasHandledCardPayment={hasPaymentIntentUserActionsDone}
-                loadingData={!stripeCustomerFetched}
-                defaultPaymentMethod={
-                  hasDefaultPaymentMethod(stripeCustomerFetched, currentUser)
-                    ? currentUser.stripeCustomer.defaultPaymentMethod
-                    : null
-                }
-                paymentIntent={paymentIntent}
-                onStripeInitialized={stripe => {
-                  setStripe(stripe);
-                  return onStripeInitialized(stripe, process, props);
-                }}
-                askShippingDetails={askShippingDetails}
-                showPickUpLocation={showPickUpLocation}
-                showLocation={showLocation}
-                listingLocation={displayLocation}
-                isCustomerLocation={isCustomerLocation}
-                locationChoice={locationChoice}
-                totalPrice={totalPrice}
-                locale={config.localization.locale}
-                stripePublishableKey={config.stripe.publishableKey}
-                marketplaceName={config.marketplaceName}
-                isBooking={isBookingProcessAlias(transactionProcessAlias)}
-                isFuzzyLocation={config.maps.fuzzy.enabled}
-                bookingDates={orderData?.bookingDates}
-                listing={listing}
+            {/* PIP: payment method selector (only when listing allows it) */}
+            {pipAllowed && showPaymentForm ? (
+              <PayInPersonSelector
+                paymentMethodSelected={paymentMethodSelected}
+                onSelect={onSelectPaymentMethod}
+                depositPct={depositPct}
+                depositAmount={null}
+                balanceAmount={null}
+                currency={listing?.attributes?.price?.currency || 'USD'}
               />
             ) : null}
+
+            {(() => {
+              if (!showPaymentForm) return null;
+
+              // Determine if booking is more than 90 days from now
+              // Note: we use bookingEnd to match the backend logic
+              const bookingDates = pageData?.orderData?.bookingDates || pageData?.orderData || {};
+              const bookingEnd = bookingDates.bookingEnd || bookingDates.end;
+              let scheduledChargeAt = null;
+              let isFarFuture = false;
+              if (bookingEnd) {
+                const bookingEndDate = new Date(bookingEnd);
+                const now = new Date();
+                const daysUntilEnd = (bookingEndDate - now) / (1000 * 60 * 60 * 24);
+                if (daysUntilEnd > 90) {
+                  isFarFuture = true;
+                  const chargeDate = new Date(bookingEndDate);
+                  chargeDate.setDate(chargeDate.getDate() - 60);
+                  scheduledChargeAt = chargeDate.toISOString();
+                }
+              }
+
+              return (
+                <StripePaymentForm
+                  className={css.paymentForm}
+                  onSubmit={values =>
+                    handleSubmit(
+                      values,
+                      process,
+                      props,
+                      stripe,
+                      submitting,
+                      setSubmitting,
+                      paymentMethodSelected
+                    )
+                  }
+                  inProgress={submitting}
+                  formId="CheckoutPagePaymentForm"
+                  paymentMethodSelected={paymentMethodSelected}
+                  authorDisplayName={authorDisplayName}
+                  showInitialMessageInput={showInitialMessageInput}
+                  initialValues={initialValuesForStripePayment}
+                  initiateOrderError={initiateOrderError}
+                  confirmCardPaymentError={confirmCardPaymentError}
+                  confirmPaymentError={confirmPaymentError}
+                  totalPrice={totalPrice}
+                  locale={config.localization.locale}
+                  onStripeInitialized={stripe => onStripeInitialized(stripe, process, props, setStripe)}
+                  handleCardSetup={onHandleCardSetup}
+                  stripePublishableKey={config.stripe.publishableKey}
+                  defaultPaymentMethod={currentUser.stripeCustomer?.defaultPaymentMethod}
+                  hasHandledCardPayment={hasHandledCardPayment}
+                  loadingData={!currentUser}
+                  askShippingDetails={askShippingDetails}
+                  showPickUpLocation={showPickUpLocation}
+                  showLocation={showLocation}
+                  listingLocation={displayLocation}
+                  isCustomerLocation={isCustomerLocation}
+                  locationChoice={locationChoice}
+                  isBooking={isBooking}
+                  isFuzzyLocation={isFuzzyLocation}
+                  bookingDates={pageData.orderData}
+                  listing={listing}
+                  isFarFuture={isFarFuture}
+                  scheduledChargeAt={scheduledChargeAt}
+                />
+              );
+            })()}
           </section>
         </div>
 

@@ -37,6 +37,7 @@ import {
   OrderBreakdown,
   OrderPanel,
   LayoutSingleColumn,
+  ReviewModal,
 } from '../../components';
 
 import TopbarContainer from '../../containers/TopbarContainer/TopbarContainer';
@@ -45,7 +46,6 @@ import FooterContainer from '../../containers/FooterContainer/FooterContainer';
 import { getStateData } from './TransactionPage.stateData';
 import ActivityFeed from './ActivityFeed/ActivityFeed';
 import DisputeModal from './DisputeModal/DisputeModal';
-import ReviewModal from './ReviewModal/ReviewModal';
 import RescheduleBookingModal from './RescheduleBookingModal/RescheduleBookingModal';
 import TransactionPanel from './TransactionPanel/TransactionPanel';
 
@@ -54,8 +54,9 @@ import {
   sendMessage,
   sendReview,
   fetchMoreMessages,
-  fetchTimeSlots,
   fetchTransactionLineItems,
+  fetchTimeSlots,
+  pipMarkPaid,
 } from './TransactionPage.duck';
 import css from './TransactionPage.module.css';
 import { getCurrentUserTypeRoles, hasPermissionToViewData } from '../../util/userHelpers.js';
@@ -161,9 +162,12 @@ export const TransactionPageComponent = props => {
     transitionInProgress,
     transitionError,
     onTransition,
+    onPipMarkPaid,
     nextTransitions,
     callSetInitialValues,
     onInitializeCardPaymentData,
+    pipMarkPaidInProgress,
+    pipMarkPaidError,
     ...restOfProps
   } = props;
 
@@ -245,19 +249,19 @@ export const TransactionPageComponent = props => {
 
     const bookingMaybe = bookingDates
       ? {
-          bookingDates: {
-            bookingStart: bookingDates.startDate,
-            bookingEnd: bookingDates.endDate,
-          },
-        }
+        bookingDates: {
+          bookingStart: bookingDates.startDate,
+          bookingEnd: bookingDates.endDate,
+        },
+      }
       : bookingStartTime && bookingEndTime
-      ? {
+        ? {
           bookingDates: {
             bookingStart: timestampToDate(bookingStartTime),
             bookingEnd: timestampToDate(bookingEndTime),
           },
         }
-      : {};
+        : {};
 
     // priceVariantName is relevant for bookings
     const priceVariantNameMaybe = priceVariantName ? { priceVariantName } : {};
@@ -299,19 +303,19 @@ export const TransactionPageComponent = props => {
     const transitionOptions =
       transactionRole === CUSTOMER
         ? {
-            reviewAsFirst: transitions.REVIEW_1_BY_CUSTOMER,
-            reviewAsSecond: transitions.REVIEW_2_BY_CUSTOMER,
-            hasOtherPartyReviewedFirst: process
-              .getTransitionsToStates([states.REVIEWED_BY_PROVIDER])
-              .includes(transaction.attributes.lastTransition),
-          }
+          reviewAsFirst: transitions.REVIEW_1_BY_CUSTOMER,
+          reviewAsSecond: transitions.REVIEW_2_BY_CUSTOMER,
+          hasOtherPartyReviewedFirst: process
+            .getTransitionsToStates([states.REVIEWED_BY_PROVIDER])
+            .includes(transaction.attributes.lastTransition),
+        }
         : {
-            reviewAsFirst: transitions.REVIEW_1_BY_PROVIDER,
-            reviewAsSecond: transitions.REVIEW_2_BY_PROVIDER,
-            hasOtherPartyReviewedFirst: process
-              .getTransitionsToStates([states.REVIEWED_BY_CUSTOMER])
-              .includes(transaction.attributes.lastTransition),
-          };
+          reviewAsFirst: transitions.REVIEW_1_BY_PROVIDER,
+          reviewAsSecond: transitions.REVIEW_2_BY_PROVIDER,
+          hasOtherPartyReviewedFirst: process
+            .getTransitionsToStates([states.REVIEWED_BY_CUSTOMER])
+            .includes(transaction.attributes.lastTransition),
+        };
     const params = { reviewRating: rating, reviewContent };
 
     onSendReview(transaction, transitionOptions, params, config)
@@ -340,11 +344,11 @@ export const TransactionPageComponent = props => {
     const currentBooking = transaction?.booking;
     const currentStart = currentBooking?.attributes?.start;
     const currentEnd = currentBooking?.attributes?.end;
-    
+
     const bookingLengthInMinutes = currentStart && currentEnd
       ? moment(currentEnd).diff(moment(currentStart), 'minutes')
       : transaction?.attributes?.protectedData?.priceVariantBookingLengthInMinutes || 60;
-    
+
     const timeZone = listing?.attributes?.availabilityPlan?.timezone;
 
     let bookingParams = {};
@@ -482,27 +486,27 @@ export const TransactionPageComponent = props => {
 
   const stateData = isDataAvailable
     ? getStateData(
-        {
-          transaction,
-          transactionRole,
-          nextTransitions,
-          transitionInProgress,
-          transitionError,
-          sendReviewInProgress,
-          sendReviewError,
-          onTransition,
-          onOpenReviewModal,
-          intl,
-        },
-        process
-      )
+      {
+        transaction,
+        transactionRole,
+        nextTransitions,
+        transitionInProgress,
+        transitionError,
+        sendReviewInProgress,
+        sendReviewError,
+        onTransition,
+        onOpenReviewModal,
+        intl,
+      },
+      process
+    )
     : {};
 
   const hasLineItems = transaction?.attributes?.lineItems?.length > 0;
   const unitLineItem = hasLineItems
     ? transaction.attributes?.lineItems?.find(
-        item => LISTING_UNIT_TYPES.includes(item.code) && !item.reversal
-      )
+      item => LISTING_UNIT_TYPES.includes(item.code) && !item.reversal
+    )
     : null;
 
   const formatLineItemUnitType = (transaction, listing) => {
@@ -517,8 +521,8 @@ export const TransactionPageComponent = props => {
   const lineItemUnitType = unitLineItem
     ? unitLineItem.code
     : isDataAvailable
-    ? formatLineItemUnitType(transaction, listing)
-    : null;
+      ? formatLineItemUnitType(transaction, listing)
+      : null;
 
   const timeZone = listing?.attributes?.availabilityPlan?.timezone;
 
@@ -527,19 +531,19 @@ export const TransactionPageComponent = props => {
   const txBookingMaybe = booking?.id ? { booking, timeZone } : {};
   const orderBreakdownMaybe = hasLineItems
     ? {
-        orderBreakdown: (
-          <OrderBreakdown
-            listing={listing}
-            fromTransactionPanel={true}
-            className={css.breakdown}
-            userRole={transactionRole}
-            transaction={transaction}
-            {...txBookingMaybe}
-            currency={config.currency}
-            marketplaceName={config.marketplaceName}
-          />
-        ),
-      }
+      orderBreakdown: (
+        <OrderBreakdown
+          listing={listing}
+          fromTransactionPanel={true}
+          className={css.breakdown}
+          userRole={transactionRole}
+          transaction={transaction}
+          {...txBookingMaybe}
+          currency={config.currency}
+          marketplaceName={config.marketplaceName}
+        />
+      ),
+    }
     : {};
 
   // The location of the booking can be shown if fuzzy location
@@ -577,6 +581,10 @@ export const TransactionPageComponent = props => {
       activityFeed={
         <ActivityFeed
           messages={messages}
+          onSendMessage={onSendMessage}
+          onPipMarkPaid={onPipMarkPaid}
+          pipMarkPaidInProgress={pipMarkPaidInProgress}
+          pipMarkPaidError={pipMarkPaidError}
           transaction={transaction}
           stateData={stateData}
           intl={intl}
@@ -713,6 +721,8 @@ const mapStateToProps = state => {
     lineItems,
     fetchLineItemsInProgress,
     fetchLineItemsError,
+    pipMarkPaidInProgress,
+    pipMarkPaidError,
   } = state.TransactionPage;
   const { currentUser } = state.user;
 
@@ -743,6 +753,8 @@ const mapStateToProps = state => {
     lineItems, // for OrderPanel
     fetchLineItemsInProgress, // for OrderPanel
     fetchLineItemsError, // for OrderPanel
+    pipMarkPaidInProgress,
+    pipMarkPaidError,
   };
 };
 
@@ -762,6 +774,7 @@ const mapDispatchToProps = dispatch => {
       dispatch(fetchTransactionLineItems(orderData, listingId, isOwnListing)), // for OrderPanel
     onFetchTimeSlots: (listingId, start, end, timeZone, options) =>
       dispatch(fetchTimeSlots(listingId, start, end, timeZone, options)), // for OrderPanel
+    onPipMarkPaid: txId => dispatch(pipMarkPaid(txId)),
   };
 };
 

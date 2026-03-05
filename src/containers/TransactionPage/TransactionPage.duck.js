@@ -11,7 +11,7 @@ import {
   stringifyDateToISO8601,
 } from '../../util/dates';
 import { isTransactionsTransitionInvalidTransition, storableError } from '../../util/errors';
-import { transactionLineItems } from '../../util/api';
+import { transactionLineItems, pipMarkPaid as markPaid } from '../../util/api';
 import * as log from '../../util/log';
 import {
   updatedEntities,
@@ -59,6 +59,10 @@ export const FETCH_TRANSITIONS_ERROR = 'app/TransactionPage/FETCH_TRANSITIONS_ER
 export const TRANSITION_REQUEST = 'app/TransactionPage/MARK_RECEIVED_REQUEST';
 export const TRANSITION_SUCCESS = 'app/TransactionPage/TRANSITION_SUCCESS';
 export const TRANSITION_ERROR = 'app/TransactionPage/TRANSITION_ERROR';
+
+export const PIP_MARK_PAID_REQUEST = 'app/TransactionPage/PIP_MARK_PAID_REQUEST';
+export const PIP_MARK_PAID_SUCCESS = 'app/TransactionPage/PIP_MARK_PAID_SUCCESS';
+export const PIP_MARK_PAID_ERROR = 'app/TransactionPage/PIP_MARK_PAID_ERROR';
 
 export const FETCH_MESSAGES_REQUEST = 'app/TransactionPage/FETCH_MESSAGES_REQUEST';
 export const FETCH_MESSAGES_SUCCESS = 'app/TransactionPage/FETCH_MESSAGES_SUCCESS';
@@ -132,6 +136,8 @@ const initialState = {
   lineItems: null,
   fetchLineItemsInProgress: false,
   fetchLineItemsError: null,
+  pipMarkPaidInProgress: false,
+  pipMarkPaidError: null,
 };
 
 // Merge entity arrays using ids, so that conflicting items in newer array (b) overwrite old values (a).
@@ -181,6 +187,12 @@ export default function transactionPageReducer(state = initialState, action = {}
         transitionInProgress: null,
         transitionError: payload,
       };
+    case PIP_MARK_PAID_REQUEST:
+      return { ...state, pipMarkPaidInProgress: true, pipMarkPaidError: null };
+    case PIP_MARK_PAID_SUCCESS:
+      return { ...state, pipMarkPaidInProgress: false };
+    case PIP_MARK_PAID_ERROR:
+      return { ...state, pipMarkPaidInProgress: false, pipMarkPaidError: payload };
 
     case FETCH_MESSAGES_REQUEST:
       return { ...state, fetchMessagesInProgress: true, fetchMessagesError: null };
@@ -390,6 +402,10 @@ export const fetchLineItemsError = error => ({
   payload: error,
 });
 
+export const pipMarkPaidRequest = () => ({ type: PIP_MARK_PAID_REQUEST });
+export const pipMarkPaidSuccess = () => ({ type: PIP_MARK_PAID_SUCCESS });
+export const pipMarkPaidError = e => ({ type: PIP_MARK_PAID_ERROR, error: true, payload: e });
+
 // ================ Thunks ================ //
 
 const timeSlotsRequest = params => (dispatch, getState, sdk) => {
@@ -463,8 +479,8 @@ const fetchMonthlyTimeSlots = (dispatch, listing) => {
     const timeUnit = startTimeInterval
       ? bookingTimeUnits[startTimeInterval]?.timeUnit
       : unitType === 'hour'
-      ? 'hour'
-      : 'day';
+        ? 'hour'
+        : 'day';
     const nextBoundary = findNextBoundary(now, 1, timeUnit, tz);
 
     const nextMonth = getStartOf(nextBoundary, 'month', tz, 1, 'months');
@@ -487,15 +503,15 @@ const fetchMonthlyTimeSlots = (dispatch, listing) => {
     const options = intervalAlign => {
       return ['fixed', 'hour'].includes(unitType)
         ? {
-            extraQueryParams: {
-              intervalDuration: 'P1D',
-              intervalAlign,
-              maxPerInterval: 1,
-              minDurationStartingInInterval,
-              perPage: 31,
-              page: 1,
-            },
-          }
+          extraQueryParams: {
+            intervalDuration: 'P1D',
+            intervalAlign,
+            maxPerInterval: 1,
+            minDurationStartingInInterval,
+            perPage: 31,
+            page: 1,
+          },
+        }
         : null;
     };
 
@@ -700,6 +716,30 @@ export const makeTransition = (txId, transitionName, params) => (dispatch, getSt
         txId,
         transition: transitionName,
       });
+      throw e;
+    });
+};
+
+export const pipMarkPaid = txId => (dispatch, getState, sdk) => {
+  if (getState().TransactionPage.pipMarkPaidInProgress) {
+    return Promise.reject(new Error('PIP mark paid already in progress'));
+  }
+  dispatch(pipMarkPaidRequest());
+
+  return markPaid({ transactionId: txId })
+    .then(response => {
+      dispatch(addMarketplaceEntities(response));
+      dispatch(pipMarkPaidSuccess());
+      dispatch(fetchCurrentUserNotifications());
+
+      // Refresh transaction entity to capture state changes
+      refreshTransactionEntity(sdk, txId, dispatch);
+
+      return response;
+    })
+    .catch(e => {
+      dispatch(pipMarkPaidError(storableError(e)));
+      log.error(e, 'pip-mark-paid-failed', { txId });
       throw e;
     });
 };
