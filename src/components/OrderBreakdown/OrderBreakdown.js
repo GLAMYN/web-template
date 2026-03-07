@@ -33,6 +33,7 @@ import LineItemUnknownItemsMaybe from './LineItemUnknownItemsMaybe';
 import LineItemCouponDiscount from './LineItemCouponDiscount';
 import LineItemTipMaybe from './LineItemTipMaybe';
 import LineItemPipBalanceAdjustmentMaybe from './LineItemPipBalanceAdjustmentMaybe';
+import LineItemOnlineDepositMaybe from './LineItemOnlineDepositMaybe';
 
 import css from './OrderBreakdown.module.css';
 
@@ -124,15 +125,27 @@ export const OrderBreakdownComponent = props => {
       <LineItemShippingFeeMaybe lineItems={lineItems} intl={intl} />
       <LineItemPickupFeeMaybe lineItems={lineItems} intl={intl} />
       {/* <LineItemCouponDiscount lineItems={lineItems} intl={intl} /> */}
-      <LineItemPipBalanceAdjustmentMaybe lineItems={lineItems} intl={intl} />
       <LineItemUnknownItemsMaybe lineItems={lineItems} isProvider={isProvider} intl={intl} />
-
       <LineItemSubTotalMaybe
         lineItems={lineItems}
         code={lineItemUnitType}
         userRole={userRole}
         intl={intl}
         marketplaceCurrency={currency}
+      />
+      <LineItemPipBalanceAdjustmentMaybe lineItems={lineItems} intl={intl} />
+      <LineItemOnlineDepositMaybe transaction={transaction} isProvider={isProvider} intl={intl} />
+      <LineItemProviderCommissionMaybe
+        lineItems={lineItems}
+        isProvider={isProvider}
+        marketplaceName={marketplaceName}
+        intl={intl}
+      />
+      <LineItemProviderCommissionRefundMaybe
+        lineItems={lineItems}
+        isProvider={isProvider}
+        marketplaceName={marketplaceName}
+        intl={intl}
       />
       <LineItemRefundMaybe lineItems={lineItems} intl={intl} marketplaceCurrency={currency} />
 
@@ -145,19 +158,6 @@ export const OrderBreakdownComponent = props => {
       <LineItemCustomerCommissionRefundMaybe
         lineItems={lineItems}
         isCustomer={isCustomer}
-        marketplaceName={marketplaceName}
-        intl={intl}
-      />
-
-      <LineItemProviderCommissionMaybe
-        lineItems={lineItems}
-        isProvider={isProvider}
-        marketplaceName={marketplaceName}
-        intl={intl}
-      />
-      <LineItemProviderCommissionRefundMaybe
-        lineItems={lineItems}
-        isProvider={isProvider}
         marketplaceName={marketplaceName}
         intl={intl}
       />

@@ -901,8 +901,8 @@
 .pipNotification {
   margin: 24px 24px 0 24px;
   padding: 16px 20px;
-  background-color: #f0f7ff;
-  border: 1px solid #cce4ff;
+  background-color: #7eae9830;
+  border: 1px solid var(--marketplaceColor);
   border-radius: 8px;
 
   @media (--viewportMedium) {
@@ -918,12 +918,12 @@
   composes: h4 from global;
   margin-top: 0;
   margin-bottom: 8px;
-  color: #004085;
+  color: var(--marketplaceColor);
 }
 
 .pipNotificationMessage {
   composes: p from global;
   margin: 0;
-  color: #004085;
+  color: var(--marketplaceColor);
   font-size: 14px;
 }

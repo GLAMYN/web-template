@@ -6,6 +6,11 @@ import { resolveLatestProcessName, getProcess } from '../../transactions/transac
 
 import css from './OrderBreakdown.module.css';
 
+import Decimal from 'decimal.js';
+import { types as sdkTypes } from '../../util/sdkLoader';
+
+const { Money } = sdkTypes;
+
 /**
  * A component that renders the total price as a line item.
  *
@@ -33,9 +38,10 @@ const LineItemTotalPrice = props => {
     providerTotalMessageId = 'OrderBreakdown.providerTotalRefunded';
   }
 
-  const isPip = !!transaction.attributes.lineItems?.find(
+  const pipItem = transaction.attributes.lineItems?.find(
     item => item.code === LINE_ITEM_PIP_BALANCE_ADJUSTMENT && !item.reversal
   );
+  const isPip = !!pipItem;
 
   const totalLabel = isPip ? (
     isProvider ? (
@@ -49,9 +55,18 @@ const LineItemTotalPrice = props => {
     <FormattedMessage id="OrderBreakdown.total" />
   );
 
-  const totalPrice = isProvider
+  let totalPrice = isProvider
     ? transaction.attributes.payoutTotal
     : transaction.attributes.payinTotal;
+
+  if (isProvider && isPip && pipItem) {
+    // For PIP providers, the payoutTotal only includes the online portion.
+    // We add the absolute value of the cash balance adjustment to show the full earnings (Online Payout + Cash).
+    const payoutAmount = new Decimal(totalPrice.amount);
+    const cashAmount = new Decimal(pipItem.lineTotal.amount).abs();
+    totalPrice = new Money(payoutAmount.plus(cashAmount), totalPrice.currency);
+  }
+
   const formattedTotalPrice = formatMoney(intl, totalPrice);
 
   return (
