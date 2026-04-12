@@ -126,6 +126,7 @@ export const OrderBreakdownComponent = props => {
       <LineItemPickupFeeMaybe lineItems={lineItems} intl={intl} />
       {/* <LineItemCouponDiscount lineItems={lineItems} intl={intl} /> */}
       <LineItemUnknownItemsMaybe lineItems={lineItems} isProvider={isProvider} intl={intl} />
+      <LineItemPipBalanceAdjustmentMaybe lineItems={lineItems} intl={intl} />
       <LineItemSubTotalMaybe
         lineItems={lineItems}
         code={lineItemUnitType}
@@ -133,8 +134,8 @@ export const OrderBreakdownComponent = props => {
         intl={intl}
         marketplaceCurrency={currency}
       />
-      <LineItemPipBalanceAdjustmentMaybe lineItems={lineItems} intl={intl} />
       <LineItemOnlineDepositMaybe transaction={transaction} isProvider={isProvider} intl={intl} />
+
       <LineItemProviderCommissionMaybe
         lineItems={lineItems}
         isProvider={isProvider}

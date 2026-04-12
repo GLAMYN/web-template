@@ -8,10 +8,12 @@ import {
   propTypes,
   LINE_ITEM_CUSTOMER_COMMISSION,
   LINE_ITEM_PROVIDER_COMMISSION,
+  LINE_ITEM_PIP_BALANCE_ADJUSTMENT,
 } from '../../util/types';
 
 import css from './OrderBreakdown.module.css';
 import classNames from 'classnames';
+
 
 const { Money } = sdkTypes;
 
@@ -84,17 +86,31 @@ const LineItemSubTotalMaybe = props => {
 
   const formattedSubTotal = subTotalLineItems.length > 0 ? formatMoney(intl, subTotal) : null;
 
+  const isPip = !!lineItems.find(
+    item => item.code === LINE_ITEM_PIP_BALANCE_ADJUSTMENT && !item.reversal
+  );
+
+  // For providers:
+  // - If PIP: Hide this subtotal (redundant with Online Deposit)
+  // - If non-PIP: Use "Online Deposit" label
+  if (userRole === 'provider' && isPip) {
+    return null;
+  }
+
+  const labelId = userRole === 'provider' && !isPip ? 'OrderBreakdown.onlineDeposit' : 'OrderBreakdown.subTotal';
+
   return formattedSubTotal && showSubTotal ? (
     <>
       {/* <hr className={css.totalDivider} /> */}
       <div className={classNames(css.subTotalLineItem, css.salesTax)}>
         <span className={css.itemLabel}>
-          <FormattedMessage id="OrderBreakdown.subTotal" />
+          <FormattedMessage id={labelId} />
         </span>
         <span className={css.itemValue}>{formattedSubTotal}</span>
       </div>
     </>
   ) : null;
+
 };
 
 export default LineItemSubTotalMaybe;
