@@ -177,7 +177,7 @@ const TransitionMessage = props => {
   // However, in practice, transitions leading to same state have had the same message.
   const message = intl.formatMessage(
     { id: `TransactionPage.ActivityFeed.${processName}.${nextState}` },
-    { actor, otherUsersName, listingTitle, reviewLink, deliveryMethod, stateStatus, isPip }
+    { actor, otherUsersName, listingTitle, reviewLink, deliveryMethod, stateStatus, isPip, ownRole }
   );
 
   return message;

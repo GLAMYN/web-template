@@ -98,6 +98,36 @@ export const getStateDataForBookingProcess = (txInfo, processInfo) => {
     .cond([states.PENDING_PAYMENT_SET_CARD, PROVIDER], () => {
       return { processName, processState, showDetailCardHeadings: true };
     })
+    .cond([states.CARD_SAVED, PROVIDER], () => {
+      // For far-future bookings, we allow the provider to approve/decline
+      const primary = isCustomerBanned ? null : actionButtonProps(transitions.ACCEPT_FROM_CARD_SAVED, PROVIDER);
+      const secondary = isCustomerBanned ? null : actionButtonProps(transitions.DECLINE_FROM_CARD_SAVED, PROVIDER);
+
+      return {
+        processName,
+        processState,
+        showDetailCardHeadings: true,
+        showActionButtons: true,
+        primaryButtonProps: primary,
+        secondaryButtonProps: secondary,
+      };
+    })
+    .cond([states.CARD_SAVED_ACCEPTED, PROVIDER], () => {
+      return {
+        processName,
+        processState,
+        showDetailCardHeadings: true,
+        showExtraInfo: true, // Used to show "Awaiting scheduled charge"
+      };
+    })
+    .cond([states.CARD_SAVED_ACCEPTED, CUSTOMER], () => {
+      return {
+        processName,
+        processState,
+        showDetailCardHeadings: true,
+        showExtraInfo: true,
+      };
+    })
     .cond([states.ACCEPTED, CUSTOMER], () => {
       const booking = transaction?.booking;
       const { canReschedule } = canRescheduleBooking(booking, listing);

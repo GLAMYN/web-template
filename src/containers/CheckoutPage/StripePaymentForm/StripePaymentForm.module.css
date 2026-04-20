@@ -129,6 +129,15 @@
   border-radius: 4px;
 }
 
+.farFutureConsentContainer {
+  margin-top: 32px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background-color: var(--matterColorBright);
+  border: 1px solid var(--matterColorNegative);
+  border-radius: 4px;
+}
+
 .policyCheckbox {
   margin-bottom: 32px !important;
   padding-bottom: 8px;
@@ -187,6 +196,7 @@
   @media (--viewportMedium) {
     margin-top: 26px;
   }
+
   @media (--viewportLarge) {
     margin-top: 16px;
   }

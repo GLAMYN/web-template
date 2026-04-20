@@ -68,12 +68,25 @@ export const transitions = {
   EXPIRE_PROVIDER_REVIEW_PERIOD: 'transition/expire-provider-review-period',
   EXPIRE_REVIEW_PERIOD: 'transition/expire-review-period',
 
+  // ─── Request to book (no payment upfront) ──────────────────────────────────────
+  // Creates a booking request, seller must approve before payment
+  REQUEST_BOOKING: 'transition/request-booking',
+  REQUEST_BOOKING_AFTER_INQUIRY: 'transition/request-booking-after-inquiry',
+
+  // Seller accepts/declines the booking request
+  ACCEPT_FROM_PENDING_APPROVAL: 'transition/accept-from-pending-approval',
+  DECLINE_FROM_PENDING_APPROVAL: 'transition/decline-from-pending-approval',
+
   // ─── Far-future booking (> 90 days away) ──────────────────────────────────
   // Uses a manual SetupIntent — card is saved, no charge until scheduledChargeAt.
   REQUEST_PAYMENT_SET_CARD: 'transition/request-payment-set-card',
   REQUEST_PAYMENT_SET_CARD_AFTER_INQUIRY: 'transition/request-payment-set-card-after-inquiry',
   // Customer confirms the SetupIntent on the client so the card is saved.
   CONFIRM_PAYMENT_SET_CARD: 'transition/confirm-payment-set-card',
+
+  // Provider explicitly accepts/declines a far-future booking
+  ACCEPT_FROM_CARD_SAVED: 'transition/accept-from-card-saved',
+  DECLINE_FROM_CARD_SAVED: 'transition/decline-from-card-saved',
 
   // System (operator via Integration SDK) charges the saved card at scheduledChargeAt
   SYSTEM_CHARGE_FULL: 'transition/system-charge-full',
@@ -117,8 +130,13 @@ export const states = {
   REVIEWED_BY_PROVIDER: 'reviewed-by-provider',
   PENDING_PAYMENT_SET_CARD: 'pending-payment-set-card',
 
-  // Reached after confirm-payment-set-card; awaiting scheduled charge.
+  // ─── Request to book (awaiting seller approval) ────────────────────────────────
+  PENDING_APPROVAL: 'pending-approval',
+
+  // Reached after confirm-payment-set-card; awaiting provider approval.
   CARD_SAVED: 'card-saved',
+  // Reached after provider accepts a far-future booking; awaiting scheduled charge.
+  CARD_SAVED_ACCEPTED: 'card-saved-accepted',
   PAYMENT_FAILED_ACTION_REQUIRED: 'payment-failed-action-required',
 };
 
@@ -147,12 +165,24 @@ export const graph = {
         [transitions.INQUIRE]: states.INQUIRY,
         [transitions.REQUEST_PAYMENT]: states.PENDING_PAYMENT,
         [transitions.REQUEST_PAYMENT_SET_CARD]: states.PENDING_PAYMENT_SET_CARD,
+        // Request to book - no payment upfront
+        [transitions.REQUEST_BOOKING]: states.PENDING_APPROVAL,
       },
     },
     [states.INQUIRY]: {
       on: {
         [transitions.REQUEST_PAYMENT_AFTER_INQUIRY]: states.PENDING_PAYMENT,
         [transitions.REQUEST_PAYMENT_SET_CARD_AFTER_INQUIRY]: states.PENDING_PAYMENT_SET_CARD,
+        // Request to book after inquiry - no payment upfront
+        [transitions.REQUEST_BOOKING_AFTER_INQUIRY]: states.PENDING_APPROVAL,
+      },
+    },
+
+    // ─── Request to book state (awaiting seller approval) ──────────────
+    [states.PENDING_APPROVAL]: {
+      on: {
+        [transitions.ACCEPT_FROM_PENDING_APPROVAL]: states.ACCEPTED,
+        [transitions.DECLINE_FROM_PENDING_APPROVAL]: states.DECLINED,
       },
     },
 
@@ -180,8 +210,15 @@ export const graph = {
       },
     },
 
-    // ── Far-future card-saved state (awaiting scheduler charge) ─────────────
+    // ── Far-future card-saved state (awaiting provider approval) ─────────────
     [states.CARD_SAVED]: {
+      on: {
+        [transitions.ACCEPT_FROM_CARD_SAVED]: states.CARD_SAVED_ACCEPTED,
+        [transitions.DECLINE_FROM_CARD_SAVED]: states.DECLINED,
+      },
+    },
+    // ── Far-future accepted state (awaiting scheduler charge) ─────────────
+    [states.CARD_SAVED_ACCEPTED]: {
       on: {
         [transitions.CANCEL_FROM_CARD_SAVED]: states.CANCELED,
         [transitions.SYSTEM_CHARGE_FULL]: states.ACCEPTED,
@@ -237,7 +274,7 @@ export const graph = {
 // Check if a transition is the kind that should be rendered
 // when showing transition history (e.g. ActivityFeed)
 // The first transition and most of the expiration transitions made by system are not relevant
-export const isRelevantPastTransition = transition => {
+export const isRelevantPastTransition = (transition) => {
   return [
     transitions.ACCEPT,
     transitions.OPERATOR_ACCEPT,
@@ -258,6 +295,8 @@ export const isRelevantPastTransition = transition => {
     // Far-future & PIP transitions
     transitions.PAID_IN_PERSON_CONFIRMED,
     transitions.AUTO_COMPLETE_PIP,
+    transitions.ACCEPT_FROM_CARD_SAVED,
+    transitions.DECLINE_FROM_CARD_SAVED,
     transitions.SYSTEM_CHARGE_FULL,
     transitions.SYSTEM_CHARGE_FAILED,
   ].includes(transition);
@@ -265,13 +304,13 @@ export const isRelevantPastTransition = transition => {
 
 // Processes might be different on how reviews are handled.
 // Default processes use two-sided diamond shape, where either party can make the review first
-export const isCustomerReview = transition => {
+export const isCustomerReview = (transition) => {
   return [transitions.REVIEW_1_BY_CUSTOMER, transitions.REVIEW_2_BY_CUSTOMER].includes(transition);
 };
 
 // Processes might be different on how reviews are handled.
 // Default processes use two-sided diamond shape, where either party can make the review first
-export const isProviderReview = transition => {
+export const isProviderReview = (transition) => {
   return [transitions.REVIEW_1_BY_PROVIDER, transitions.REVIEW_2_BY_PROVIDER].includes(transition);
 };
 
@@ -281,17 +320,18 @@ export const isProviderReview = transition => {
 // i.e. the backend. This helper is used to check if the transition
 // should go through the local API endpoints, or if using JS SDK is
 // enough.
-export const isPrivileged = transition => {
+export const isPrivileged = (transition) => {
   return [
     transitions.REQUEST_PAYMENT,
     transitions.REQUEST_PAYMENT_AFTER_INQUIRY,
     transitions.REQUEST_PAYMENT_SET_CARD,
     transitions.REQUEST_PAYMENT_SET_CARD_AFTER_INQUIRY,
+    transitions.ACCEPT_FROM_CARD_SAVED,
   ].includes(transition);
 };
 
 // Check when transaction is completed (booking over)
-export const isCompleted = transition => {
+export const isCompleted = (transition) => {
   const txCompletedTransitions = [
     transitions.COMPLETE,
     transitions.OPERATOR_COMPLETE,
@@ -310,14 +350,19 @@ export const isCompleted = transition => {
 
 // Check when transaction is refunded (booking did not happen)
 // In these transitions action/stripe-refund-payment is called
-export const isRefunded = transition => {
+export const isRefunded = (transition) => {
   const txRefundedTransitions = [
     transitions.EXPIRE_PAYMENT,
     transitions.EXPIRE,
     transitions.CANCEL,
     transitions.DECLINE,
+    transitions.DECLINE_FROM_CARD_SAVED,
   ];
   return txRefundedTransitions.includes(transition);
 };
 
-export const statesNeedingProviderAttention = [states.PREAUTHORIZED];
+export const statesNeedingProviderAttention = [
+  states.PREAUTHORIZED,
+  states.CARD_SAVED,
+  states.PENDING_APPROVAL,
+];

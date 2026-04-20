@@ -45,7 +45,7 @@ async function updateCouponUsage(integrationSdk, providerId, couponCode) {
     const coupons = privateData?.coupons || [];
 
     // Find the coupon by code
-    const couponIndex = coupons.findIndex(c => c.code === couponCode);
+    const couponIndex = coupons.findIndex((c) => c.code === couponCode);
     if (couponIndex === -1) {
       console.log(`Coupon ${couponCode} not found for provider ${providerId}`);
       return false;
@@ -96,6 +96,7 @@ module.exports = (req, res) => {
     coupanCode,
     paymentMethodSelected,
     isFarFuture: isFarFutureFromClient,
+    isRequestToBook,
   } = req.body;
   const selectedLocationType = pageData?.orderData?.locationChoice;
   const selectedLocation =
@@ -142,13 +143,14 @@ module.exports = (req, res) => {
       const stripeCustomerRef = currentUserResponse.data.data.relationships?.stripeCustomer?.data;
       if (stripeCustomerRef) {
         const stripeCustomerEntity = currentUserResponse.data.included?.find(
-          entity => entity.type === 'stripeCustomer' && entity.id?.uuid === stripeCustomerRef.id?.uuid
+          (entity) =>
+            entity.type === 'stripeCustomer' && entity.id?.uuid === stripeCustomerRef.id?.uuid
         );
         stripeCustomerId = stripeCustomerEntity?.attributes?.stripeCustomerId || null;
       }
       const listing_Id = bodyParams?.params?.listingId?.uuid || bodyParams?.params?.listingId;
 
-      const user = showListingResponse.data.included?.find(i => i.type === 'user');
+      const user = showListingResponse.data.included?.find((i) => i.type === 'user');
       const author = await sdk.users.show({ id: user.id?.uuid });
       const customer = await sdk.users.show({ id: customerId });
       const customCommission =
@@ -223,10 +225,9 @@ module.exports = (req, res) => {
       // Using the outer couponData variable
       if (coupanCodes) {
         try {
-
           // Find the matching coupon - validate code, active status and expiration date
           const coupon = providerCoupons.find(
-            c =>
+            (c) =>
               c.code === coupanCodes.toUpperCase() &&
               c.isActive &&
               (!c.expiresAt || new Date(c.expiresAt) > new Date()) &&
@@ -269,11 +270,10 @@ module.exports = (req, res) => {
 
       // Determine if booking is more than 90 days from now
       const bookingEnd = orderData?.bookingEnd || bodyParams?.params?.bookingEnd;
-      let scheduledChargeAt = null;
       isFarFuture = !!isFarFutureFromClient;
 
       // Fallback calculation if flag not provided
-      if (isFarFutureFromClient === undefined && bookingEnd) {
+      if (!isFarFuture && bookingEnd) {
         const bookingEndDate = new Date(bookingEnd);
         const now = new Date();
         const daysUntilEnd = (bookingEndDate - now) / (1000 * 60 * 60 * 24);
@@ -282,21 +282,13 @@ module.exports = (req, res) => {
         }
       }
 
-      if (isFarFuture && bookingEnd) {
-        const bookingEndDate = new Date(bookingEnd);
-        const chargeDate = new Date(bookingEndDate);
-        chargeDate.setDate(chargeDate.getDate() - 60);
-        scheduledChargeAt = chargeDate.toISOString();
-      }
-
-
       // ─── PIP: Compute snapshots from line items ──────────────────────────────
-      const isPipValueTrue = val => val === true || val?.toLowerCase() === 'yes';
+      const isPipValueTrue = (val) => val === true || val?.toLowerCase() === 'yes';
       const pipAllowed =
         isPipValueTrue(listing.attributes.publicData?.pay_in_person_allowed) ||
         isPipValueTrue(listing.attributes.publicData?.payinPersonAllowed);
 
-      const balanceAdj = lineItems.find(item => item.code === 'line-item/pip-balance-adjustment');
+      const balanceAdj = lineItems.find((item) => item.code === 'line-item/pip-balance-adjustment');
 
       if (pipAllowed && balanceAdj) {
         const balanceCents = Math.abs(balanceAdj.unitPrice.amount);
@@ -305,7 +297,7 @@ module.exports = (req, res) => {
         // Re-calculate subtotal for snapshot
         const customerSubtotalCents = lineItems
           .filter(
-            item =>
+            (item) =>
               item.includeFor.includes('customer') &&
               !item.code.includes('commission') &&
               item.code !== 'line-item/pip-balance-adjustment'
@@ -331,16 +323,13 @@ module.exports = (req, res) => {
           paymentMethodSelected: 'in_person_deposit',
           depositAmount: { amount: depositCents, currency },
           balanceAmount: { amount: balanceCents, currency },
-          ...(scheduledChargeAt ? { scheduledChargeAt } : {}),
         };
       } else {
         // Full online payment
         const currency = listing.attributes.price.currency;
         const customerSubtotalCents = lineItems
           .filter(
-            item =>
-              item.includeFor.includes('customer') &&
-              !item.code.includes('commission')
+            (item) => item.includeFor.includes('customer') && !item.code.includes('commission')
           )
           .reduce((sum, item) => {
             const quantity =
@@ -352,21 +341,25 @@ module.exports = (req, res) => {
           pipAllowedSnapshot: pipAllowed,
           paymentMethodSelected: 'online_full',
           fullAmount: { amount: customerSubtotalCents, currency },
-          ...(scheduledChargeAt ? { scheduledChargeAt } : {}),
         };
       }
 
       return getTrustedSdk(req);
     })
-    .then(async trustedSdk => {
+    .then(async (trustedSdk) => {
       const { params } = bodyParams;
+      const transitionName = bodyParams?.transition || '';
 
       // Merge PIP protectedData into the transaction's protectedData
       const existingProtectedData = params?.protectedData || {};
 
-      // If far future and not speculative, create a SetupIntent
+      // Check if this is a "request to book" flow (no payment upfront)
+      const isRequestToBook = transitionName.includes('request-booking');
+
+      // If far future AND not speculative AND not "request to book", create a SetupIntent
+      // For "request to book" flow, we don't create SetupIntent - seller must accept first
       let setupIntentSecret = null;
-      if (isFarFuture && !isSpeculative) {
+      if (isFarFuture && !isSpeculative && !isRequestToBook) {
         try {
           // If stripeCustomerId is missing (new user), create one in Stripe and associate with Sharetribe user
           if (!stripeCustomerId) {
@@ -375,7 +368,7 @@ module.exports = (req, res) => {
               metadata: { userId: customerId },
             });
             stripeCustomerId = customer.id;
-            // Associate Stripe customer with Sharetribe user using the user's SDK
+            // Associate Stripe customer with Sharetribe user's SDK
             await sdk.stripeCustomer.create({ stripeCustomerId });
           }
 
@@ -383,18 +376,27 @@ module.exports = (req, res) => {
             const setupIntent = await stripe.setupIntents.create({
               customer: stripeCustomerId,
               usage: 'off_session',
-              metadata: { listingId: bodyParams?.params?.listingId?.uuid || bodyParams?.params?.listingId },
+              metadata: {
+                listingId: bodyParams?.params?.listingId?.uuid || bodyParams?.params?.listingId,
+              },
             });
             setupIntentSecret = setupIntent.client_secret;
+
             // Store stripeCustomerId in protectedData for the scanner
             pipProtectedData.stripeCustomerId = stripeCustomerId;
           } else {
-            console.error('initiate-privileged - stripeCustomerId missing, cannot create SetupIntent');
+            console.error(
+              'initiate-privileged - stripeCustomerId missing, cannot create SetupIntent'
+            );
           }
         } catch (error) {
           console.error('initiate-privileged - Error creating SetupIntent:', error);
-          // Fallback or handle error
+          // This will let the flow continue without SetupIntent
         }
+      } else if (isRequestToBook) {
+        // For "request to book" flow, mark it in protectedData
+        pipProtectedData.isRequestToBook = true;
+        console.log('[INFO] Request to book - no payment upfront, seller approval required');
       }
 
       // Add lineItems to the body params
@@ -415,13 +417,12 @@ module.exports = (req, res) => {
         },
       };
 
-
       if (isSpeculative) {
         return trustedSdk.transactions.initiateSpeculative(body, queryParams);
       }
       return trustedSdk.transactions.initiate(body, queryParams);
     })
-    .then(async apiResponse => {
+    .then(async (apiResponse) => {
       const { status, statusText, data } = apiResponse;
 
       // Only update coupon usage for non-speculative transactions
@@ -436,7 +437,7 @@ module.exports = (req, res) => {
 
       // Helper function to serialize line items for metadata storage
       // Converts Money objects to plain objects with amount and currency
-      const serializeLineItem = lineItem => {
+      const serializeLineItem = (lineItem) => {
         const serialized = { ...lineItem };
         if (
           lineItem.unitPrice &&
@@ -463,7 +464,7 @@ module.exports = (req, res) => {
 
       // Helper function to identify sale line items
       // Sale line items are base price items (night, day, hour, item, fixed) or price variant items
-      const isSaleLineItem = lineItem => {
+      const isSaleLineItem = (lineItem) => {
         return lineItem.code.includes('Sales Tax');
       };
 
@@ -472,14 +473,14 @@ module.exports = (req, res) => {
         ? lineItems.filter(isSaleLineItem).map(serializeLineItem)
         : [];
       const lineItemsWithoutSale = lineItems
-        ? lineItems.filter(item => !isSaleLineItem(item)).map(serializeLineItem)
+        ? lineItems.filter((item) => !isSaleLineItem(item)).map(serializeLineItem)
         : [];
 
       // Prepare base metadata with sale line items and line items
       const baseMetadata = {
         // Add sale line items and line items without sale line items
         ...(saleLineItems.length > 0 && {
-          saleLineItem: saleLineItems?.map(item => {
+          saleLineItem: saleLineItems?.map((item) => {
             item.code = item?.code?.replace('line-item/', '');
             item.linetotal = {
               amount: Number(item.unitPrice?.amount / 100) * Number(item.quantity || 1),
@@ -489,7 +490,7 @@ module.exports = (req, res) => {
           }),
         }),
         ...(lineItemsWithoutSale.length > 0 && {
-          lineItems: lineItemsWithoutSale?.map(item => {
+          lineItems: lineItemsWithoutSale?.map((item) => {
             item.code = item?.code?.replace('line-item/', '');
             item.linetotal = {
               amount: Number(item.unitPrice?.amount / 100) * Number(item.quantity || 1),
@@ -501,11 +502,13 @@ module.exports = (req, res) => {
         ...{
           serviceTotal: {
             amount:
-              lineItemsWithoutSale?.filter(item => !item.code.includes("provider-commission"))?.reduce(
-                (total, item) =>
-                  total + Number(item.unitPrice?.amount || 0) * Number(item.quantity || 1),
-                0
-              ) / 100,
+              lineItemsWithoutSale
+                ?.filter((item) => !item.code.includes('provider-commission'))
+                ?.reduce(
+                  (total, item) =>
+                    total + Number(item.unitPrice?.amount || 0) * Number(item.quantity || 1),
+                  0
+                ) / 100,
             currency: 'USD',
           },
         },
@@ -546,7 +549,7 @@ module.exports = (req, res) => {
               expand: true,
             }
           )
-          .then(res => {
+          .then((res) => {
             // res.data contains the response data
           });
       }
@@ -563,7 +566,7 @@ module.exports = (req, res) => {
         )
         .end();
     })
-    .catch(e => {
+    .catch((e) => {
       handleError(res, e);
     });
 };
