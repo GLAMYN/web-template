@@ -98,6 +98,7 @@ module.exports = (req, res) => {
   let isFarFuture = false;
   let stripeCustomerId = null;
   let pipProtectedData = {};
+  let scheduledChargeAt = null;
 
   const listingPromise = () =>
     sdk.listings.show({ id: bodyParams?.params?.listingId, include: ['author'] });
@@ -168,15 +169,15 @@ module.exports = (req, res) => {
         customerCommission.percentage = hasTransactions
           ? 0
           : getCommissionValue(
-              recurringCommission.customerCommission.percentage,
-              customerCommission.percentage
-            );
+            recurringCommission.customerCommission.percentage,
+            customerCommission.percentage
+          );
         customerCommission.minimum_amount = hasTransactions
           ? 0
           : getCommissionValue(
-              recurringCommission.customerCommission.minimum_amount,
-              customerCommission.minimum_amount
-            );
+            recurringCommission.customerCommission.minimum_amount,
+            customerCommission.minimum_amount
+          );
 
         // We need to fetch coupon details from the provider's private data
         // Using the outer couponData variable
@@ -240,25 +241,26 @@ module.exports = (req, res) => {
         );
 
         // Determine if booking is more than 90 days from now
-        const bookingEnd = bodyParams?.params?.bookingEnd || bookingEndFromTx;
-        let scheduledChargeAt = null;
+        const bookingStart = bodyParams?.params?.bookingStart || bodyParams?.params?.bookingDates?.bookingStart || transaction?.booking?.attributes?.start;
+        const bookingEnd = bodyParams?.params?.bookingEnd || bodyParams?.params?.bookingDates?.bookingEnd || bookingEndFromTx;
 
         // Fallback calculation if flag not provided
-        if (isFarFutureFromClient === undefined && bookingEnd && !isAcceptanceFromCardSaved) {
-          const bookingEndDate = new Date(bookingEnd);
+        if (isFarFutureFromClient === undefined && (bookingStart || bookingEnd) && !isAcceptanceFromCardSaved) {
+          const referenceDate = new Date(bookingStart || bookingEnd);
           const now = new Date();
-          const daysUntilEnd = (bookingEndDate - now) / (1000 * 60 * 60 * 24);
-          if (daysUntilEnd > 90) {
+          const daysUntilStart = (referenceDate - now) / (1000 * 60 * 60 * 24);
+          if (daysUntilStart > 90) {
             isFarFuture = true;
           }
         }
 
         // If we are accepting a far-future booking, schedule the charge
-        if (isAcceptanceFromCardSaved && bookingEnd) {
-          const bookingEndDate = new Date(bookingEnd);
-          const chargeDate = new Date(bookingEndDate);
+        if (isAcceptanceFromCardSaved && (bookingStart || bookingEnd)) {
+          const referenceStart = bookingStart || bookingEnd;
+          const chargeDate = new Date(referenceStart);
           chargeDate.setDate(chargeDate.getDate() - 60);
           scheduledChargeAt = chargeDate.toISOString();
+          console.log(`[INFO] Provider accepted far-future booking. Scheduled charge at: ${scheduledChargeAt}`);
         }
 
         // ─── PIP: Compute snapshots from line items ──────────────────────────────
@@ -291,9 +293,9 @@ module.exports = (req, res) => {
 
           const depositPct = Number(
             listing.attributes.publicData?.deposit_percentage ||
-              listing.attributes.publicData?.depositAmount ||
-              listing.attributes.publicData?.depositPercentage ||
-              0
+            listing.attributes.publicData?.depositAmount ||
+            listing.attributes.publicData?.depositPercentage ||
+            0
           );
 
           pipProtectedData = {
@@ -369,8 +371,8 @@ module.exports = (req, res) => {
             ...pipProtectedData,
             ...(setupIntentSecret
               ? {
-                  setupIntentClientSecret: setupIntentSecret,
-                }
+                setupIntentClientSecret: setupIntentSecret,
+              }
               : {}),
           },
         },
@@ -380,7 +382,20 @@ module.exports = (req, res) => {
         return trustedSdk.transactions.transitionSpeculative(body, queryParams);
       }
 
-      return trustedSdk.transactions.transition(body, queryParams);
+      return trustedSdk.transactions.transition(body, queryParams).then(async (res) => {
+        // If we have a scheduledChargeAt, update the transaction metadata so the scanner can find it easily
+        if (scheduledChargeAt) {
+          try {
+            await integrationSdk.transactions.updateMetadata({
+              id: res.data.data.id,
+              metadata: { scheduledChargeAt },
+            });
+          } catch (metaErr) {
+            console.error('Failed to update metadata with scheduledChargeAt:', metaErr);
+          }
+        }
+        return res;
+      });
     })
     .then(async (apiResponse) => {
       const { status, statusText, data } = apiResponse;

@@ -121,6 +121,7 @@ module.exports = (req, res) => {
   // (where currentUserResponse would otherwise be out of scope)
   let customerId = null;
   let currentUserEmail = null;
+  let scheduledChargeAt = null;
 
   const listingPromise = () =>
     sdk.listings.show({
@@ -269,16 +270,27 @@ module.exports = (req, res) => {
       );
 
       // Determine if booking is more than 90 days from now
-      const bookingEnd = orderData?.bookingEnd || bodyParams?.params?.bookingEnd;
+      const bookingStart = bodyParams?.params?.bookingStart || bodyParams?.params?.bookingDates?.bookingStart || orderData?.bookingStart;
+      const bookingEnd = bodyParams?.params?.bookingEnd || bodyParams?.params?.bookingDates?.bookingEnd || orderData?.bookingEnd;
+      
       isFarFuture = !!isFarFutureFromClient;
 
-      // Fallback calculation if flag not provided
-      if (!isFarFuture && bookingEnd) {
-        const bookingEndDate = new Date(bookingEnd);
+      // Fallback calculation if flag not provided: check if booking start is > 90 days away
+      if (!isFarFuture && (bookingStart || bookingEnd)) {
+        const referenceDate = new Date(bookingStart || bookingEnd);
         const now = new Date();
-        const daysUntilEnd = (bookingEndDate - now) / (1000 * 60 * 60 * 24);
-        if (daysUntilEnd > 90) {
+        const daysUntilStart = (referenceDate - now) / (1000 * 60 * 60 * 24);
+        if (daysUntilStart > 90) {
           isFarFuture = true;
+        }
+      }
+
+      // Calculate scheduledChargeAt for Far-Future bookings (60 days before booking start)
+      if (isFarFuture) {
+        const referenceStart = bookingStart || bookingEnd;
+        if (referenceStart) {
+          scheduledChargeAt = moment(referenceStart).subtract(60, 'days').toISOString();
+          console.log(`[INFO] Far-future booking detected. Scheduled charge at: ${scheduledChargeAt}`);
         }
       }
 
@@ -323,6 +335,7 @@ module.exports = (req, res) => {
           paymentMethodSelected: 'in_person_deposit',
           depositAmount: { amount: depositCents, currency },
           balanceAmount: { amount: balanceCents, currency },
+          ...(scheduledChargeAt ? { scheduledChargeAt } : {}),
         };
       } else {
         // Full online payment
@@ -341,6 +354,7 @@ module.exports = (req, res) => {
           pipAllowedSnapshot: pipAllowed,
           paymentMethodSelected: 'online_full',
           fullAmount: { amount: customerSubtotalCents, currency },
+          ...(scheduledChargeAt ? { scheduledChargeAt } : {}),
         };
       }
 
@@ -356,10 +370,9 @@ module.exports = (req, res) => {
       // Check if this is a "request to book" flow (no payment upfront)
       const isRequestToBook = transitionName.includes('request-booking');
 
-      // If far future AND not speculative AND not "request to book", create a SetupIntent
-      // For "request to book" flow, we don't create SetupIntent - seller must accept first
+      // If far future OR "request to book" AND not speculative, create a SetupIntent
       let setupIntentSecret = null;
-      if (isFarFuture && !isSpeculative && !isRequestToBook) {
+      if ((isFarFuture || isRequestToBook) && !isSpeculative) {
         try {
           // If stripeCustomerId is missing (new user), create one in Stripe and associate with Sharetribe user
           if (!stripeCustomerId) {
@@ -537,6 +550,7 @@ module.exports = (req, res) => {
                 ...(bookingQuestion1 && { bookingQuestion1 }),
                 ...(bookingQuestion2 && { bookingQuestion2 }),
                 ...(bookingQuestion3 && { bookingQuestion3 }),
+                ...(scheduledChargeAt && { scheduledChargeAt }),
                 ...(couponData?.coupon && {
                   couponCode: couponData.coupon.code,
                   couponType: couponData.coupon.type,

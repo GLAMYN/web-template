@@ -222,12 +222,7 @@ export const processCheckoutWithPayment = (orderParams, extraPaymentParams) => {
     const isInquiry = storedTx?.attributes?.lastTransition === process.transitions.INQUIRE;
 
     let requestTransition;
-    if (requestToBook) {
-      // "Request to book" - no payment upfront, seller must approve
-      requestTransition = isInquiry
-        ? process.transitions.REQUEST_BOOKING_AFTER_INQUIRY
-        : process.transitions.REQUEST_BOOKING;
-    } else if (isFarFuture) {
+    if (isFarFuture || requestToBook) {
       requestTransition = isInquiry
         ? process.transitions.REQUEST_PAYMENT_SET_CARD_AFTER_INQUIRY
         : process.transitions.REQUEST_PAYMENT_SET_CARD;
